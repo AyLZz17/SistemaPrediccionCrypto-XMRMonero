@@ -51,13 +51,6 @@ export default function DashboardPage() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Aviso legal */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
-          <strong>Aviso legal:</strong> Esta aplicación proporciona análisis predictivo de series de tiempo. No constituye asesoría financiera, no promete rentabilidad y no simula operaciones de inversión.
-        </p>
-      </div>
     </div>
   )
 }

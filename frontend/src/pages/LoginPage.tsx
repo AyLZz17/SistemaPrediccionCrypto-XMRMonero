@@ -76,10 +76,6 @@ export default function LoginPage() {
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
-
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Análisis predictivo. No es asesoría financiera.
-        </p>
       </div>
     </div>
   )

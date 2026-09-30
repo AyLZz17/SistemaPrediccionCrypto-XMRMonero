@@ -61,12 +61,6 @@ export default function PredictionsPage() {
           </button>
         </form>
       </div>
-
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
-          <strong>Aviso legal:</strong> Las predicciones son estimaciones basadas en modelos estadísticos. No constituyen asesoría financiera.
-        </p>
-      </div>
     </div>
   )
 }

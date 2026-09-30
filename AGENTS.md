@@ -1,0 +1,171 @@
+# AGENTS.md — Instrucciones del proyecto XMR-Forecast
+
+> **Léelo completo antes de cualquier tarea.** Este archivo es la fuente de verdad de las reglas del proyecto.
+> **Se actualiza al terminar CADA tarea** (ver §7 y §10). Si algo aquí contradice a `MEMORY.md`, gana `AGENTS.md`.
+
+Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidades y recetas) · `MEMORY.md` (memoria corta, máx. 50 líneas).
+
+---
+
+## 1. Contexto del proyecto
+
+- **Nombre de trabajo:** XMR-Forecast.
+- **Qué es:** aplicación web comercial que permite a los usuarios predecir el **precio de cierre del día siguiente** o la **dirección** (sube/baja) de **Monero (XMR)**, comparando modelos **LSTM/GRU** contra modelos base: **media móvil, regresión lineal y ARIMA**.
+- **Tipo de producto:** aplicación web SaaS para análisis predictivo de criptomonedas.
+- **Documentos fuente (en `/docs/fuentes/`):** `Propuesta_Monero_IEEE.docx` (especificación original del cliente) y `Fase1_Proyecto7.docx` (requisitos generales de pronóstico de series de tiempo).
+- **Documentación derivada:** `docs/01_documentacion.md`, `docs/02_stack_tecnologico.md`, `docs/03_machine_learning.md`, `docs/04_diagramas.md`, `docs/05_seguridad.md`.
+
+---
+
+## 2. Reglas inviolables
+
+### 2.1 Rigor científico (ML)
+| ID | Regla |
+|----|-------|
+| R-01 | Partición **estrictamente cronológica**. Prohibido `shuffle` y `train_test_split` aleatorio. Validación cruzada solo con `TimeSeriesSplit` / walk-forward. |
+| R-02 | El `MinMaxScaler` se ajusta **solo con train**; validación y prueba solo usan `transform`. Las predicciones se **des-escalan** antes de calcular métricas (en USD). |
+| R-03 | Indicadores técnicos (RSI, MACD, medias móviles) usan **solo información ≤ t**. Prohibido `shift(-n)` o ventanas centradas en features. |
+| R-04 | El conjunto de **prueba se usa una sola vez** para la evaluación final. El ajuste de hiperparámetros usa únicamente validación. |
+| R-05 | Todos los modelos se evalúan sobre **el mismo conjunto de prueba y las mismas fechas**. |
+| R-06 | Baselines obligatorios: media móvil, regresión lineal, ARIMA. |
+| R-07 | Métricas obligatorias: **MAE, RMSE, MAPE** y **proporción de aciertos** para dirección. |
+| R-08 | Reproducibilidad: semillas fijas, configuración versionada (YAML), snapshot del dataset con checksum, tracking en MLflow. Modelos estocásticos: **≥ 5 semillas**, reportar media ± desviación. |
+| R-09 | **Un resultado negativo es válido.** Si el LSTM no supera a los baselines, se reporta tal cual. Prohibido ajustar usando el test hasta "ganar". |
+| R-10 | Análisis de fallos obligatorio: cambios bruscos del mercado y suavizado de picos. |
+| R-23 | Una muestra pertenece al subconjunto de la **fecha de su objetivo**. Su ventana de entrada puede incluir días anteriores del subconjunto previo, nunca su objetivo ni datos posteriores. |
+| R-24 | El **modelo campeón** se elige por métricas de **validación**, no de test. El test solo se reporta. ARIMA se evalúa con pronóstico rodante de **un paso** para ser comparable con el LSTM. |
+
+### 2.2 Ética y comunicación
+| ID | Regla |
+|----|-------|
+| R-11 | El sistema **no es asesoría financiera** ni promete rentabilidad. **Prohibido** simular operaciones/backtesting de trading. El aviso legal debe estar visible en la UI, la documentación de la API, el README y los reportes exportados. |
+| R-12 | No escribir que el sistema "predice el mercado". Usar lenguaje de *capacidad predictiva evaluada*. |
+
+### 2.3 Ingeniería
+| ID | Regla |
+|----|-------|
+| R-13 | `backend/app/ml/` **no importa** FastAPI ni SQLAlchemy (queda aislado, testeable y usable desde notebooks/CLI). |
+| R-14 | Secretos solo por variables de entorno. Nada de credenciales en git. Se versiona `.env.example`. |
+| R-15 | Cambios de esquema **solo con migraciones Alembic**. |
+| R-16 | Toda función pública de `ml/` lleva type hints y tests. Los **tests de no-fuga de datos** (R-01 a R-03) son obligatorios. |
+| R-17 | Dependencias con versión fijada (lockfile). **Verificar la versión vigente** al crear el entorno; no asumir versiones. |
+| R-18 | Los tests no hacen llamadas de red (se mockean las fuentes). Datos de prueba sintéticos. |
+
+### 2.4 Proceso
+| ID | Regla |
+|----|-------|
+| R-19 | Tras **cada tarea**: (a) actualizar `MEMORY.md`, (b) promover a `AGENTS.md` lo crítico, (c) añadir fila al registro (§10). |
+| R-20 | `MEMORY.md` tiene **máximo 50 líneas** (verificar con `wc -l`). Resumir o eliminar lo que no aporte. |
+| R-21 | No inventar datos, citas ni resultados. Toda cifra de rendimiento proviene de una corrida registrada. |
+| R-22 | Los supuestos y decisiones abiertas se registran en §9. No se resuelven en silencio. |
+| R-25 | Todo diagrama Mermaid se **valida (parse + render)** antes de entregar: `python tools/validate_mermaid.py <archivo.md> <mermaid.min.js>`. Si cambia el diseño, se actualizan los diagramas en la misma tarea. |
+| R-26 | Los controles de seguridad se trazan a `05_seguridad.md` y a ASVS/API Top 10; toda ruta nueva requiere autenticación/autorización explícita o justificación pública, validación de entrada, límites y pruebas negativas. |
+| R-27 | Producción usa secretos fuera de git/artifacts/logs, mínimo privilegio, MFA para `admin`, red privada para DB/Redis/MLflow y rotación/revocación ante compromiso. |
+| R-28 | Datos, modelos, scalers y configuraciones ML se cargan solo desde artefactos versionados y verificables por digest/procedencia; la promoción de campeón requiere gates de integridad, no fuga y validación. |
+| R-29 | CI bloquea secretos, vulnerabilidades críticas y artefactos no verificables; genera SBOM y escanea dependencias/imágenes antes de publicar. Las excepciones requieren vencimiento y aprobación registrada. |
+| R-30 | Todo incidente se gestiona con el runbook de `05_seguridad.md`, preservando evidencia, rotando credenciales comprometidas y documentando causa raíz, impacto y acciones correctivas. |
+
+---
+
+## 3. Stack decidido (detalle y alternativas en `docs/02_stack_tecnologico.md`)
+
+| Capa | Tecnología |
+|------|-----------|
+| Backend API | Python 3.11, FastAPI, Pydantic v2, Uvicorn |
+| ORM / migraciones | SQLAlchemy 2.0, Alembic |
+| Base de datos | PostgreSQL (datos, experimentos, predicciones) · Redis (broker y caché) |
+| Tareas asíncronas | Celery + Celery Beat (entrenamiento e ingesta diaria) |
+| ML / datos | pandas, NumPy, scikit-learn, statsmodels, TensorFlow/Keras (LSTM/GRU), Optuna |
+| Tracking | MLflow |
+| Frontend | React + TypeScript + Vite, Tailwind CSS, Apache ECharts, TanStack Query |
+| Infra | Docker + Docker Compose, GitHub Actions |
+| Calidad | pytest, ruff, mypy, Vitest, ESLint, pre-commit |
+
+---
+
+## 4. Convenciones
+
+- **Idioma:** documentación en español; identificadores de código en inglés; commits en inglés con *Conventional Commits* (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`).
+- **Estilo:** Python con `ruff` (lint + format) y `mypy`; TypeScript en modo `strict`.
+- **Ramas:** `main` protegida; trabajo en `feat/<tema>`; PR con CI verde.
+- **Configuración de experimentos:** un YAML por experimento en `configs/`.
+- **Nombres de artefactos:** `artifacts/models/{run_id}/model.keras`, `scaler.joblib`, `config.yaml`.
+
+## 5. Estructura del repositorio (objetivo)
+
+```
+xmr-forecast/
+├── AGENTS.md · SKILLS.md · MEMORY.md · README.md
+├── docs/                    # documentación y diagramas (Mermaid)
+│   └── fuentes/             # documentos originales del cliente
+├── backend/
+│   ├── app/
+│   │   ├── api/             # routers: auth, market, experiments, predictions
+│   │   ├── core/            # config, seguridad, logging
+│   │   ├── db/              # modelos SQLAlchemy, sesión
+│   │   ├── schemas/         # Pydantic
+│   │   ├── services/        # lógica de aplicación
+│   │   ├── workers/         # tareas Celery
+│   │   └── ml/              # SIN dependencias de FastAPI/SQLAlchemy (R-13)
+│   │       ├── data/  models/  evaluation/  tracking/  pipelines/
+│   ├── alembic/  tests/  pyproject.toml
+├── frontend/                # src/pages, components, api, hooks
+├── tools/                   # utilidades (validate_mermaid.py)
+├── notebooks/               # solo EDA exploratorio
+├── configs/                 # YAML de experimentos
+├── data/                    # snapshots (git ignora datos; se versiona manifest)
+├── artifacts/               # modelos y reportes generados
+├── docker-compose.yml
+└── .github/workflows/ci.yml
+```
+
+## 6. Comandos estándar (planificados; crear con el andamiaje)
+
+`make up` (levanta todo) · `make test` · `make lint` · `make migrate` · `make ingest` · `make experiment CONFIG=configs/lstm_base.yaml` · `make diagrams` (valida Mermaid)
+
+## 7. Protocolo del agente en cada tarea
+
+1. Leer `AGENTS.md` → `MEMORY.md` → `SKILLS.md` (solo la habilidad relevante).
+2. Ejecutar la tarea respetando §2.
+3. Verificar: tests/linters si hay código; coherencia con los diagramas si cambió el diseño.
+4. **Actualizar `MEMORY.md`** (≤ 50 líneas).
+5. Si aprendiste una regla crítica o tomaste una decisión permanente → **promoverla a este archivo**.
+6. Añadir una fila al registro (§10).
+7. Si surgió una habilidad nueva → añadirla a `SKILLS.md`.
+
+## 8. Definición de Hecho (DoD)
+
+- Cumple todas las reglas de §2.
+- Con código: tests pasan, `ruff` y `mypy` limpios, tests de no-fuga incluidos si toca datos/ML.
+- Con diseño: `docs/` y diagramas actualizados y consistentes entre sí.
+- Los artefactos no incluyen secretos ni datos crudos pesados.
+- `AGENTS.md`, `MEMORY.md` y el registro (§10) actualizados.
+
+## 9. Decisiones abiertas y supuestos
+
+| ID | Tema | Estado | Supuesto vigente |
+|----|------|--------|------------------|
+| D-00 | Dominio: los dos documentos difieren (retail Store Sales vs. Monero) | **Supuesto** | Proyecto activo = **Monero**. Retail queda como dataset alternativo vía la interfaz `DataSource` (no implementar salvo decisión del cliente). |
+| D-01 | Fuente de datos XMR | Abierta | Candidata: Yahoo Finance (`yfinance`, XMR-USD); alternativas: CryptoDataDownload, CoinGecko. Guardar siempre snapshot CSV con checksum. |
+| D-02 | Período exacto de datos | Abierta | Se fija al iniciar la recolección. |
+| D-03 | Modelo recurrente final: LSTM vs. GRU | Abierta | LSTM principal, GRU alternativa. |
+| D-04 | Salida principal | Abierta | Implementar **ambas** tareas: regresión (cierre t+1) y dirección; comparar. |
+| D-05 | Proporciones de partición | Propuesta | 70 / 15 / 15 cronológico + `TimeSeriesSplit` (5) para ajuste. |
+| D-06 | Cola de tareas | Propuesta | Celery + Redis (entrenamiento no debe bloquear la API). Alternativa más ligera: RQ/ARQ. |
+| D-07 | Objetivos numéricos de calidad (cobertura ≥ 80 % en `ml/`, lecturas API p95 < 500 ms) | Propuesta | Ajustables por el cliente. |
+| D-08 | Extensiones fuera de alcance inicial | Diferidas | Multi-horizonte, indicadores técnicos vs. solo precio, BTC/ETH, exógenas, alertas. |
+
+## 10. Registro de tareas
+
+| ID | Fecha | Tarea | Archivos | Resultado |
+|----|-------|-------|----------|-----------|
+| T-001 | 2026-09-29 | Lectura y análisis de los documentos fuente | — | Contexto extraído; se detecta discrepancia retail vs. Monero → D-00 |
+| T-002 | 2026-09-29 | Creación de archivos de gobierno | AGENTS.md, SKILLS.md, MEMORY.md | Creados |
+| T-003 | 2026-09-29 | Documentación general (visión, requisitos, casos de uso, arquitectura, BD, API, UI, pruebas, plan, riesgos) | docs/01_documentacion.md, docs/fuentes/ | Creada |
+| T-004 | 2026-09-29 | Documento de stack tecnológico (backend, BD, ML, frontend, DevOps, seguridad, alternativas, Compose) | docs/02_stack_tecnologico.md | Creado |
+| T-005 | 2026-09-29 | Diseño de Machine Learning (formulación, features, split, baselines, LSTM/GRU, métricas, fallos, experimentos E-01…E-09) | docs/03_machine_learning.md | Creado; se promueven R-23 y R-24 |
+| T-006 | 2026-09-29 | Diagramas: casos de uso, flujo de usuario (+ 2 journeys), arquitectura, 3 de clases, 4 de flujo, 3 de secuencia, ER, 2 de estados | docs/04_diagramas.md | Creado; 19 diagramas validados (parse + render) |
+| T-007 | 2026-09-29 | Herramienta de validación de Mermaid; alineación ER ↔ doc 01 (`data_split.dataset_version_id`); corrección de layout en casos de uso | tools/validate_mermaid.py, docs/01, docs/04 | Hecho; se promueve R-25 |
+| T-008 | 2026-09-29 | Protocolo integral de seguridad: marcos, threat model, controles API/identidad/ML/supply chain, incidentes, matriz y checklist | docs/05_seguridad.md, docs/01, docs/02, AGENTS.md, SKILLS.md, MEMORY.md | Hecho; se promueven R-26…R-30 |
+| T-009 | 2026-09-29 | Adaptación de documentación para cliente real (eliminar enfoque académico) | AGENTS.md, SKILLS.md, MEMORY.md, docs/01-05 | Hecho |
+<!-- LOG:END -->

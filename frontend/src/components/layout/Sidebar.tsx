@@ -5,7 +5,7 @@ const navItems = [
   { path: '/predictions', label: 'Predicciones', icon: '🔮' },
   { path: '/models', label: 'Modelos', icon: '🤖' },
   { path: '/datasets', label: 'Datasets', icon: '📁' },
-  { path: '/http-codes', label: 'HTTP Codes', icon: '🔌' },
+  { path: '/http-codes', label: 'HTTP Codes', icon: '📋' },
 ]
 
 export default function Sidebar() {
