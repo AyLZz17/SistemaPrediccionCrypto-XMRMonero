@@ -92,14 +92,17 @@ services:
     image: ghcr.io/mlflow/mlflow:v2.8.1
     container_name: xmr-mlflow
     restart: unless-stopped
+    # SQLite local: la imagen oficial no trae psycopg2 y no acepta Postgres
+    # sin driver. Para Postgres, fijar MLFLOW_BACKEND_STORE_URI con una
+    # imagen propia que incluya el driver.
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
-      --backend-store-uri postgresql://${POSTGRES_USER:-xmr}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-xmr_forecast}
+      --backend-store-uri ${MLFLOW_BACKEND_STORE_URI:-sqlite:////mlflow/artifacts/mlflow.db}
       --artifacts-destination /mlflow/artifacts
     environment:
-      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-https://mlflow:5000}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
     volumes:
       - mlflow-data:/mlflow/artifacts
       - ./docker/certs:/certs:ro
@@ -109,7 +112,7 @@ services:
     networks:
       - data
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('https://127.0.0.1:5000/health',context=__import__('ssl')._create_unverified_context())\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:5000/')\""]
       interval: 20s
       timeout: 8s
       retries: 10
@@ -128,7 +131,7 @@ services:
       ML_SSL_CERTFILE: ${ML_SSL_CERTFILE:-/certs/ml-service/cert.pem}
       ML_SSL_KEYFILE: ${ML_SSL_KEYFILE:-/certs/ml-service/key.pem}
       ML_SSL_CAFILE: ${ML_SSL_CAFILE:-/certs/ca/ca.crt}
-      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-https://mlflow:5000}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
       MLFLOW_SSL_CAFILE: /certs/ca/ca.crt
       ML_ALLOW_PLAINTEXT_DEV: "false"
     volumes:
@@ -200,7 +203,7 @@ services:
       - backend
       - data
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --ca-certificate=/certs/ca/ca.crt https://127.0.0.1:8443/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O /dev/null --ca-certificate=/certs/ca/ca.crt https://127.0.0.1:8443/actuator/health || exit 1"]
       interval: 20s
       timeout: 8s
       retries: 10
@@ -213,22 +216,31 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Vite incrusta las VITE_* en el bundle EN BUILD: el `environment:` de
+        # abajo NO llega al JS servido. Sin este arg, el bundle apunta al
+        # dominio de ejemplo del Dockerfile y todo falla con DNS/NETWORK.
+        # Es solo el ORIGEN (el codigo anade `/api/v1/...`).
+        VITE_API_BASE_URL: ${FRONTEND_API_BASE_URL:-https://localhost:8443}
     container_name: xmr-frontend
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
     environment:
-      # Se incrusta en tiempo de build: el bundle no lleva secretos (R-14).
-      VITE_API_BASE_URL: https://localhost:8443/api/v1
-      VITE_AUTH_GOOGLE_URL: https://localhost:8443/api/v1/auth/google/authorize
+      # Informativo: lo que vale es el build-arg de arriba, no esto.
+      VITE_API_BASE_URL: ${FRONTEND_API_BASE_URL:-https://localhost:8443}
     ports:
-      - "127.0.0.1:3000:8080"
+      # El puerto publico es el TLS (8443). El 8080 queda interno, solo para
+      # la sonda /healthz (R-33: nada en claro hacia el host).
+      - "127.0.0.1:3000:8443"
+    volumes:
+      - ./docker/certs:/etc/nginx/tls:ro
     networks:
       - edge
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --ca-certificate=/certs/ca/ca.crt https://127.0.0.1:8080/ || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O /dev/null --spider http://127.0.0.1:8080/healthz || exit 1"]
       interval: 20s
       timeout: 8s
       retries: 5

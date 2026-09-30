@@ -5,58 +5,45 @@
 - LSTM/GRU frente a media movil, regresion lineal y ARIMA. Metricas MAE, RMSE,
   MAPE y acierto de direccion.
 - **No es asesoria financiera**, no promete rentabilidad, no simula trading
-  (R-11/R-12). El aviso viaja en la UI, en `/api/v1/meta/disclaimer` y en cada
-  respuesta de prediccion.
+  (R-11/R-12). Aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
 
 ## Tarea en curso
-- T-028: revision de documentacion oficial y correccion del backend (cerrada).
+- T-032: pantallas de error de infraestructura (cerrada, redirect 497 + 50x).
 
 ## Estado verificado en esta sesion
-- **Backend: `mvn clean verify` = 129 tests, BUILD SUCCESS**, Java 21.
-- **Arranque real**: el jar levanta contra PostgreSQL 15.19 y Redis 7 reales,
-  migra V1..V5 y responde por HTTPS.
-- **`tools/verify-stack.ps1`: 48/48**, incluidas 4 comprobaciones nuevas que
-  obligan a que la cola AVANCE (antes solo miraban que el trabajo apareciera).
+- **Stack Docker UP**: 6/6 `healthy`. **`tools/verify-stack.ps1`: 48/48.**
+- Frontend TLS verificado con la CA de desarrollo: `200` en `/` y en
+  `/api/v1/meta/disclaimer` via proxy (aviso legal intacto).
+- Backend: `mvn clean verify` = 129 tests, BUILD SUCCESS (Java 21).
 
-## Bloqueantes corregidos (ninguno lo detectaba un test)
-1. **Cola de trabajos muerta**: `claimIfPending` era `@Modifying` sin
-   `@Transactional` (Spring Data JPA no los aplica a consultas declaradas) y el
-   worker se llamaba a si mismo, saltandose el proxy. Todo trabajo quedaba en
-   PENDING para siempre. Resuelto con `@Transactional` explicito y un bean
-   `JobQueue` separado.
-2. **OAuth Google nunca completaba**: la firma se verificaba con `parts[1]` (el
-   payload) en vez de `parts[2]`. Fallaba siempre. Ahora hay tests con RSA real.
-3. **`@Valid` ausente** en `POST /experiments/{id}/runs`; al anadirlo aparecio
-   `List<@Size Integer>` (`@Size` no existe para `Integer`, HV000030) y el
-   endpoint daba 500 en la primera llamada.
-4. `AuditService` capturaba el fallo **dentro** de su transaccion: el alta de
-   usuario respondia 500 con `UnexpectedRollbackException`.
+## Bloqueantes historicos (ningun test los detectaba)
+1. Cola muerta (@Modifying sin @Transactional + auto-invocacion sin proxy).
+2. OAuth: firma con parts[1]; @Valid ausente + List<@Size Integer>; catch
+   dentro de la transaccion (R-44/R-45/R-46/R-47).
+
+## Fallos del primer despliegue (solo en local, nunca en tests)
+1. mlflow v2.8.0 inexistente → v2.8.1. 2. Pins py3.12 vs base 3.11 → 3.12.
+3. mkdir tras USER ml. 4. truststore OpenSSL3 vacio → keytool. 5. MLflow
+   sin psycopg2 → SQLite local. 6. wget sin -O; healthz en 8080 http.
+7. assume-unchanged ocultaba cambios. 8. VITE_* en BUILD → build-arg.
+9. CORS: http://localhost:3000 en .env. 10. Frontend sin TLS → nginx 8443
+   ssl + cert `frontend`, 3000→8443. 11. Upstream `xmr_backend` rompia el
+   SNI (Tomcat: illegal_parameter) → upstream `backend` = SAN del cert.
+12. HTTP en claro al puerto TLS daba el 400 en crudo → `error_page 497`
+    redirige a https; 500/502/503/504 sirven `50x.html` propia (oscura,
+    con pie R-11, sin secretos). La SPA ya tenia NotFound/ErrorBoundary.
 
 ## Decisiones
 - D-00 Monero · D-04 regresion + direccion · D-05 split 70/15/15 cronologico.
-- D-06 cola = tabla `jobs`; `idempotency_key` ahora `train:<sha256>` (no depende
-  del ancho de dos columnas ajenas).
-- ids opacos; traduccion de estados en el servidor (R-43).
-- **No hay bandera para desactivar TLS** (se elimino `ML_VERIFY_TLS`, que se leia
-  y no se usaba). `ML_SERVICE_URL` se exige `https://` **en el arranque**.
-- `RestClient.Builder` con ambito **prototype**: como singleton, el `baseUrl` del
-  servicio ML se filtraba al cliente de Google.
+- D-06 cola = tabla `jobs`; ids opacos; estados traducidos en servidor (R-43).
+- Sin bandera para desactivar TLS; frontend local en https (R-33).
+- `RestClient.Builder` prototype (no filtrar `baseUrl` al cliente de Google).
 
 ## Entorno (verificado, no asumir)
-- `java` y `JAVA_HOME` = **Corretto 21.0.12** (antes JDK 8; nota ya corregida).
-- **Siempre `mvn clean`**, y **detener el backend antes**: con el jar abierto,
-  `maven-clean-plugin` falla con "Failed to delete ... jar".
+- `JAVA_HOME` = Corretto 21.0.12. **Siempre `mvn clean` con backend detenido.**
 - Maven 3.9.16 · Node 24.19 · Docker 29.6.2 · Python 3.12.10.
-- PostgreSQL nativo en 5432: usar **55432** para el contenedor de pruebas.
+- PostgreSQL nativo en 5432: el contenedor de pruebas usa **55432**.
 
 ## Pendiente / riesgos
-- `docs/07_pruebas_carga.md`: **sin cifras hasta ejecutar k6**.
-- `npm audit`: vulnerabilidades transitivas por decidir (R-29).
-- Limitaciones ya documentadas: entrenamiento solo por CLI; estado y nonce de
-  OAuth **en memoria del proceso** (no escala en horizontal); sin circuit breaker;
-  sin MFA de administrador.
-- **OAuth no probado contra Google real** (sin credenciales): lo verificado es la
-  validacion del ID Token con tokens firmados de verdad.
-
-## Pie de pagina obligatorio
-`Sistema esta realizado por (c) AyLZz17 - AyLZz Software Solutions. Todos los derechos reservados.`
+- k6 sin ejecutar; `npm audit` por decidir (R-29); OAuth sin probar en Google.
+- Entrenamiento solo CLI; OAuth en memoria; sin circuit breaker; sin MFA admin.

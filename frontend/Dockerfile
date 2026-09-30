@@ -49,6 +49,7 @@ RUN apk add --no-cache openssl \
 USER nginx
 
 COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
+COPY --chown=nginx:nginx nginx-error/50x.html /usr/share/nginx/html/50x.html
 COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 EXPOSE 8080

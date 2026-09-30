@@ -51,7 +51,8 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/de
 # de CA propia. No se usa --no-check-certificate: si el certificado no valida, el
 # contenedor debe considerarse unhealthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget --quiet --tries=1 --ca-certificate=/certs/ca/ca.crt \
+  CMD wget --quiet --tries=1 -O /dev/null \
+      --ca-certificate=/certs/ca/ca.crt \
       "https://127.0.0.1:${SERVER_PORT}/actuator/health" || exit 1
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

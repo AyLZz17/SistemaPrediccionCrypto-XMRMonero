@@ -66,7 +66,7 @@ if [ -f "${CERT_DIR}/ca/ca.crt" ] && [ "${FORCE:-0}" != "1" ]; then
   exit 0
 fi
 
-mkdir -p "${CERT_DIR}/ca" "${CERT_DIR}/backend" "${CERT_DIR}/ml-service" "${CERT_DIR}/mlflow"
+mkdir -p "${CERT_DIR}/ca" "${CERT_DIR}/backend" "${CERT_DIR}/ml-service" "${CERT_DIR}/mlflow" "${CERT_DIR}/frontend"
 
 log "Generando la CA de desarrollo (autoridad certificadora local)"
 openssl req -x509 -newkey rsa:4096 -sha256 -days "$DAYS" -nodes \
@@ -108,6 +108,7 @@ issue() {
 issue "backend"    "backend"
 issue "ml-service" "ml-service"
 issue "mlflow"     "mlflow"
+issue "frontend"   "frontend"
 rm -f "$EXT_FILE"
 
 log "Empaquetando el keystore PKCS12 del backend"
