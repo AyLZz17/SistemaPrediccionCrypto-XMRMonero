@@ -64,22 +64,29 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 | R-28 | Datos, modelos, scalers y configuraciones ML se cargan solo desde artefactos versionados y verificables por digest/procedencia; la promoción de campeón requiere gates de integridad, no fuga y validación. |
 | R-29 | CI bloquea secretos, vulnerabilidades críticas y artefactos no verificables; genera SBOM y escanea dependencias/imágenes antes de publicar. Las excepciones requieren vencimiento y aprobación registrada. |
 | R-30 | Todo incidente se gestiona con el runbook de `05_seguridad.md`, preservando evidencia, rotando credenciales comprometidas y documentando causa raíz, impacto y acciones correctivas. |
+| R-31 | **Monolito modular Spring Boot** como backend principal. **FastAPI-ML** como servicio especializado de ML. No adoptar microservicios completos sin justificación (dominio acotado, complejidad operativa). |
+| R-32 | FastAPI-ML **no es accesible públicamente**. Solo Spring Boot consume el servicio ML mediante cliente tipado con timeout, reintentos limitados y correlación de solicitudes. |
+| R-33 | **HTTPS forzado** en todos los entornos. Certificados autofirmados para desarrollo, certificados válidos para producción. |
+| R-34 | Migraciones de base de datos **solo con Flyway** (Spring Boot). El servicio ML no administra el esquema de PostgreSQL. |
+| R-35 | Toda ruta nueva requiere documentación de seguridad: autenticación, autorización, validación, límites, datos tratados, amenazas, controles y pruebas. |
+| R-36 | El backend Spring Boot usa Java 21 de forma consistente en desarrollo, CI y Docker; las imágenes de compilación y ejecución deben coincidir con esa versión. |
+| R-37 | El `pom.xml` raíz es el agregador Maven del backend y debe bloquear la compilación si el JDK activo no pertenece al rango Java 21. |
 
 ---
 
-## 3. Stack decidido (detalle y alternativas en `docs/02_stack_tecnologico.md`)
+## 3. Stack decidido v2 (detalle y alternativas en `docs/02_stack_tecnologico.md`)
 
 | Capa | Tecnología |
 |------|-----------|
-| Backend API | Python 3.11, FastAPI, Pydantic v2, Uvicorn |
-| ORM / migraciones | SQLAlchemy 2.0, Alembic |
-| Base de datos | PostgreSQL (datos, experimentos, predicciones) · Redis (broker y caché) |
-| Tareas asíncronas | Celery + Celery Beat (entrenamiento e ingesta diaria) |
+| **Backend principal** | **Java 21, Spring Boot 3.2, Spring Security, Spring Data JPA** |
+| **Servicio ML** | **Python 3.11, FastAPI, Pydantic v2, Uvicorn** |
+| ORM / migraciones | Spring Data JPA + Flyway |
+| Base de datos | PostgreSQL 15 (datos, experimentos, predicciones) · Redis 7 (caché y colas) |
 | ML / datos | pandas, NumPy, scikit-learn, statsmodels, TensorFlow/Keras (LSTM/GRU), Optuna |
-| Tracking | MLflow |
-| Frontend | React + TypeScript + Vite, Tailwind CSS, Apache ECharts, TanStack Query |
+| Tracking | MLflow 2.8 |
+| Frontend | React 18 + TypeScript + Vite, Tailwind CSS, Recharts, TanStack Query |
 | Infra | Docker + Docker Compose, GitHub Actions |
-| Calidad | pytest, ruff, mypy, Vitest, ESLint, pre-commit |
+| Calidad | JUnit 5, pytest, ruff, mypy, Vitest, ESLint, pre-commit |
 
 ---
 
@@ -168,4 +175,15 @@ xmr-forecast/
 | T-007 | 2026-09-29 | Herramienta de validación de Mermaid; alineación ER ↔ doc 01 (`data_split.dataset_version_id`); corrección de layout en casos de uso | tools/validate_mermaid.py, docs/01, docs/04 | Hecho; se promueve R-25 |
 | T-008 | 2026-09-29 | Protocolo integral de seguridad: marcos, threat model, controles API/identidad/ML/supply chain, incidentes, matriz y checklist | docs/05_seguridad.md, docs/01, docs/02, AGENTS.md, SKILLS.md, MEMORY.md | Hecho; se promueven R-26…R-30 |
 | T-009 | 2026-09-29 | Adaptación de documentación para cliente real (eliminar enfoque académico) | AGENTS.md, SKILLS.md, MEMORY.md, docs/01-05 | Hecho |
+| T-013 | 2026-09-30 | **RETRACTADO (T-023)** — `backend/`, `ml-service/`, `docker-compose.yml` nunca existieron en git ni en disco | — | Registro falso corregido |
+| T-014 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-015 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013. `docs/06_auditoria.md` se conserva como documento, pero sus hallazgos no aplican al código real | docs/06_auditoria.md | Registro falso corregido |
+| T-016 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-017 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-018 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-019 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-020 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-021 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-022 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
+| T-023 | 2026-09-30 | Auditoría de continuidad: detectado registro falso, normalizada ruta `docs/`, recuperado el `frontend/` borrado del working tree | AGENTS.md, MEMORY.md, docs/, frontend/ | Hecho. Hallazgo: solo 3 commits en toda la historia, sin backend; `java` en PATH es JDK 8 (JDK 21 disponible en Adoptium); Python 3.12 (no 3.11); falta `tools/validate_mermaid.py` |
 <!-- LOG:END -->

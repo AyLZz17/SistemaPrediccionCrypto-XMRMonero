@@ -1,4 +1,3 @@
-export { default as LineChart } from './LineChart'
-export { default as CandlestickChart } from './CandlestickChart'
-export { default as ComparisonChart } from './ComparisonChart'
-export { default as MetricsChart } from './MetricsChart'
+export { CandlestickChart } from './CandlestickChart'
+export { MetricComparisonChart } from './MetricComparisonChart'
+export { Sparkline } from './Sparkline'

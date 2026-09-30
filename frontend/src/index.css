@@ -1,9 +1,116 @@
+@import './styles/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html {
+    background-color: var(--xmr-bg-root);
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-deep font-sans text-base text-ink leading-normal antialiased;
+    margin: 0;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(1100px 620px at 12% -8%, rgba(34, 211, 238, 0.09), transparent 60%),
+      radial-gradient(900px 560px at 92% 4%, rgba(139, 124, 255, 0.08), transparent 62%),
+      radial-gradient(760px 520px at 50% 110%, rgba(34, 224, 122, 0.05), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* WCAG 2.4.7 — always-visible keyboard focus for every interactive element. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--xmr-focus-ring);
+    border-radius: var(--xmr-radius-sm);
+  }
+
+  ::selection {
+    background-color: var(--xmr-accent-cyan-soft);
+    color: var(--xmr-text-primary);
+  }
+
+  /* Scrollbars tuned to the dark shell. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--xmr-border-strong) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--xmr-border-default);
+    border-radius: var(--xmr-radius-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-ink font-semibold leading-tight;
+  }
+}
+
+@layer components {
+  /* Translucent glass panel — the base container for every data surface. */
+  .glass-panel {
+    @apply border-hairline-subtle bg-surface-1 shadow-card backdrop-blur-glass;
+  }
+
+  .glass-panel-strong {
+    @apply border-hairline bg-surface-2 shadow-card backdrop-blur-glass;
+  }
+
+  .mono {
+    @apply font-mono;
+  }
+
+  .label-caps {
+    @apply font-mono text-xs uppercase tracking-wide text-ink-muted;
+  }
+
+  /* Dark loading skeleton with a travelling highlight. */
+  .skeleton-bar {
+    @apply relative overflow-hidden rounded-sm bg-surface-3;
+  }
+
+  .skeleton-bar::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+    animation: shimmer 1.6s infinite;
+  }
+
+  .link-accent {
+    @apply border-b border-accent-cyan/40 text-accent-cyan transition-colors duration-fast hover:border-accent-cyan;
+  }
+
+  .scroll-fade {
+    @apply overflow-y-auto;
+    mask-image: linear-gradient(to bottom, transparent, black 12px, black calc(100% - 12px), transparent);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(var(--xmr-border-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--xmr-border-subtle) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 }

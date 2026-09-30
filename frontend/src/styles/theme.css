@@ -1,0 +1,144 @@
+/**
+ * XMR-Forecast — design tokens (single source of truth).
+ *
+ * Every colour / alpha / border / shadow / typography / state value used by the
+ * UI resolves from these CSS custom properties. Components and Tailwind utilities
+ * reference them through `tailwind.config.js` -> `theme.extend`; hardcoded hex
+ * values are not allowed anywhere else (see frontend/README.md § Design tokens).
+ *
+ * Mode is permanently dark (`color-scheme: dark`). There is no light theme.
+ *
+ * Contrast targets (WCAG AA), measured against --xmr-bg-deep (#080b10):
+ *   --xmr-text-primary   15.2:1  (body text, >= 4.5 required)
+ *   --xmr-text-secondary  9.6:1  (body text, >= 4.5 required)
+ *   --xmr-text-muted      5.9:1  (small text, >= 4.5 required)
+ *   --xmr-accent-green   11.3:1  (large text / UI, >= 3 required)
+ *   --xmr-accent-cyan    10.9:1
+ *   --xmr-accent-red      6.1:1
+ *   --xmr-accent-amber   10.0:1
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------------------------------------------------------------- base */
+  --xmr-bg-root: #05070a; /* deep black, app background */
+  --xmr-bg-deep: #080b10; /* page background, contrast reference */
+  --xmr-bg-raised: #0b0f15; /* subtle raised band */
+
+  /* ------------------------------------------------------------- surfaces */
+  --xmr-surface-1: rgba(18, 24, 33, 0.72);
+  --xmr-surface-2: rgba(24, 32, 43, 0.78);
+  --xmr-surface-3: rgba(33, 43, 57, 0.86);
+  --xmr-surface-inset: rgba(4, 7, 11, 0.66);
+  --xmr-surface-overlay: rgba(3, 5, 8, 0.82);
+  --xmr-glass-blur: 14px;
+
+  /* -------------------------------------------------------------- borders */
+  --xmr-border-subtle: rgba(148, 163, 184, 0.12);
+  --xmr-border-default: rgba(148, 163, 184, 0.22);
+  --xmr-border-strong: rgba(148, 163, 184, 0.38);
+  --xmr-border-accent: rgba(34, 211, 238, 0.45);
+
+  /* ----------------------------------------------------------------- text */
+  --xmr-text-primary: #e6edf6;
+  --xmr-text-secondary: #a9b6c9;
+  --xmr-text-muted: #7f8da3;
+  --xmr-text-inverse: #05070a;
+
+  /* -------------------------------------------------------------- accents */
+  --xmr-accent-green: #22e07a;
+  --xmr-accent-cyan: #22d3ee;
+  --xmr-accent-red: #ff4d6a;
+  --xmr-accent-amber: #ffb020;
+  --xmr-accent-violet: #8b7cff;
+
+  /* Channel triplets of the accents above, so Tailwind can apply real alpha
+     modifiers (`border-accent-cyan/40`) instead of dropping them. */
+  --xmr-accent-green-ch: 34 224 122;
+  --xmr-accent-cyan-ch: 34 211 238;
+  --xmr-accent-red-ch: 255 77 106;
+  --xmr-accent-amber-ch: 255 176 32;
+  --xmr-accent-violet-ch: 139 124 255;
+
+  /* Text channel triplets (used with opacity in a few places). */
+  --xmr-text-primary-ch: 230 237 246;
+  --xmr-text-secondary-ch: 169 182 201;
+  --xmr-text-muted-ch: 127 141 163;
+
+  /* accent alpha ramps (glass tints, never large fills) */
+  --xmr-accent-green-soft: rgba(34, 224, 122, 0.14);
+  --xmr-accent-cyan-soft: rgba(34, 211, 238, 0.14);
+  --xmr-accent-red-soft: rgba(255, 77, 106, 0.14);
+  --xmr-accent-amber-soft: rgba(255, 176, 32, 0.14);
+  --xmr-accent-violet-soft: rgba(139, 124, 255, 0.14);
+  --xmr-accent-cyan-glow: rgba(34, 211, 238, 0.35);
+  --xmr-accent-green-glow: rgba(34, 224, 122, 0.3);
+  --xmr-accent-red-glow: rgba(255, 77, 106, 0.3);
+
+  /* --------------------------------------------------------------- states */
+  --xmr-state-idle: var(--xmr-text-muted);
+  --xmr-state-active: var(--xmr-accent-cyan);
+  --xmr-state-success: var(--xmr-accent-green);
+  --xmr-state-warning: var(--xmr-accent-amber);
+  --xmr-state-danger: var(--xmr-accent-red);
+  --xmr-state-info: var(--xmr-accent-violet);
+  --xmr-state-disabled: rgba(148, 163, 184, 0.35);
+
+  /* -------------------------------------------------------------- shadows */
+  --xmr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --xmr-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --xmr-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.65);
+  --xmr-shadow-glow-cyan: 0 0 0 1px var(--xmr-accent-cyan-glow), 0 0 22px rgba(34, 211, 238, 0.18);
+  --xmr-shadow-glow-green: 0 0 0 1px var(--xmr-accent-green-glow), 0 0 22px rgba(34, 224, 122, 0.16);
+  --xmr-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* ----------------------------------------------------------- typography */
+  --xmr-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif;
+  --xmr-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  --xmr-text-xs: 0.75rem;
+  --xmr-text-sm: 0.8125rem;
+  --xmr-text-base: 0.9375rem;
+  --xmr-text-lg: 1.0625rem;
+  --xmr-text-xl: 1.25rem;
+  --xmr-text-2xl: 1.5rem;
+  --xmr-text-3xl: 1.875rem;
+  --xmr-tracking-wide: 0.08em;
+  --xmr-leading-tight: 1.2;
+  --xmr-leading-normal: 1.55;
+
+  /* --------------------------------------------------------------- radii */
+  --xmr-radius-sm: 6px;
+  --xmr-radius-md: 10px;
+  --xmr-radius-lg: 14px;
+  --xmr-radius-full: 999px;
+
+  /* ----------------------------------------------------------- animation */
+  --xmr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --xmr-duration-fast: 120ms;
+  --xmr-duration-base: 200ms;
+  --xmr-duration-slow: 380ms;
+
+  /* --------------------------------------------------------------- focus */
+  --xmr-focus-ring-color: var(--xmr-accent-cyan);
+  --xmr-focus-ring-width: 2px;
+  --xmr-focus-ring-offset: 2px;
+  --xmr-focus-ring: 0 0 0 var(--xmr-focus-ring-width) var(--xmr-focus-ring-offset) var(--xmr-bg-root),
+    0 0 0 calc(var(--xmr-focus-ring-width) + var(--xmr-focus-ring-offset)) var(--xmr-focus-ring-color);
+
+  /* -------------------------------------------------------------- layout */
+  --xmr-sidebar-width: 264px;
+  --xmr-header-height: 64px;
+  --xmr-footer-height: 56px;
+  --xmr-content-max: 1440px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --xmr-duration-fast: 0ms;
+    --xmr-duration-base: 0ms;
+    --xmr-duration-slow: 0ms;
+  }
+}

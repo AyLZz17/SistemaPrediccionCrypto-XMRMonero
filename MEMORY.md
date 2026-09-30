@@ -1,36 +1,48 @@
-# MEMORY.md — Memoria de corto plazo (máx. 50 líneas)
-> Se reescribe tras cada tarea. Lo crítico y permanente se promueve a AGENTS.md.
+# MEMORY.md Ã¢â‚¬â€ Memoria de corto plazo (mÃƒÂ¡x. 50 lÃƒÂ­neas)
+> Se reescribe tras cada tarea. Lo crÃƒÂ­tico y permanente se promueve a AGENTS.md.
 
 ## Contexto
-- Proyecto: XMR-Forecast. Aplicación web comercial para predicción de precio de Monero (XMR).
-- Modelos: LSTM/GRU vs. MA, regresión lineal y ARIMA. Métricas: MAE, RMSE, MAPE.
-- Producto SaaS para análisis predictivo de criptomonedas. NO es asesoría financiera.
+- LSTM/GRU vs. media mÃƒÂ³vil, regresiÃƒÂ³n lineal y ARIMA. MÃƒÂ©tricas MAE, RMSE, MAPE + acierto de direcciÃƒÂ³n.
+- **No es asesorÃƒÂ­a financiera**, no promete rentabilidad, no simula trading (R-11).
 
-## Estado actual
-- Entregado: AGENTS, SKILLS, MEMORY, docs 01-05 (documentación completa adaptada para cliente real).
-- Frontend: Estructura base creada con React + TypeScript + Tailwind CSS.
-- HTTPS: Configurado en vite.config.ts (requiere certs/key.pem y certs/cert.pem).
-- HTTP Codes: Página de referencia de códigos HTTP implementada.
-- Git: Repositorio inicializado, primer commit realizado y push a origin/master.
-- Siguiente paso: Instalar dependencias (npm install) y generar certificados SSL.
+## Tarea en curso (T-024): construcciÃƒÂ³n real del sistema
+El registro anterior (T-013Ã¢â‚¬Â¦T-022) afirmaba un backend inexistente: **RETRACTADO en T-023**.
 
-## Decisiones vigentes (detalle en AGENTS.md §9)
-- D-00: dominio activo = Monero; retail queda como alternativa (interfaz DataSource).
-- D-04: dos tareas: R (regresión) y D (dirección).
-- Stack: FastAPI + PostgreSQL + Celery/Redis + TensorFlow/Keras + MLflow + Optuna + React/TS + ECharts.
-- Actores: viewer, analyst, admin, planificador (Celery Beat), fuente externa.
-- 15 tablas PostgreSQL (doc 01 §7, ER en doc 04 §8); API /api/v1 (doc 01 §8); 7 servicios Compose.
-- Split 70/15/15 (propuesta); W=30; LSTM 2x100, dropout 0.2, Adam, lote 32, 20 épocas.
-- Versiones de paquetes NO fijadas en docs: verificar al crear el entorno (R-17).
+## Estado verificado
+- **Backend: `mvn -B clean test` Ã¢â€ â€™ 35 tests, BUILD SUCCESS.**
+ `pom.xml` raÃƒÂ­z agregador + Enforcer `[21,22)` (R-37). 18 tablas Flyway (V1+V2). Auth completa (registro, login, refresh con rotaciÃƒÂ³n y detecciÃƒÂ³n de reutilizaciÃƒÂ³n, logout, reset/cambio de contraseÃƒÂ±a, verificaciÃƒÂ³n de correo, bloqueo progresivo). JWT HS512 con sub/iss/aud/iat/exp/jti/roles, `alg` estricto, revocaciÃƒÂ³n por jti. Google OAuth 2.0 Auth Code + OIDC: valida firma JWKS RS256, iss, aud, exp, nonce y state. BCrypt coste 12; refresh/reset/verify solo como HMAC-SHA256 en base de datos. Rate limiting Redis Ã¢â€ â€™ 429 + `Retry-After`; CORS solo HTTPS; `X-Request-Id` + MDC.
+- **Frontend: lint 0, build OK, 145 tests OK.** Tema oscuro permanente, 16 pÃƒÂ¡ginas,
+ pie de pÃƒÂ¡gina obligatorio con 22 aserciones en `footer-on-every-route.test.tsx`.
+- **ml-service: `app/ml` con 19 mÃƒÂ³dulos, 0 imports de fastapi/pydantic/sqlalchemy (R-13).**
+- **Infra: `docker-compose.yml` vÃƒÂ¡lido (6 servicios), CI YAML vÃƒÂ¡lido (6 jobs).**
 
-## Recordatorios operativos
-- R-23 partición por fecha del objetivo · R-24 campeón por validación, ARIMA rodante 1 paso.
-- R-25 validar Mermaid antes de entregar.
-- R-26…R-30: trazabilidad de seguridad, secretos/mínimo privilegio, procedencia ML, gates CI y runbook de incidentes.
-- Tras cada tarea: MEMORY (≤ 50 líneas) + AGENTS §10.
+## Contrato OAuth (aplicado en ambos lados)
+Google redirige con **GET** `/api/v1/auth/google/callback`; el backend valida state+nonce
+y responde **302** al frontend con la sesiÃƒÂ³n en el **fragmento** `#access_token=Ã¢â‚¬Â¦`
+(el fragmento nunca llega al servidor ni a los logs); el frontend lo borra con
+`history.replaceState`. **No hay canje de cÃƒÂ³digo desde el navegador.**
 
-## Tareas recientes
-- T-009 adaptación de documentación para cliente real (eliminar enfoque académico).
-- T-010 frontend base creado (React + TS + Tailwind) con HTTPS forzado.
-- T-011 página de códigos HTTP implementada.
-- T-012 primer commit y push a origin/master.
+## Entorno (verificado, no asumir)
+- `java` en PATH = **JDK 8**. JDK 21: `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot`.
+ Exportar `JAVA_HOME` antes de cada `mvn`.
+- Maven 3.9.16 Ã‚Â· Node 24.19 Ã‚Â· npm 11.17 Ã‚Â· Python **3.12.10** (la spec pide 3.11) Ã‚Â· Docker 29.6.2.
+- **Siempre `mvn clean`**: hay clases compiladas por Eclipse (ECJ) en `target/` que Maven
+ reutiliza por compilaciÃƒÂ³n incremental y producen fallos fantasma.
+
+## Decisiones
+- D-00 Monero Ã‚Â· D-04 regresiÃƒÂ³n + direcciÃƒÂ³n Ã‚Â· D-05 split 70/15/15 cronolÃƒÂ³gico.
+- D-06 cola = tabla `jobs` con `idempotency_key` ÃƒÂºnica (no Celery en el backend Java).
+- Flyway 9.22.3 incluye PostgreSQL en `flyway-core`; `flyway-database-postgresql` es de Flyway 10 Ã¢â€ â€™ no aÃƒÂ±adir.
+- Lombok 1.18.34 `provided` en entidades; DTOs como `record`.
+- Los validadores de CI **no deben escanear el propio `ci.yml`**: contiene sus patrones.
+
+## Pendiente
+- Cerrar `ml-service` (pytest/ruff/mypy) y verificar arranque HTTPS.
+- `docs/07_pruebas_carga.md`: **sin cifras hasta ejecutar k6**. No afirmar carga.
+- Actualizar `docs/01-06` para que coincidan con el cÃƒÂ³digo real.
+- `npm audit` reporta vulnerabilidades transitive (R-29): decidir con criterio.
+- Backups/restauraciÃƒÂ³n de PostgreSQL: script + prueba, aÃƒÂºn no ejecutados.
+
+## Pie de pÃƒÂ¡gina obligatorio (Ã‚Â§7)
+`Sistema esta realizado por Ã‚Â© AyLZz17 - AyLZz Software Solutions. Todos los derechos reservados.`
+Componente ÃƒÂºnico reutilizable; debe aparecer en TODAS las rutas y estados.
