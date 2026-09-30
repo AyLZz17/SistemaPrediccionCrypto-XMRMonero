@@ -9,62 +9,54 @@
   respuesta de prediccion.
 
 ## Tarea en curso
-- T-027: alineacion del contrato HTTP y verificacion de arranque. Cerrada; ver
-  abajo y el registro de AGENTS.md.
+- T-028: revision de documentacion oficial y correccion del backend (cerrada).
 
 ## Estado verificado en esta sesion
-- **Backend: `mvn clean test` = 94 tests, BUILD SUCCESS.** Java 21. El `pom`
-  raiz bloquea si el JDK no es 21 (R-37). 13 controladores, **46 rutas** bajo
-  `/api/v1`, 5 migraciones Flyway (22 tablas).
-- **Frontend: `npm test` = 147 tests OK; `npm run lint` y `tsc --noEmit`
-  limpios.** Tema oscuro permanente, 16 paginas, pie de pagina obligatorio
-  verificado en todas las rutas.
-- **ml-service: 199 tests OK, 15 omitidos** (los de TensorFlow, que es extra
-  opcional; `pip install .[tf]`). `app/ml` sin imports de fastapi/pydantic.
-- **Arranque real verificado**: el jar empaquetado levanta contra PostgreSQL
-  15.19 en Docker, migra solo, y responde por HTTPS. **43/43 comprobaciones de
-  `tools/verify-stack.ps1` pasan.**
-- **Backup y restauracion ejecutados**: 30 filas de `market_data` y 5 de
-  `models` destruidas y recuperadas al 100 %, checksum verificado, 0 huerfanos.
+- **Backend: `mvn clean verify` = 129 tests, BUILD SUCCESS**, Java 21.
+- **Arranque real**: el jar levanta contra PostgreSQL 15.19 y Redis 7 reales,
+  migra V1..V5 y responde por HTTPS.
+- **`tools/verify-stack.ps1`: 48/48**, incluidas 4 comprobaciones nuevas que
+  obligan a que la cola AVANCE (antes solo miraban que el trabajo apareciera).
 
-## Defectos de arranque encontrados y corregidos (ninguno lo detectaba un test)
-1. `spring-boot:repackage` no se heredaba sin `spring-boot-starter-parent`: el
-   jar salia de 300 KB sin `Main-Class` y el contenedor moria. Ver R-42.
-2. Siete columnas `CHAR(64)` frente a `varchar(64)` de las entidades:
-   `ddl-auto: validate` impedia arrancar. Corregido en V5.
-3. JPQL con `com.aylzz.xmrforecast.job.Job.JobStatus.PENDING` en un UPDATE:
-   Hibernate lo rechaza. Ahora se usan parametros ligados.
-4. `spring.security.oauth2.client.registration.google` con `client-id` vacio
-   hacia fallar el arranque. Eliminado; el flujo es manual.
-5. `NotificationService` con `REQUIRES_NEW` hacia fallar **todo alta de
-   usuario** por clave foranea. Ahora `REQUIRED`.
-6. `:from is null or ...` en JPQL: PostgreSQL no deduce el tipo del parametro y
-   devolvia 500. Ahora se usan extremos tipados.
-7. `AuthenticatedUser` sin `@AuthenticationPrincipal` en `PredictionController`:
-   500 en la primera peticion. `ControllerParameterTest` lo impede.
+## Bloqueantes corregidos (ninguno lo detectaba un test)
+1. **Cola de trabajos muerta**: `claimIfPending` era `@Modifying` sin
+   `@Transactional` (Spring Data JPA no los aplica a consultas declaradas) y el
+   worker se llamaba a si mismo, saltandose el proxy. Todo trabajo quedaba en
+   PENDING para siempre. Resuelto con `@Transactional` explicito y un bean
+   `JobQueue` separado.
+2. **OAuth Google nunca completaba**: la firma se verificaba con `parts[1]` (el
+   payload) en vez de `parts[2]`. Fallaba siempre. Ahora hay tests con RSA real.
+3. **`@Valid` ausente** en `POST /experiments/{id}/runs`; al anadirlo aparecio
+   `List<@Size Integer>` (`@Size` no existe para `Integer`, HV000030) y el
+   endpoint daba 500 en la primera llamada.
+4. `AuditService` capturaba el fallo **dentro** de su transaccion: el alta de
+   usuario respondia 500 con `UnexpectedRollbackException`.
 
 ## Decisiones
 - D-00 Monero · D-04 regresion + direccion · D-05 split 70/15/15 cronologico.
-- D-06 cola = tabla `jobs` con `idempotency_key` unica; worker en proceso.
-- **ids publicos opacos (cadenas)** y **traduccion de estados en el servidor**
-  (`DRAFT`->`PENDING`, `COMPLETED`->`SUCCEEDED`, `PENDING`->`QUEUED`). R-43.
-- Google OAuth se implementa a mano; `spring-boot-starter-oauth2-client` se
-  elimino a proposito.
+- D-06 cola = tabla `jobs`; `idempotency_key` ahora `train:<sha256>` (no depende
+  del ancho de dos columnas ajenas).
+- ids opacos; traduccion de estados en el servidor (R-43).
+- **No hay bandera para desactivar TLS** (se elimino `ML_VERIFY_TLS`, que se leia
+  y no se usaba). `ML_SERVICE_URL` se exige `https://` **en el arranque**.
+- `RestClient.Builder` con ambito **prototype**: como singleton, el `baseUrl` del
+  servicio ML se filtraba al cliente de Google.
 
 ## Entorno (verificado, no asumir)
-- `java` en PATH = **JDK 8**. JDK 21: `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot`.
-- **Siempre `mvn clean`**: hay clases compiladas por ECJ en `target/` que
-  producen fallos fantasma ("Unresolved compilation problem").
-- Python 3.12.10 (la spec pide 3.11) · Maven 3.9.16 · Node 24.19 · Docker 29.6.2.
-- Bash: usar `C:\Program Files\Git\bin\bash.exe`; `bash` del PATH no existe.
-- Hay un PostgreSQL **nativo** en 5432: no usar ese puerto para el contenedor.
+- `java` y `JAVA_HOME` = **Corretto 21.0.12** (antes JDK 8; nota ya corregida).
+- **Siempre `mvn clean`**, y **detener el backend antes**: con el jar abierto,
+  `maven-clean-plugin` falla con "Failed to delete ... jar".
+- Maven 3.9.16 · Node 24.19 · Docker 29.6.2 · Python 3.12.10.
+- PostgreSQL nativo en 5432: usar **55432** para el contenedor de pruebas.
 
-## Pendiente
-- `docs/07_pruebas_carga.md`: **sin cifras hasta ejecutar k6**. No afirmar carga.
+## Pendiente / riesgos
+- `docs/07_pruebas_carga.md`: **sin cifras hasta ejecutar k6**.
 - `npm audit`: vulnerabilidades transitivas por decidir (R-29).
-- Limitaciones conocidas, ya documentadas: entrenamiento solo por CLI; estado
-  OAuth en memoria del proceso; sin circuit breaker; sin MFA de administrador.
+- Limitaciones ya documentadas: entrenamiento solo por CLI; estado y nonce de
+  OAuth **en memoria del proceso** (no escala en horizontal); sin circuit breaker;
+  sin MFA de administrador.
+- **OAuth no probado contra Google real** (sin credenciales): lo verificado es la
+  validacion del ID Token con tokens firmados de verdad.
 
 ## Pie de pagina obligatorio
 `Sistema esta realizado por (c) AyLZz17 - AyLZz Software Solutions. Todos los derechos reservados.`
-Componente unico reutilizable; debe aparecer en TODAS las rutas y estados.

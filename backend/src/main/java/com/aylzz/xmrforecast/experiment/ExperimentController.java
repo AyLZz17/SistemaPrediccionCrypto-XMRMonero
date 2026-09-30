@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
@@ -152,6 +153,17 @@ public class ExperimentController {
      * {@code @RequestBody(required = false)} <strong>sin {@code @Valid}</strong>,
      * de modo que un {@code runKey} de 200 caracteres pasaba la validacion y
      * chocaba contra {@code experiment_runs.run_key VARCHAR(64)} con un 500.
+     *
+     * <p>Los elementos de {@code seeds} no llevan anotacion de tipo. La restriccion
+     * que habia, {@code @Size} sobre un {@code Integer}, no es valida para ese tipo
+     * ({@code @Size} solo admite {@code CharSequence}, {@code Collection}, {@code Map}
+     * y arrays): Hibernate Validator lanza
+     * {@code UnexpectedTypeException: HV000030: No validator could be found for
+     * constraint 'Size' validating type 'Integer'} en la PRIMERA peticion que llega
+     * con semillas. Nunca se habia visto porque la falta de {@code @Valid} hacia que
+     * el validador no se ejecutara nunca. El tamano lo acota el servicio
+     * ({@code MIN_SEEDS} / {@code MAX_SEEDS}, R-08) y cada elemento ya es un
+     * {@code Integer}, asi que no admite nada fuera de rango.
      */
     public record StartRunBody(
             @Size(max = 64, message = "El runKey no puede superar 64 caracteres.")
@@ -159,7 +171,7 @@ public class ExperimentController {
                     message = "el runKey solo admite letras, digitos, punto, guion y guion bajo")
             String runKey,
             @Size(max = 32, message = "Se admiten como maximo 32 semillas.")
-            List<@Size(min = 0, max = 2_147_483_647) Integer> seeds
+            List<@NotNull Integer> seeds
     ) {
     }
 }

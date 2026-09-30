@@ -9,7 +9,7 @@
 
 ## 1. Arquitectura del sistema
 
-El backend solo expone **HTTPS** (`server.http.enabled: false`): no hay puerto 8080 ni redireccion de HTTP a HTTPS. `db`, `redis` y `ml-service` viven en una red `internal: true` sin puerto publicado.
+El backend solo expone **HTTPS** (`server.ssl.enabled: true`, unico conector): no hay puerto 8080 ni redireccion de HTTP a HTTPS. `db`, `redis` y `ml-service` viven en una red `internal: true` sin puerto publicado.
 
 ```mermaid
 flowchart TD

@@ -185,7 +185,6 @@ app:
     connect-timeout-ms: ${ML_CONNECT_TIMEOUT_MS:3000}
     read-timeout-ms: ${ML_READ_TIMEOUT_MS:60000}
     max-retries: ${ML_MAX_RETRIES:2}
-    verify-tls: ${ML_VERIFY_TLS:true}
 
   security:
     # Falla el arranque si se sirve por HTTP plano

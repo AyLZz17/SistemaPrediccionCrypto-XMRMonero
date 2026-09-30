@@ -19,7 +19,17 @@
 #   7. los 14 endpoints que el frontend consume y antes no existian responden
 #      200 con el sobre de paginacion correcto;
 #   8. un VIEWER recibe 403 en /api/v1/audit y /api/v1/users (ADMIN);
-#   9. escritura permitida para VIEWER+ segun rol, y 403 donde no cabe.
+#   9. escritura permitida para VIEWER+ segun rol, y 403 donde no cabe;
+#  10. la cola de trabajos AVANZA: el trabajo TRAIN encolado llega a un estado
+#      terminal, y la corrida y el experimento reflejan ese desenlace.
+#
+# POR QUE EL PUNTO 10 EXISTE
+#   Entre T-027 y esta revision, `JobRepository.claimIfPending` era un @Modifying
+#   sin @Transactional y el worker lanzaba InvalidDataAccessApiUsageException en
+#   CADA barrido: la cola estaba muerta y los trabajos se quedaban en PENDING para
+#   siempre. Las 43 comprobaciones originales pasaban igual, porque solo miraban
+#   que el trabajo estuviera "en la cola", nunca que avanzara. Un health check en
+#   verde no dice si el sistema hace su trabajo.
 #
 # Uso: powershell -NoProfile -ExecutionPolicy Bypass -File tools/verify-stack.ps1
 # =====================================================================
@@ -318,6 +328,49 @@ if (-not $token) {
   $jobTypes = @()
   if ($jobs.Status -eq 200) { $jobTypes = ($jobs.Body | ConvertFrom-Json).items | ForEach-Object { $_.type } }
   Check 'el trabajo TRAIN aparece en la cola' ($jobTypes -contains 'TRAIN') "tipos=$($jobTypes -join ',')"
+
+  # ------------------------------------------------- 11. la cola AVANZA
+  #
+  # "Aparece en la cola" no es "se procesa". Se espera a que el worker reclame el
+  # trabajo y lo lleve a un estado terminal, y se comprueba que el estado
+  # publicado sea coherente con el TRAINING_NOT_EXPOSED documentado (D-10): el
+  # entrenamiento no se expone por HTTP, asi que FAILED con ese motivo es la
+  # respuesta correcta. Lo que NO es correcto es quedarse en PENDING, ni que el
+  # trabajo pase a SUCCEEDED sin haber entrenado nada.
+  $terminal = $null
+  for ($i = 1; $i -le 12; $i++) {
+    $poll = Invoke-Check GET "/api/v1/jobs/$($runJson.job.id)" '' $analystToken
+    if ($poll.Status -eq 200) {
+      $current = ($poll.Body | ConvertFrom-Json)
+      if ($current.status -in @('SUCCEEDED', 'FAILED', 'RUNNING')) { $terminal = $current; break }
+      if ($current.status -eq 'CANCELLED') { $terminal = $current; break }
+    }
+    Start-Sleep -Seconds 5
+  }
+  Check 'el trabajo encolado alcanza un estado terminal (el worker lo procesa)' `
+    ($null -ne $terminal) "estado=$($terminal.status)"
+
+  if ($null -ne $terminal) {
+    Check 'el trabajo TRAIN termina en FAILED con TRAINING_NOT_EXPOSED (D-10), no en SUCCEEDED' `
+      ($terminal.status -eq 'FAILED' -and $terminal.message -match 'TRAINING_NOT_EXPOSED') `
+      "estado=$($terminal.status) mensaje=$($terminal.message)"
+  }
+
+  # La corrida debe reflejar el desenlace del trabajo, no quedarse en PENDING.
+  $runAfter = Invoke-Check GET "/api/v1/experiments/$($experimentJson.id)/runs/$($runJson.run.id)" '' $analystToken
+  $runAfterJson = $null
+  if ($runAfter.Status -eq 200) { $runAfterJson = $runAfter.Body | ConvertFrom-Json }
+  Check 'la corrida pasa a un estado terminal, no se queda en PENDING' `
+    ($runAfterJson -and $runAfterJson.status -in @('FAILED', 'SUCCEEDED', 'CANCELLED')) `
+    "estado=$($runAfterJson.status)"
+
+  # El experimento tampoco puede quedarse en RUNNING: su unica corrida ya termino.
+  $expAfter = Invoke-Check GET "/api/v1/experiments/$($experimentJson.id)" '' $analystToken
+  $expAfterJson = $null
+  if ($expAfter.Status -eq 200) { $expAfterJson = $expAfter.Body | ConvertFrom-Json }
+  Check 'el experimento ya no se queda en RUNNING con su corrida terminada' `
+    ($expAfterJson -and $expAfterJson.status -ne 'RUNNING') `
+    "estado=$($expAfterJson.status)"
 }
 
 Write-Host ''

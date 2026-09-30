@@ -125,11 +125,19 @@ openssl pkcs12 -export \
   -passout "pass:${KEYSTORE_PASSWORD}" >/dev/null 2>&1
 
 log "Empaquetando el truststore PKCS12 compartido"
-openssl pkcs12 -export -nokeys \
-  -in  "${CERT_DIR}/ca/ca.crt" \
-  -name "devca" \
-  -out "${CERT_DIR}/ca/truststore.p12" \
-  -passout "pass:${KEYSTORE_PASSWORD}" >/dev/null 2>&1
+# Se usa keytool y no `openssl pkcs12 -export -nokeys` a proposito: el PKCS12
+# que genera OpenSSL 3 para un almacen solo-certificados lo lee Java como
+# vacio (0 entradas) y Tomcat aborta con "the trustAnchors parameter must be
+# non-empty". Verificado con OpenSSL 3.5.7 + keytool de JDK 21.
+command -v keytool >/dev/null 2>&1 || fail "Se requiere keytool en el PATH para el truststore"
+rm -f "${CERT_DIR}/ca/truststore.p12"
+keytool -importcert -noprompt -trustcacerts \
+  -alias "devca" \
+  -file "${CERT_DIR}/ca/ca.crt" \
+  -keystore "${CERT_DIR}/ca/truststore.p12" \
+  -storetype PKCS12 \
+  -storepass "${KEYSTORE_PASSWORD}" >/dev/null 2>&1 \
+  || fail "No se pudo crear el truststore PKCS12"
 
 rm -f "${CERT_DIR}/ca/ca.srl"
 

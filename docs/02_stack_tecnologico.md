@@ -108,7 +108,7 @@ reactivo.
 | Reintentos | 2 (3 intentos en total) | `ML_MAX_RETRIES` |
 | Espera entre reintentos | 500 ms x intento, tope 2000 ms | Backoff interno |
 | Circuit breaker | **No existe** | Limitacion registrada, ver 2.7 |
-| Verificacion TLS | Activa; `https://` obligatorio | `ML_VERIFY_TLS` |
+| Verificacion TLS | **Siempre activa**; `https://` obligatorio | ninguna bandera: la CA se anade al truststore |
 
 Correlacion: el backend envia **`X-Request-Id` y `X-Trace-Id`**, y el servicio ML
 devuelve ambas cabeceras en la respuesta.
@@ -404,9 +404,11 @@ alcanzable desde la red externa.
 
 Dos precisiones que evitan diagnosticos falsos:
 
-- **El backend no redirige `8080`.** `server.http.enabled: false` significa que
-  **no existe** un listener de HTTP plano: no hay redireccion porque no hay nada
-  que redireccionar.
+- **El backend no redirige `8080`.** Con `server.ssl.enabled: true`, Tomcat abre
+  **unicamente** el conector HTTPS: no existe un listener de HTTP plano, y por eso
+  no hay redireccion que hacer. (La propiedad `server.http.enabled`, citada en
+  versiones anteriores de este documento, no existe en Spring Boot y no tenia
+  efecto.)
 - **`8000` es solo el mapeo de loopback.** El servicio ML escucha en `8443` dentro
   del contenedor; `8000` es el puerto del host. El backend lo llama por
   `https://ml-service:8443`.
@@ -471,8 +473,19 @@ igual: es el escenario que la configuracion de Spring impedia.
 | `ML_CONNECT_TIMEOUT_MS` | Timeout de conexion (3000) |
 | `ML_READ_TIMEOUT_MS` | Timeout de lectura (60000) |
 | `ML_MAX_RETRIES` | Reintentos adicionales (2) |
-| `ML_VERIFY_TLS` | Verificar el TLS del servicio ML |
 | `MLFLOW_TRACKING_URI` | URI de MLflow |
+
+**No existe bandera para desactivar la verificacion TLS.** La version anterior de
+este documento recogia `ML_VERIFY_TLS`, pero el codigo la leia y no hacia nada con
+ella: el cliente HTTP usaba el almacen de confianza por defecto y la propiedad era
+decorativa. Una bandera de ese tipo es peligrosa por si misma —acaba activada en
+algun entorno por descuido— asi que se elimino en lugar de implementarla. Para el
+certificado de desarrollo, la CA se anade al almacen del proceso
+(`-Djavax.net.ssl.trustStore=...`, ver `JAVA_OPTS` en `docker-compose.yml`).
+
+`ML_SERVICE_URL` se valida **en el arranque**: si no empieza por `https://` la
+aplicacion no levanta. Un `http://` se descubre en la primera prediccion en
+produccion, con datos de un usuario en pantalla, o no se descubre.
 
 ### Servidor y TLS
 

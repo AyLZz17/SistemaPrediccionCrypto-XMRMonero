@@ -51,12 +51,23 @@ public record AppProperties(
         }
     }
 
+    /**
+     * Cliente del servicio ML.
+     *
+     * <p>No hay ninguna propiedad para desactivar la verificacion TLS. Existia
+     * {@code verifyTls} y no hacia nada: el cliente HTTP usaba el almacen de
+     * confianza por defecto, con lo que la propiedad era decorativa y su
+     * documentacion afirmaba una garantia inexistente. Una bandera para no
+     * verificar certificados acaba activada en algun entorno por descuido
+     * (R-33), asi que se elimino en lugar de implementarla. Para el certificado de
+     * desarrollo se anade la CA al truststore del proceso
+     * ({@code -Djavax.net.ssl.trustStore}).
+     */
     public record Ml(
             @NotBlank String baseUrl,
             @Positive int connectTimeoutMs,
             @Positive int readTimeoutMs,
-            @Positive int maxRetries,
-            boolean verifyTls
+            @Positive int maxRetries
     ) {}
 
     public record Security(

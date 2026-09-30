@@ -11,7 +11,7 @@
 # TensorFlow es opcional: sin el, LSTM y GRU no estan disponibles y el
 # servicio responde con un error claro, pero el resto del sistema funciona.
 # =====================================================================
-FROM python:3.11-slim AS base
+FROM python:3.12-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -37,13 +37,12 @@ COPY app ./app
 # ---- usuario sin privilegios
 RUN groupadd --system --gid 1001 ml \
  && useradd --system --uid 1001 --gid ml --create-home --shell /usr/sbin/nologin ml \
- && mkdir -p /app/artifacts \
- && chown -R ml:ml /app
+ && mkdir -p /app/artifacts /certs \
+ && chown -R ml:ml /app /certs
 
 USER ml
 
 # Certificados TLS montados en /certs (solo lectura).
-RUN mkdir -p /certs && chown ml:ml /certs
 
 ENV ML_SSL_CERTFILE=/certs/ml-service/cert.pem \
     ML_SSL_KEYFILE=/certs/ml-service/key.pem \

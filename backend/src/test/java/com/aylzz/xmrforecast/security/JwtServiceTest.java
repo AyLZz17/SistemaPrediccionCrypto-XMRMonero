@@ -37,7 +37,7 @@ class JwtServiceTest {
                 new AppProperties.Jwt(SECRET, ISSUER, AUDIENCE, 900, 2592000, 30),
                 new AppProperties.OAuth2(new AppProperties.OAuth2.Google(
                         "", "", "", "", List.of(), "")),
-                new AppProperties.Ml("https://ml-service:8443", 3000, 60000, 2, true),
+                new AppProperties.Ml("https://ml-service:8443", 3000, 60000, 2),
                 new AppProperties.Security(true, 31536000, List.of("https://localhost:3000"),
                         new AppProperties.Security.RateLimit(false, 5, 300),
                         new AppProperties.Security.Account(5, 15)),

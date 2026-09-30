@@ -89,7 +89,7 @@ services:
   # MLflow. Solo alcanzable desde la red de datos (R-27).
   # ==================================================================
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.8.0
+    image: ghcr.io/mlflow/mlflow:v2.8.1
     container_name: xmr-mlflow
     restart: unless-stopped
     command: >
@@ -180,7 +180,6 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://localhost:8443/api/v1/auth/google/callback}
       FRONTEND_OAUTH_CALLBACK: ${FRONTEND_OAUTH_CALLBACK:-https://localhost:3000/auth/callback}
       ML_SERVICE_URL: ${ML_SERVICE_URL:-https://ml-service:8443}
-      ML_VERIFY_TLS: ${ML_VERIFY_TLS:-true}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://localhost:3000}
       SERVER_SSL_KEYSTORE: /certs/backend/keystore.p12
       SERVER_SSL_KEYSTORE_PASSWORD: ${SERVER_SSL_KEYSTORE_PASSWORD:-changeit}

@@ -308,12 +308,33 @@ WHERE status = 'RUNNING' AND heartbeat_at < NOW() - INTERVAL '15 minutes';
 
 #### La recuperacion la hace el sistema, no el operador
 
-**No hay que escribir un `UPDATE` a mano.** `JobWorker` ejecuta
-`recoverStalledJobs()` en cada pasada, **antes** de reclamar trabajo pendiente:
-devuelve a `PENDING` los trabajos `RUNNING` cuyo `heartbeat_at` es anterior a
-`app.jobs.heartbeat-timeout-seconds`, y los marca `FAILED` si ya agotaron los
-intentos. Con la configuracion por defecto, un trabajo colgado se recupera solo en
-la siguiente pasada, como maximo unos 15 segundos despues de vencer el umbral.
+**No hay que escribir un `UPDATE` a mano.** `JobWorker` delega la recuperacion en
+`JobQueue`, que la ejecuta en cada pasada, **antes** de reclamar trabajo
+pendiente: devuelve a `PENDING` los trabajos `RUNNING` cuyo `heartbeat_at` es
+anterior a `app.jobs.heartbeat-timeout-seconds`, y los marca `FAILED` si ya
+agotaron los intentos. Con la configuracion por defecto, un trabajo colgado se
+recupera solo en la siguiente pasada, como maximo unos 15 segundos despues de
+vencer el umbral.
+
+La operacion vive en `JobQueue` y no en el propio worker por una razon concreta:
+Spring AOP es basado en proxy, de modo que una llamada interna (`this.metodo()`)
+**no** atraviesa el proxy y su `@Transactional` no se aplicaria. Al delegar en
+otro bean, la llamada sale por el proxy y la transaccion existe de verdad.
+
+#### La cola avanza: como comprobarlo
+
+Un trabajo puede quedarse en `PENDING` indefinidamente si el worker no avanza, y
+un health check en verde **no** lo detecta. La comprobacion es:
+
+```sql
+SELECT status, count(*) FROM jobs GROUP BY status;
+```
+
+Si `PENDING` crece de forma sostenida, el worker no esta reclamando. El sintoma
+en el log es `InvalidDataAccessApiUsageException: No EntityManager with actual
+transaction available` en `JobRepository.claimIfPending`: el metodo es
+`@Modifying` y necesita `@Transactional`, que Spring Data JPA no aplica por
+defecto a los metodos de consulta declarados.
 
 | Propiedad | Valor | Clave de configuracion |
 |-----------|-------|-----------------------|
@@ -361,12 +382,23 @@ ejecuto nada que no se ejecuto (R-21).
 
 #### Estado del experimento y de la corrida
 
-Al terminar un trabajo, `JobWorker` notifica a
+Al terminar un trabajo —**con exito o con fallo**—, `JobWorker` notifica a
 `experiment/ExperimentRunCompletionLink`, que **recalcula el estado de la corrida
 y del experimento** a partir del conjunto de sus corridas. El worker no conoce el
 modulo de experimentos: la unica dependencia es la interfaz
 `JobWorker.ExperimentRunLink`, declarada para que siga siendo testeable. Es el
 mismo patron que la traduccion de estados en el servidor (R-43).
+
+Hay un metodo de la interfaz por desenlace (`onJobCompleted` y `onJobFailed`) y no
+solo uno de "completado". Con un unico metodo, una corrida fallida se quedaba en
+`PENDING` para siempre y el experimento anunciaba `RUNNING` con una ejecucion en
+curso que no existia: exactamente el estado mentiroso que R-21 prohibe.
+
+La comprobacion de que la cadena entera funciona es que, tras encolar una
+corrida, los tres estados pasan a su desenlace: trabajo `FAILED` con
+`TRAINING_NOT_EXPOSED`, corrida `FAILED`, experimento `FAILED`. Un trabajo que
+permanezca en `PENDING` significa que el worker no avanza (vease *La cola avanza*
+mas arriba).
 
 ### 4.6 Credenciales de Google comprometidas
 

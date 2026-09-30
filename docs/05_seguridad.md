@@ -92,10 +92,17 @@ En el despliegue local reproducible:
 
 Dos precisiones que evitan diagnosticos falsos:
 
-- **El backend no redirige `8080`.** `server.http.enabled: false` significa que
-  **no existe** un listener de HTTP plano. No hay redireccion porque no hay nada
-  que redireccionar, y por eso `verify-stack.ps1` comprueba que el puerto 80 esta
-  cerrado.
+- **El backend no redirige `8080`.** Con `server.ssl.enabled: true`, Tomcat abre
+  **unicamente** el conector HTTPS: no existe un listener de HTTP plano. No hay
+  redireccion porque no hay nada que redireccionar, y por eso `verify-stack.ps1`
+  comprueba que el puerto 80 esta cerrado y que una peticion HTTP contra el 8443
+  se rechaza.
+
+  Nota: la propiedad `server.http.enabled` que aparecia en versiones anteriores de
+  esta documentacion **no existe en Spring Boot** y no tenia efecto alguno. La
+  garantia de "solo HTTPS" la da `server.ssl.enabled: true`, que es lo que esta
+  verificado. Eliminar una propiedad que suena a garantia y no lo es es peor que
+  documentar la que si la sostiene.
 - **`8000` no es el puerto del servicio ML.** El proceso de FastAPI escucha en
   **8443 dentro del contenedor**; `8000` es unicamente el mapeo de loopback del
   host. El backend lo llama por `https://ml-service:8443`.
@@ -127,6 +134,14 @@ TLS en produccion (R-33).
   cliente.
 - Revocar sesiones al desactivar el usuario, cambiar la contrasena o detectar un
   compromiso. Al rotar `JWT_SECRET` **todos** los access tokens quedan invalidos.
+- **Un unico administrador no puede perder su rol.** La comprobacion de "no es el
+  ultimo ADMIN" se hace con aislamiento `SERIALIZABLE`: con el aislamiento por
+  defecto (READ COMMITTED), dos degradaciones concurrentes observan ambas dos
+  administradores y las dos pasan el control, dejando el sistema sin nadie capaz de
+  restaurarlo.
+- **Los intentos fallidos se asocian a la cuenta**, no solo al correo:
+  `login_attempts.user_id` existe con su indice para correlacionar ataques contra
+  una cuenta concreta. Guardar solo el correo dejaba ese indice sin usar.
 
 ### 4.2 API REST (Spring Boot)
 
@@ -138,6 +153,14 @@ TLS en produccion (R-33).
 - Definir esquemas de entrada y salida con allowlist y tipos estrictos: el
   servicio ML usa `extra='forbid'`, de modo que un campo de mas devuelve `422`
   sin fallo de compilacion (R-38).
+- **Toda restriccion de bean debe ser ejecutable, no solo plausible.** Una
+  anotacion que no aplica a su tipo (`@Size` sobre un `Integer`) no falla al
+  compilar: Hibernate Validator lanza `HV000030` en la primera peticion que la
+  alcanza. Y si el controlador no lleva `@Valid`, el validador no se ejecuta
+  nunca, con lo que la anotacion imposible permanece oculta. Ambas condiciones se
+  vigilan en `BeanValidationConstraintTest`, que valida **instancias reales** de
+  cada cuerpo de peticion: es lo que hace Spring, y es lo unico que detecta la
+  clase de fallo que un analisis estatico pasa por alto.
 - Todo `id` publicado es una **cadena opaca**, y la traduccion de estados entre
   lo persistido y lo publicado ocurre **en el servidor** (R-43).
 - Implementar limitacion diferenciada: login, exportacion, ingesta, creacion de

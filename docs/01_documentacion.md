@@ -207,7 +207,7 @@ Los esquemas de Pydantic usan `extra='forbid'`: enviar un campo de mas devuelve 
 | Servicio | URL/puerto publicado (dev) | Contenedor | Descripcion |
 |----------|----------------------------|------------|-------------|
 | `frontend` | `https://127.0.0.1:3000` | 8080 | React/Vite servido por nginx; consume unicamente HTTPS |
-| `backend` | `https://127.0.0.1:8443` | 8443 | Spring Boot 3.2. **Solo HTTPS**: `server.http.enabled: false` |
+| `backend` | `https://127.0.0.1:8443` | 8443 | Spring Boot 3.2. **Solo HTTPS**: `server.ssl.enabled: true` (unico conector) |
 | `ml-service` | `https://127.0.0.1:8000` | 8443 | FastAPI-ML con TLS |
 | `mlflow` | `https://127.0.0.1:5000` | 5000 | MLflow 2.8 con TLS |
 | `db` | sin puerto publicado | 5432 | PostgreSQL 15 en red interna |
@@ -259,8 +259,10 @@ Estos son los nombres que el codigo lee de verdad. **No existe `DB_USER`** (es `
 | `ML_CONNECT_TIMEOUT_MS` | Timeout de conexion del cliente ML (3000 ms) |
 | `ML_READ_TIMEOUT_MS` | Timeout de lectura del cliente ML (60000 ms) |
 | `ML_MAX_RETRIES` | Reintentos limitados del cliente ML (2) |
-| `ML_VERIFY_TLS` | Verificacion del certificado del servicio ML |
 | `MLFLOW_TRACKING_URI` | URI de MLflow |
+
+La verificacion del certificado del servicio ML **no tiene bandera**: es siempre
+activa. Antes existia `ML_VERIFY_TLS`, que el codigo leia y no usaba.
 
 **Servidor, red y correo**
 
@@ -296,7 +298,7 @@ Estos son los nombres que el codigo lee de verdad. **No existe `DB_USER`** (es `
 - **Cookie de refresco:** `xmr_refresh` con `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, emitida en login, refresh y callback de Google; borrada en el logout.
 - **Autorizacion:** roles `VIEWER`, `ANALYST`, `ADMIN`; cada ruta declara su requisito y hay pruebas negativas por ruta (R-35).
 - **Contrasenas:** BCrypt con salt unico; en base de datos solo hashes. De los refresh tokens solo se guarda el hash HMAC-SHA256 (R-14).
-- **HTTPS:** forzado en todos los entornos; `server.http.enabled: false`.
+- **HTTPS:** forzado en todos los entornos; `server.ssl.enabled: true` deja a Tomcat un unico conector, el HTTPS.
 - **CORS:** allowlist de origenes HTTPS.
 - **TLS local:** los certificados de desarrollo son autofirmados y solo sirven para el entorno local; produccion debe usar certificados emitidos por una autoridad confiable.
 - **Conexiones internas:** Spring Boot usa `ML_SERVICE_URL=https://ml-service:8443` y ML usa `MLFLOW_TRACKING_URI=https://mlflow:5000`.
