@@ -8,7 +8,8 @@
   (R-11/R-12). Aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
 
 ## Tarea en curso
-- T-032: pantallas de error de infraestructura (cerrada, redirect 497 + 50x).
+- T-033: guia de despliegue del frontend en Vercel + `vercel.json` (pendiente:
+  exige backend publico con TLS valido; localhost no sirve).
 
 ## Estado verificado en esta sesion
 - **Stack Docker UP**: 6/6 `healthy`. **`tools/verify-stack.ps1`: 48/48.**
