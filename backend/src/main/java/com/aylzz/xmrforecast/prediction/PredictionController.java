@@ -1,6 +1,7 @@
 package com.aylzz.xmrforecast.prediction;
 
 import com.aylzz.xmrforecast.common.PageResponse;
+import com.aylzz.xmrforecast.common.QueryParams;
 import com.aylzz.xmrforecast.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,11 +45,12 @@ public class PredictionController {
 
     @Operation(summary = "Solicita una prediccion",
             description = "Idempotente: repetir la misma combinacion de modelo, simbolo y "
-                    + "fecha devuelve la prediccion existente en vez de crear otra.")
+                    + "fecha devuelve la prediccion existente en vez de crear otra. "
+                    + "Acepta `modelId` (usa su version campeon) o `modelVersionId`.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Prediccion creada"),
-            @ApiResponse(responseCode = "404", description = "La version de modelo no existe"),
-            @ApiResponse(responseCode = "422", description = "El modelo no supero el gate de integridad"),
+            @ApiResponse(responseCode = "404", description = "El modelo o la version no existen"),
+            @ApiResponse(responseCode = "422", description = "Sin version campeon, o sin integridad verificada"),
             @ApiResponse(responseCode = "503", description = "El servicio de ML no responde")
     })
     @PreAuthorize("hasAnyRole('ANALYST','ADMIN')")
@@ -55,18 +58,20 @@ public class PredictionController {
     @ResponseStatus(HttpStatus.CREATED)
     public PredictionService.PredictionResponse create(
             @RequestBody PredictionService.CreatePredictionRequest request,
-            AuthenticatedUser user) {
+            @AuthenticationPrincipal AuthenticatedUser user) {
         return service.create(request, user.id());
     }
 
-    @Operation(summary = "Lista las predicciones del usuario autenticado")
+    @Operation(summary = "Lista las predicciones del usuario autenticado",
+            description = "El filtro por simbolo SIEMPRE se combina con el propietario: "
+                    + "no existe forma de listar las predicciones de otro usuario.")
     @GetMapping
     @PreAuthorize("hasAnyRole('VIEWER','ANALYST','ADMIN')")
     public PageResponse<PredictionService.PredictionResponse> list(
             @RequestParam(required = false) String symbol,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            AuthenticatedUser user) {
+            @AuthenticationPrincipal AuthenticatedUser user) {
         return service.listForUser(user.id(), symbol, page, size);
     }
 
@@ -78,8 +83,8 @@ public class PredictionController {
     })
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('VIEWER','ANALYST','ADMIN')")
-    public PredictionService.PredictionResponse get(@PathVariable Long id,
-                                                    AuthenticatedUser user) {
-        return service.getOne(id, user.id(), user.isAdmin());
+    public PredictionService.PredictionResponse get(@PathVariable String id,
+                                                    @AuthenticationPrincipal AuthenticatedUser user) {
+        return service.getOne(QueryParams.id(id), user.id(), user.isAdmin());
     }
 }

@@ -82,6 +82,47 @@ class AuditServiceSanitizationTest {
     }
 
     @Test
+    @DisplayName("Las variantes que la lista exacta no cubria tambien se redactan")
+    void redactsSeparatorsAndUnknownVariants() {
+        // Ninguna de estas claves estaba en la lista exacta por igualdad: todas
+        // describen la misma credencial con otra ortografia. `audit_events` es
+        // append-only, asi que lo que se escribe no se puede purgar despues.
+        Map<String, Object> details = new LinkedHashMap<>();
+        for (String key : new String[]{"refresh_token", "id_token", "new_password",
+                "password_confirmation", "X-Api-Key", "client.secret", "Set-Cookie",
+                "setCookie", "PRIVATE_KEY", "clientSecretValue", "userPassword"}) {
+            details.put(key, "valor-sensible");
+        }
+
+        var sanitized = AuditService.sanitize(details);
+
+        assertThat(sanitized.values()).allMatch("[REDACTED]"::equals);
+    }
+
+    @Test
+    @DisplayName("Las claves inocuas no se redactan por accidente")
+    void keepsInnocentKeys() {
+        // La deteccion es por "contiene", asi que hay que comprobar que no se ha
+        // vuelto demasiado agresiva: una metrica de una auditoria util que
+        // desapareciese por prudencia inutil seria una perdida de informacion.
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("modelKey", "lstm_base");
+        details.put("email", "user@example.com");
+        details.put("requestId", "abc-123");
+        details.put("type", "TRAIN");
+        details.put("page", 2);
+
+        var sanitized = AuditService.sanitize(details);
+
+        assertThat(sanitized)
+                .containsEntry("modelKey", "lstm_base")
+                .containsEntry("email", "user@example.com")
+                .containsEntry("requestId", "abc-123")
+                .containsEntry("type", "TRAIN")
+                .containsEntry("page", 2);
+    }
+
+    @Test
     @DisplayName("El enum de resultado cubre los tres desenlaces de auditoria")
     void outcomeValues() {
         assertThat(AuditEvent.Outcome.values())

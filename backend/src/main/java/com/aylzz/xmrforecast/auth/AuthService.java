@@ -197,9 +197,17 @@ public class AuthService {
     // -------------------------------------------------------------- refresh
 
     @Transactional
-    public TokenResponse refresh(AuthRequests.RefreshRequest request, String ip, String userAgent) {
+    public TokenResponse refresh(AuthRequests.RefreshRequest request, String cookieToken,
+                                 String ip, String userAgent) {
+        String presented = resolveRefreshToken(request.refreshToken(), cookieToken);
+        if (presented == null) {
+            // Sin token no hay nada que renovar. Se responde 401 y no 400: la
+            // peticion es correcta en forma pero no aporta credencial alguna.
+            throw ApiException.unauthorized("MISSING_REFRESH_TOKEN",
+                    "No se presento ningun refresh token.");
+        }
         RefreshToken stored = refreshTokenRepository
-                .findByTokenHash(tokenHasher.hash(request.refreshToken()))
+                .findByTokenHash(tokenHasher.hash(presented))
                 .orElseThrow(() -> ApiException.unauthorized("INVALID_REFRESH_TOKEN",
                         "El refresh token no es valido."));
 
@@ -235,8 +243,14 @@ public class AuthService {
     // --------------------------------------------------------------- logout
 
     @Transactional
-    public void logout(AuthRequests.LogoutRequest request, Long userId) {
-        refreshTokenRepository.findByTokenHash(tokenHasher.hash(request.refreshToken()))
+    public void logout(AuthRequests.LogoutRequest request, String cookieToken, Long userId) {
+        String presented = resolveRefreshToken(request.refreshToken(), cookieToken);
+        if (presented == null) {
+            // Idempotente: cerrar sesion sin token no es un error, es un no-op.
+            // Devolver 400 aqui dejaba al cliente sin forma de limpiar su estado.
+            return;
+        }
+        refreshTokenRepository.findByTokenHash(tokenHasher.hash(presented))
                 .ifPresent(token -> {
                     if (token.getRevokedAt() == null) {
                         token.setRevokedAt(Instant.now());
@@ -246,6 +260,20 @@ public class AuthService {
                     auditService.success(userId, primaryRole(token.getUser()), "AUTH_LOGOUT",
                             "RefreshToken", token.getJti(), Map.of());
                 });
+    }
+
+    /**
+     * Resuelve el refresh token presentado: primero el cuerpo, despues la cookie.
+     * Devuelve {@code null} si no llego ninguno.
+     */
+    private String resolveRefreshToken(String fromBody, String fromCookie) {
+        if (fromBody != null && !fromBody.isBlank()) {
+            return fromBody.trim();
+        }
+        if (fromCookie != null && !fromCookie.isBlank()) {
+            return fromCookie.trim();
+        }
+        return null;
     }
 
     /** Cierra todas las sesiones del usuario. */
@@ -520,8 +548,8 @@ public class AuthService {
 
     /** Bloqueo progresivo: cuenta intentos y bloquea al superar el limite. */
     private void registerFailure(User user, String email, String reason, String ip, String userAgent) {
-        loginAttemptRepository.save(LoginAttempt.failure(email,
-                user == null ? null : user.getId(), reason, ip, userAgent, AuthProvider.LOCAL));
+        loginAttemptRepository.save(LoginAttempt.failure(email, user, reason, ip, userAgent,
+                AuthProvider.LOCAL));
 
         auditService.record(user == null ? null : user.getId(),
                 user == null ? null : primaryRole(user), "AUTH_LOGIN", "User",
@@ -553,8 +581,8 @@ public class AuthService {
     }
 
     private void recordDeniedLogin(User user, String reason, String ip, String userAgent) {
-        loginAttemptRepository.save(LoginAttempt.failure(user.getEmail(), user.getId(),
-                reason, ip, userAgent, AuthProvider.LOCAL));
+        loginAttemptRepository.save(LoginAttempt.failure(user.getEmail(), user, reason, ip,
+                userAgent, AuthProvider.LOCAL));
         auditService.record(user.getId(), primaryRole(user), "AUTH_LOGIN", "User",
                 String.valueOf(user.getId()), AuditEvent.Outcome.DENIED, Map.of("reason", reason));
     }
@@ -572,7 +600,7 @@ public class AuthService {
     }
 
     public UserResponse toResponse(User user) {
-        return new UserResponse(
+        return UserResponse.of(
                 user.getId(),
                 user.getEmail(),
                 user.getFullName(),

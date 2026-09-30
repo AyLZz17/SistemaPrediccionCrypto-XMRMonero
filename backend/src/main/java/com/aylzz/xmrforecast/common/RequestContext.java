@@ -42,6 +42,17 @@ public final class RequestContext {
     }
 
     /**
+     * Longitud maxima admitida. Coincide con el ancho de las columnas que guardan
+     * estos identificadores: {@code audit_events.request_id},
+     * {@code audit_events.trace_id} y {@code predictions.request_id} son
+     * {@code VARCHAR(64)}. Aceptar mas aqui hacia que un cliente que mandara
+     * 100 caracteres provocara un {@code value too long for type character
+     * varying(64)} al insertar el registro de auditoria: la peticion se
+     * atendia, pero la traza de auditoria se perdia en silencio.
+     */
+    public static final int MAX_LENGTH = 64;
+
+    /**
      * Sanea un identificador entrante: si el cliente manda algo absurdo se descarta
      * y se genera uno nuevo, evitando inyeccion en los logs (CRLF injection).
      */
@@ -50,7 +61,7 @@ public final class RequestContext {
             return newId();
         }
         String trimmed = candidate.trim();
-        boolean safe = trimmed.length() <= 128
+        boolean safe = trimmed.length() <= MAX_LENGTH
                 && trimmed.chars().allMatch(c -> Character.isLetterOrDigit(c) || c == '-' || c == '_' || c == '.');
         return safe ? trimmed : newId();
     }

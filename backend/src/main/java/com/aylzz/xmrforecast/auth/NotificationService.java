@@ -5,12 +5,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Bandeja de notificaciones. Toda lectura y toda marcacion se acotan al usuario
  * autenticado: no existe forma de tocar la bandeja de otro usuario por IDOR.
+ *
+ * <p><strong>Propagacion REQUIRED, no REQUIRES_NEW.</strong> Una notificacion es
+ * dato de negocio, no un rastro de auditoria: describe algo que ocurrio dentro
+ * de una operacion y debe ser coherente con ella. Con REQUIRES_NEW la
+ * insercion se confirma en su propia transaccion, que se cierra ANTES de que la
+ * transaccion que llama confirme lo suyo, y el alta de usuario terminaba
+ * fallando con {@code notifications_user_id_fkey: Key (user_id)=(1) is not
+ * present in table "users"}. La auditoria si usa REQUIRES_NEW (en
+ * AuditService), porque alli se busca lo contrario: que el evento sobreviva a
+ * un rollback de la operacion de negocio.
  */
 @Service
 public class NotificationService {
@@ -39,7 +48,7 @@ public class NotificationService {
         this.repository = repository;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void notify(Long userId, NotificationType type, String title, String body, Severity severity) {
         if (userId == null) {
             return;

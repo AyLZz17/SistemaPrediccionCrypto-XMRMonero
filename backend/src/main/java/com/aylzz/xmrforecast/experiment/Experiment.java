@@ -33,6 +33,15 @@ public class Experiment {
     @Column(nullable = false, length = 24)
     private ExperimentStatus status = ExperimentStatus.DRAFT;
 
+    /**
+     * Tarea que evalua el experimento (D-04). Vive aqui y no solo en la corrida
+     * porque la comparacion de metricas se filtra por tarea, y un filtro que
+     * obligara a unir con las corridas no se podria aplicar sobre el catalogo.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "task_type", nullable = false, length = 16)
+    private TaskType taskType = TaskType.REGRESSION;
+
     /** Configuracion del experimento tal cual se entrega al servicio ML. */
     @Column(name = "config_yaml", nullable = false, columnDefinition = "text")
     private String configYaml;
@@ -58,5 +67,12 @@ public class Experiment {
         COMPLETED,
         FAILED,
         CANCELLED
+    }
+
+    public enum TaskType {
+        /** Estimacion del cierre t+1. */
+        REGRESSION,
+        /** Direccion sube/baja. */
+        DIRECTION
     }
 }

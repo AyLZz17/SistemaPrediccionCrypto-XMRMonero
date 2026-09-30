@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -36,12 +37,18 @@ public class MlServiceClient {
                 .baseUrl(properties.ml().baseUrl())
                 .requestFactory(requestFactory(properties.ml()))
                 .build();
+        // Falla el arranque, no la primera prediccion en produccion.
+        assertSecureBaseUrl();
     }
 
     /**
-     * Fabrica de conexiones con TLS verificado. La verificacion nunca se desactiva:
-     * {@code verifyTls=false} solo permite el certificado autofirmado de desarrollo,
-     * y solo si se permite explicitamente por entorno.
+     * Fabrica de conexiones con TLS verificado.
+     *
+     * <p>La verificacion no se desactiva nunca. Para el certificado autofirmado de
+     * desarrollo se anade la CA al almacen del proceso
+     * ({@code -Djavax.net.ssl.trustStore}, ver {@code JAVA_OPTS} en
+     * {@code docker-compose.yml}); no existe una bandera que lo omita, porque una
+     * bandera de ese tipo acabaria activada en algun entorno por descuido.
      */
     private static org.springframework.http.client.ClientHttpRequestFactory requestFactory(
             AppProperties.Ml ml) {
@@ -76,8 +83,8 @@ public class MlServiceClient {
     }
 
     private JsonNode withRetry(String method, String path, Map<String, Object> payload) {
-        RuntimeException last = null;
         int attempts = properties.ml().maxRetries() + 1;
+        RuntimeException last = null;
 
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
@@ -88,8 +95,20 @@ public class MlServiceClient {
                 last = ex;
                 log.warn("Fallo de transporte hacia el servicio ML (intento {}/{}): {}",
                         attempt, attempts, ex.getMessage());
+            } catch (HttpStatusCodeException ex) {
+                // El servicio responde, con error. Un 5xx es transitorio y merece
+                // otro intento; un 4xx no lo es. Antes de distinguir, ambos
+                // llegaban al cliente como 500 con la traza del servicio remoto.
+                int status = ex.getStatusCode().value();
+                last = ex;
+                if (status >= 500) {
+                    log.warn("El servicio ML devolvio {} (intento {}/{})", status, attempt, attempts);
+                } else {
+                    throw ApiException.badGateway("ML_SERVICE_REJECTED",
+                            "El servicio de Machine Learning rechazo la peticion.");
+                }
             } catch (ApiException ex) {
-                // El servicio respondio con un error de negocio: reintentar no ayuda.
+                // Error ya traducido por esta misma clase: reintentar no aporta.
                 throw ex;
             }
 
@@ -98,6 +117,8 @@ public class MlServiceClient {
             }
         }
 
+        log.warn("El servicio ML no respondio tras {} intentos: {}",
+                attempts, last == null ? "sin detalle" : last.getMessage());
         throw ApiException.unavailable("ML_SERVICE_UNAVAILABLE",
                 "El servicio de Machine Learning no esta disponible en este momento.");
     }
@@ -152,14 +173,17 @@ public class MlServiceClient {
         }
     }
 
-    /** Verifica que la URL configurada del servicio ML sea HTTPS (R-32, R-33). */
+    /**
+     * Verifica que la URL configurada del servicio ML sea HTTPS (R-32, R-33).
+     *
+     * <p>Se invoca desde el constructor: un {@code http://} en la configuracion
+     * rompe el arranque en lugar de permitir que el primer fallo se descubra en
+     * la primera prediccion, en produccion, con datos de un usuario en pantalla.
+     */
     public void assertSecureBaseUrl() {
         if (!properties.ml().baseUrl().startsWith("https://")) {
             throw new IllegalStateException(
                     "app.ml.base-url debe usar https:// ; se configuro: " + properties.ml().baseUrl());
-        }
-        if (!properties.ml().verifyTls()) {
-            log.warn("Verificacion TLS del servicio ML desactivada: solo admisible en desarrollo");
         }
     }
 }

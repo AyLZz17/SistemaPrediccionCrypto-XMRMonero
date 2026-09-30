@@ -19,12 +19,15 @@ aparece marcado como pendiente en la [sección 10](#10-limitaciones-y-pendientes
 
 | Componente | Comprobación | Resultado |
 |---|---|---|
-| Backend Spring Boot 3.2.5 / Java 21 | `mvn -B clean test` | **35 tests, BUILD SUCCESS** |
-| Esquema PostgreSQL | Flyway `V1`+`V2` sobre PostgreSQL 15.19 | **22 tablas, 27 FK, 71 índices** |
+| Backend Spring Boot 3.2.5 / Java 21 | `mvn -B clean test` | **94 tests, BUILD SUCCESS** |
+| Arranque real del backend | `tools/verify-stack.ps1` (jar empaquetado contra PostgreSQL real) | **43/43 comprobaciones OK** |
+| Esquema PostgreSQL | Flyway `V1`..`V5` sobre PostgreSQL 15.19 | **22 tablas**, migradas sin intervención manual |
+| Contrato HTTP frontend ↔ backend | `HttpContractTest` (extrae rutas de ambos lados) | **33 rutas del cliente, todas implementadas** |
+| Inyección del principal | `ControllerParameterTest` (reflexión sobre los controladores) | **Todos los parámetros con `@AuthenticationPrincipal`** |
 | Restricciones de integridad | Inserciones inválidas contra la BD real | **Rechazadas correctamente** |
 | Migración de permisos | Comprobación de mínimo privilegio | VIEWER: 8 permisos, 0 de escritura |
-| Backup y restauración | Ciclo completo borrar → restaurar | **Datos recuperados, 0 huérfanos** |
-| Frontend React + TS | `npm run build` / `lint` / `test` | **build OK · lint 0 · 145 tests** |
+| Backup y restauración | Ciclo completo borrar → restaurar | **30 + 5 filas recuperadas, 0 huérfanos** |
+| Frontend React + TS | `npm run build` / `lint` / `test` | **build OK · lint 0 · 147 tests** |
 | Pie de página obligatorio | `footer-on-every-route.test.tsx` | **22 aserciones OK** |
 | `docker-compose.yml` | `docker compose config` | **Válido · 6 servicios** |
 | CI/CD | Parseo de `ci.yml` | **Válido · 6 jobs** |
@@ -91,7 +94,7 @@ aparece marcado como pendiente en la [sección 10](#10-limitaciones-y-pendientes
 
 ```bash
 # 1. Certificados TLS de desarrollo (autofirmados, solo local)
-bash docker/certs/generate-dev-certs.sh
+bash docker/generate-dev-certs.sh
 
 # 2. Variables de entorno
 cp .env.example .env
@@ -186,7 +189,7 @@ local ya existente: nunca concede acceso por sí solo, y solo si Google afirma
 
 ## 5. Base de datos
 
-22 tablas criadas por Flyway. El backend corre con `ddl-auto: validate`: el esquema solo
+22 tablas criadas por Flyway (`V1` a `V5`). El backend corre con `ddl-auto: validate`: el esquema solo
 cambia por migración versionada (R-34).
 
 **Identidad:** `users`, `roles`, `permissions`, `role_permissions`, `user_roles`,
@@ -252,7 +255,7 @@ Todos se miden sobre **las mismas fechas de test** (R-05) y el campeón se elige
 | Contraseñas | BCrypt 12; nunca en claro ni en logs |
 | Tokens opacos | HMAC-SHA256 en base de datos; el valor en claro solo en memoria |
 | JWT | HS512, `alg` fijo, `iss`/`aud`/`exp`/`jti`, revocación por `jti` |
-| CSRF | Desactivado **porque no hay autenticación por cookie**: el token viaja en cabecera. En OAuth se protege con `state` + `nonce` |
+| CSRF | Desactivado **porque el JWT de acceso no viaja en cookie**: viaja en la cabecera `Authorization`. La cookie de refresh `xmr_refresh` sí existe, con `HttpOnly` + `Secure` + `SameSite=Strict` + `Path=/api/v1/auth`; se protege por construcción de la cookie, no por el filtro. En OAuth se usa `state` + `nonce` |
 | CORS | Solo orígenes HTTPS explícitos; sin comodines |
 | Rate limiting | Redis, ventana fija; 429 con `Retry-After` |
 | IDOR | Consultas acotadas al propietario; 404 en lugar de 403 |

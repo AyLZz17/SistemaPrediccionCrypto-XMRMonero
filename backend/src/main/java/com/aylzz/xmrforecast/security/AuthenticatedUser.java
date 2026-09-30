@@ -24,6 +24,18 @@ public record AuthenticatedUser(Long id, String email, String jti, Set<Role> rol
         return roles.contains(role);
     }
 
+    /**
+     * Rol efectivo: el mas alto del conjunto. Se usa al registrar auditoria, que
+     * guarda un unico {@code actor_role}, y en respuestas que necesitan un rol
+     * concreto en lugar de una coleccion.
+     */
+    public Role role() {
+        if (roles.contains(Role.ADMIN)) {
+            return Role.ADMIN;
+        }
+        return roles.contains(Role.ANALYST) ? Role.ANALYST : Role.VIEWER;
+    }
+
     public boolean isAdmin() {
         return roles.contains(Role.ADMIN);
     }

@@ -1,9 +1,34 @@
 # XMR-Forecast — Informe de Auditoría de Seguridad, Bugs y Base de Datos
 
+> ## RETRACTADO — NO DESCRIBA EL CÓDIGO REAL
+>
+> Este informe se **retractó en T-023** (ver el registro de `AGENTS.md` §10) y su
+> contenido **no aplica al sistema que existe hoy**. Se conserva solo como
+> registro histórico de por qué se reconstruyó el backend.
+>
+> **Por qué es peligroso leerlo sin este aviso:** audita un código que nunca
+> existió. Describe 15 tablas (`app_user`, `audit_log`, `data_source`, `asset`,
+> `ohlcv_daily`, `ingestion_log`, `data_split`, `feature_set`, `model_definition`,
+> `experiment`, `training_run`, `evaluation_metric`, `prediction`,
+> `failure_period`) de las que **ninguna** está en el esquema actual, y verifica
+> endpoints inexistentes contra el puerto 8080, que el backend no expone.
+> Sus cifras de riesgo (1 crítica, 6 altas...) no son la postura de seguridad de
+> este proyecto.
+>
+> **Dónde está la información vigente:**
+> - Seguridad y amenazas: [`05_seguridad.md`](05_seguridad.md)
+> - Operación, backup y recuperación: [`08_operacion.md`](08_operacion.md)
+> - Verificación reproducible: `tools/verify-stack.ps1`
+>
+> Alguien debe auditar de verdad el código actual en una tarea propia. Hasta
+> entonces, el sistema **no está listo para producción** (ver `README.md` §10).
+
+---
+
 > **Fecha:** 2026-09-30  
 > **Auditor:** Agente de desarrollo  
-> **Estado:** Completada  
-> **Alcance:** Frontend, Backend Spring Boot, FastAPI-ML, Infraestructura, Base de Datos, Documentación
+> **Estado:** **RETRACTADO en T-023**  
+> **Alcance original:** Frontend, Backend Spring Boot, FastAPI-ML, Infraestructura, Base de Datos, Documentación
 
 ---
 

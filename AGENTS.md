@@ -46,7 +46,7 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 |----|-------|
 | R-13 | `backend/app/ml/` **no importa** FastAPI ni SQLAlchemy (queda aislado, testeable y usable desde notebooks/CLI). |
 | R-14 | Secretos solo por variables de entorno. Nada de credenciales en git. Se versiona `.env.example`. |
-| R-15 | Cambios de esquema **solo con migraciones Alembic**. |
+| R-15 | Cambios de esquema **solo con migraciones Flyway** en `backend/src/main/resources/db/migration/`. Corrige una contradiccion previa: decia "Alembic", que pertenece al python de `ml-service` y jamas se aplico. R-34 es la regla vigente; el servicio ML no administra el esquema de PostgreSQL. |
 | R-16 | Toda función pública de `ml/` lleva type hints y tests. Los **tests de no-fuga de datos** (R-01 a R-03) son obligatorios. |
 | R-17 | Dependencias con versión fijada (lockfile). **Verificar la versión vigente** al crear el entorno; no asumir versiones. |
 | R-18 | Los tests no hacen llamadas de red (se mockean las fuentes). Datos de prueba sintéticos. |
@@ -74,6 +74,9 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 | R-38 | **Contratos entre servicios verificados, no supuestos.** Los esquemas del servicio ML usan `extra='forbid'`: enviar un campo de más devuelve 422 y rompe la funcionalidad entera sin fallo de compilación. Todo contrato HTTP compartido (backend ↔ ML, backend ↔ frontend) debe tener una prueba que compare los campos realmente enviados con los realmente aceptados. |
 | R-39 | **Un registro de tarea afirma solo lo verificado en esa sesión.** Si una tarea se registra como "Hecho" sin que su artefacto exista en git o en disco, es un registro falso y debe retractarse en la tarea siguiente (aplicado en T-023). |
 | R-40 | **Los diagramas se validan con parse + render.** Un diagrama que parsea pero no renderiza está mal; `tools/validate_mermaid.py` ejecuta ambas fases y devuelve código de salida 1 ante cualquier fallo. El runner no puede escanearse a sí mismo en los validadores de CI, porque contiene sus propios patrones de búsqueda. |
+| R-41 | **Un contrato verificado es un contrato que responde en runtime, no que compila.** `HttpContractTest` extrae las rutas que el cliente emite y las que el backend declara y exige que coincidan. Sin el, 21 endpoints ausentes y 7 desalineaciones convivieron con la suite en verde. |
+| R-42 | **`mvn test` no demuestra que la aplicacion arranque.** El empaquetado (`spring-boot:repackage`), el esquema real contra Hibernate (`ddl-auto: validate`), el JPQL que solo falla en runtime y la configuracion que impide arrancar se verifican levantando el servicio. Ver T-027: cuatro defectos de arranque que ninguna prueba de unidades detectaba. |
+| R-43 | **El estado persistido y el estado publicado pueden usar vocabularios distintos, y la traduccion va en el servidor.** `Experiment` guarda `DRAFT`/`COMPLETED`; la API publica `PENDING`/`SUCCEEDED`. El cliente no conoce los dos vocabularios ni decide cual usar. Solo una copia de cada estado puede ser la fuente de verdad. |
 
 ---
 
@@ -106,38 +109,41 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 ```
 xmr-forecast/
 ├── AGENTS.md · SKILLS.md · MEMORY.md · README.md · Makefile
+├── .env.example · docker-compose.yml · docker-compose.dev.yml (solo desarrollo)
 ├── docs/                    # documentación (01-08) + diagramas
 │   ├── fuentes/             # documentos originales del cliente
 │   └── diagrams/            # diagramas drawio
-├── backend/                 # Spring Boot 3.2 / Java 21 (monolito modular)
+├── backend/                 # Spring Boot 3.2.5 / Java 21 (monolito modular)
 │   ├── pom.xml
 │   ├── Dockerfile
 │   └── src/
 │       ├── main/java/com/aylzz/xmrforecast/
 │       │   ├── auth/        # registro, login, refresh, OAuth Google, notificaciones
-│       │   ├── user/        # users, roles, oauth_accounts, tokens, login_attempts
-│       │   ├── security/    # JWT, filtros, roles, hash de tokens
-│       │   ├── market/ dataset/ experiment/ mlmodel/ prediction/ metrics/ job/
+│       │   ├── user/        # users, roles, oauth_accounts, tokens, login_attempts, admin
+│       │   ├── security/    # JWT, filtros, roles, hash de tokens, rate limiting
+│       │   ├── market/ dataset/ experiment/ mlmodel/ metrics/ prediction/ job/
 │       │   ├── ml/          # cliente tipado del servicio ML (R-32)
 │       │   ├── audit/ common/ config/
 │       │   └── XmrForecastApplication.java
 │       ├── main/resources/
 │       │   ├── application.yml
-│       │   └── db/migration/  # Flyway: ÚNICA fuente del esquema (R-34)
+│       │   └── db/migration/  # Flyway V1..V5: ÚNICA fuente del esquema (R-34)
 │       └── test/java/...      # JUnit 5
 ├── ml-service/              # FastAPI (Python)
 │   ├── Dockerfile · requirements.txt (versiones fijadas, R-17)
 │   └── app/
 │       ├── main.py · config.py · services.py
-│       ├── api/ clients/            # capa HTTP
-│       └── ml/                      # PAQUETE PURO, sin frameworks (R-13)
+│       ├── api/            # routes_health|models|predict|metrics, schemas.py
+│       ├── clients/        # cliente de MLflow
+│       └── ml/             # PAQUETE PURO, sin frameworks (R-13)
 │           └── data/ models/ evaluation/ pipelines/
 ├── frontend/                # React 18 + TS + Vite + Tailwind (tema oscuro)
 │   ├── Dockerfile · nginx.conf · vite.config.ts
-│   └── src/{api,auth,components,config,pages,store,styles,types,test}/
-├── docker/                  # certificados TLS, backup/restore, init de PostgreSQL
+│   └── src/{api,auth,components,config,pages,store,styles,test,types,utils}/
+├── docker/                  # generate-dev-certs.sh · backup.sh · certs/ (ignorada)
+│   └── postgres/init/
 ├── loadtests/api.js         # k6 (cifras solo tras ejecutar)
-├── tools/validate_mermaid.py
+├── tools/                   # validate_mermaid.py · verify-stack.ps1
 └── .github/workflows/ci.yml
 ```
 
@@ -176,6 +182,10 @@ xmr-forecast/
 | D-06 | Cola de tareas | **Resuelto** | Tabla `jobs` en PostgreSQL con `idempotency_key` única, estados PENDING/RUNNING/COMPLETED/FAILED/CANCELLED y `heartbeat_at` para detectar trabajos colgados. El backend Java no usa Celery. |
 | D-07 | Objetivos numéricos de calidad (cobertura ≥ 80 % en `ml/`, lecturas API p95 < 500 ms) | Propuesta | Ajustables por el cliente. |
 | D-08 | Extensiones fuera de alcance inicial | Diferidas | Multi-horizonte, indicadores técnicos vs. solo precio, BTC/ETH, exógenas, alertas. |
+| D-09 | Estado y `nonce` de OAuth: en memoria o en Redis | **Supuesto activo** | `GoogleOAuthService` los guarda en un `ConcurrentHashMap`. Valido con una sola instancia; con varias replicas o tras un reinicio la sesion se pierde. El propio codigo lo reconoce. Migrar a Redis (R-27) antes de escalar en horizontal. |
+| D-10 | Entrenamiento de modelos: HTTP o CLI | **Resuelto (CLI)** | El entrenamiento NO se expone por HTTP. Un trabajo `TRAIN` termina siempre en `FAILED` con `TRAINING_NOT_EXPOSED`, a proposito: es una operacion larga y reproducible que se ejecuta por CLI sobre configuracion versionada. Decirlo es preferible a fingir una ejecucion que no ocurre (R-21). |
+| D-11 | Identificadores en la API publica | **Resuelto (cadenas opacas)** | Todo `id` se publica como cadena. Evita depender del rango y de la precision de los enteros de JavaScript y hace que el cliente lo trate como opaco. El `@PathVariable` acepta ambas formas. Ver R-43. |
+| D-12 | Puertos de PostgreSQL y Redis en desarrollo | **Resuelto (loopback alto)** | `docker-compose.yml` no publica nada (red `data` con `internal: true`). `docker-compose.dev.yml` publica 55432/56379 en loopback y conecta ambos a la red `backend` no interna. Motivo: una red interna no tiene ruta de vuelta al host, asi que el binding se acepta y no publica nada; y 5432 suele estar ocupado por una instalacion local, con el sintoma desconcertante de un "password authentication failed" que procede de OTRO servidor. |
 
 ## 10. Registro de tareas
 
@@ -201,7 +211,8 @@ xmr-forecast/
 | T-021 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
 | T-022 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
 | T-023 | 2026-09-30 | Auditoría de continuidad: detectado registro falso, normalizada ruta `docs/`, recuperado el `frontend/` borrado del working tree | AGENTS.md, MEMORY.md, docs/, frontend/ | Hecho. Hallazgo: solo 3 commits en toda la historia, sin backend; `java` en PATH es JDK 8 (JDK 21 disponible en Adoptium); Python 3.12 (no 3.11); falta `tools/validate_mermaid.py` |
-| T-024 | 2026-09-30 | Construccion real del sistema: backend Spring Boot 3.2/Java 21, ml-service FastAPI, frontend oscuro, Docker Compose con HTTPS, CI/CD, k6, docs | backend/, ml-service/, frontend/, docker/, tools/, loadtests/, .github/workflows/ci.yml, README.md, docs/07, docs/08 | Hecho. Verificado: `mvn clean test` 40 tests OK; pytest 199+15 OK con ruff y mypy limpios; npm build/lint/test 145 OK; migraciones aplicadas sobre PostgreSQL 15.19 (22 tablas); backup+restore probado (0 huerfanos); 9 diagramas Mermaid validados (parse+render); Compose y CI YAML validos |
+| T-024 | 2026-09-30 | Construccion real del sistema: backend Spring Boot 3.2/Java 21, ml-service FastAPI, frontend oscuro, Docker Compose con HTTPS, CI/CD, k6, docs | backend/, ml-service/, frontend/, docker/, tools/, loadtests/, .github/workflows/ci.yml, README.md, docs/07, docs/08 | Hecho, pero **corregido en T-027**: las cifras de esta fila quedaron desfasadas. Se afirmaron entonces "40 tests" y "9 diagramas validados"; las cifras reales son 94 tests de backend y 7 diagramas. La construccion inicial tampoco arranco nunca contra una base de datos real: los siete defectos de arranque de T-027 estaban presentes desde aqui |
 | T-025 | 2026-09-30 | Sincronizacion del contrato OAuth entre backend y frontend | GoogleOAuthController.java, GoogleCallbackPage.tsx, api/auth.ts, store/authStore.ts, test/google-oauth.test.tsx | Hecho. Google redirige con GET; el backend responde 302 con la sesion en el fragmento. Corregido: el frontend canjeaba el codigo por POST y el backend exigia GET |
 | T-026 | 2026-09-30 | Correccion de un fallo de integracion detectado al cruzar los contratos | PredictionService.java, MlServiceClientContractTest.java | Hecho. El servicio ML usa `extra=forbid`: el backend enviaba `seed` y TODAS las predicciones fallarian con 422. Se elimino el campo y se fijo el contrato con un test |
+| T-027 | 2026-09-30 | **Alineacion del contrato HTTP (33 -> 46 rutas) y verificacion de arranque de extremo a extremo** | backend: 9 controladores nuevos, `HttpContractTest`, `ControllerParameterTest`, `QueryParams`, `Ids`, `RefreshCookie`, `JobWorker`, `ExperimentRunCompletionLink`, V3/V4/V5, `pom.xml` (repackage), `application.yml`; frontend: `GoogleCallbackPage`, `types/domain.ts`; infra: `generate-dev-certs.sh`, `docker-compose.dev.yml`, `tools/verify-stack.ps1`, `backup.sh`; docs/01-05, 08 | Hecho. **Verificado**: backend 94 tests, frontend 147, ml-service 199 (+15 omitidos); el jar empaquetado **arranca de verdad** contra PostgreSQL 15.19, migra V1..V5 solo y responde por HTTPS con **43/43** comprobaciones de `tools/verify-stack.ps1`; backup y restauracion **ejecutados** (30 + 5 filas destruidas y recuperadas, 0 huerfanos); 7 diagramas Mermaid validan (parse + render). **Fuga IDOR corregida** en el listado de predicciones con filtro de simbolo. Siete defectos de arranque corregidos que ninguna prueba de unidades detectaba. Se promueven R-41, R-42 y R-43; R-15 deja de contradecir a R-34 |
 <!-- LOG:END -->

@@ -57,9 +57,22 @@ public class LoginAttempt {
         return attempt;
     }
 
-    public static LoginAttempt failure(String email, Long userId, String reason, String ip,
-                                        String userAgent, AuthProvider provider) {
+    /**
+     * Intento fallido.
+     *
+     * <p>Se acepta la entidad {@code user} y no solo su id: la columna
+     * {@code login_attempts.user_id} existe, con su indice, para correlocar los
+     * ataques contra una cuenta concreta. Guardando solo el correo, toda consulta
+     * por {@code user_id} devolvia cero filas y el indice no se usaba nunca.
+     *
+     * @param user usuario afectado, o {@code null} si el correo no existe (un
+     *             intento contra una cuenta inexistente no tiene usuario al que
+     *             associarse, y es precisamente el caso que se quiere detectar).
+     */
+    public static LoginAttempt failure(String email, User user, String reason, String ip,
+                                       String userAgent, AuthProvider provider) {
         LoginAttempt attempt = new LoginAttempt();
+        attempt.setUser(user);
         attempt.setEmail(email);
         attempt.setSuccessful(false);
         attempt.setFailureReason(reason);

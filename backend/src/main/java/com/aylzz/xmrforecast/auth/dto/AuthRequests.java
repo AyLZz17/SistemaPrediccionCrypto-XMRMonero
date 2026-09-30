@@ -38,14 +38,27 @@ public final class AuthRequests {
             String password
     ) {}
 
+    /**
+     * Renovacion de sesion.
+     *
+     * <p>El token es opcional en el cuerpo porque puede llegar en la cookie
+     * {@code xmr_refresh} ({@code HttpOnly}, {@code Secure}, {@code SameSite=Strict}),
+     * que es la forma recomendada: un refresh token accesible desde JavaScript es
+     * un refresh token que un XSS puede robar. El servidor resuelve cuerpo primero
+     * y cookie despues, de modo que ambos clientes funcionan.
+     */
     public record RefreshRequest(
-            @NotBlank(message = "El refresh token es obligatorio.")
             @Size(max = PasswordPolicy.MAX_TOKEN_LENGTH)
             String refreshToken
     ) {}
 
+    /**
+     * Cierre de sesion. Token opcional por la misma razon que en
+     * {@link RefreshRequest}; ademas, cerrar sesion sin token debe ser una
+     * operacion idempotente y sin error, no un 400 que deje al usuario encerrado
+     * en una sesion que ya no controla.
+     */
     public record LogoutRequest(
-            @NotBlank(message = "El refresh token es obligatorio.")
             @Size(max = PasswordPolicy.MAX_TOKEN_LENGTH)
             String refreshToken
     ) {}

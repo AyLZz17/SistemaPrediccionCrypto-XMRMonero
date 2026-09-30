@@ -62,7 +62,13 @@ export interface MetricSet {
 export interface ModelVersion {
   id: string
   modelId: string
-  version: number
+  /**
+   * Version tal como la nombra el backend. Se mantiene como cadena y no como
+   * numero porque la base de datos la almacena como etiqueta de version, no como
+   * un entero: convertirla aqui obligaria al cliente a inventar una regla de
+   * parseo que el servidor ya conoce.
+   */
+  version: string
   label?: string
   isChampion: boolean
   createdAt?: string
@@ -70,10 +76,13 @@ export interface ModelVersion {
   digest?: string
 }
 
+/** Familias reales del dominio. Las tres ultimas son los baselines de R-06. */
+export type ModelFamily = 'LSTM' | 'GRU' | 'MOVING_AVERAGE' | 'LINEAR_REGRESSION' | 'ARIMA'
+
 export interface ModelDescriptor {
   id: string
   name: string
-  family: 'LSTM' | 'GRU' | 'BASELINE'
+  family: ModelFamily
   task: 'REGRESSION' | 'DIRECTION' | 'BOTH'
   description?: string
   championVersionId?: string | null
@@ -121,7 +130,8 @@ export interface AuditEntry {
   action: string
   resourceType?: string
   resourceId?: string
-  outcome: 'SUCCESS' | 'FAILURE'
+  /** `DENIED` lo emite el backend cuando una peticion se rechaza por permisos. */
+  outcome: 'SUCCESS' | 'DENIED' | 'FAILURE'
   requestId?: string
   detail?: string
 }

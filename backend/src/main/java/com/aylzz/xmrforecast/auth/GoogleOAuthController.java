@@ -68,22 +68,36 @@ public class GoogleOAuthController {
         // viaja al servidor, no aparece en los logs de acceso ni en la cabecera
         // Referer, y el frontend lo borra de inmediato con history.replaceState.
         return redirectToFrontend("access_token=" + urlEncode(tokens.accessToken())
-                + "&refresh_token=" + urlEncode(tokens.refreshToken())
-                + "&token_type=" + urlEncode(tokens.tokenType())
-                + "&expires_in=" + tokens.expiresIn()
-                + "&role=" + urlEncode(tokens.roles().stream()
-                        .map(Enum::name).findFirst().orElse("VIEWER")));
+                        + "&refresh_token=" + urlEncode(tokens.refreshToken())
+                        + "&token_type=" + urlEncode(tokens.tokenType())
+                        + "&expires_in=" + tokens.expiresIn()
+                        + "&role=" + urlEncode(tokens.roles().stream()
+                                .map(Enum::name).findFirst().orElse("VIEWER")),
+                // Ademas del fragmento se emite la cookie HttpOnly: el cliente puede
+                // descartar el fragmento y renovar por cookie sin volver a exponer
+                // el refresh token a JavaScript.
+                RefreshCookie.issue(tokens.refreshToken(),
+                        properties.jwt().refreshTokenTtlSeconds()));
     }
 
     private ResponseEntity<Void> redirectToFrontend(String fragment) {
+        return redirectToFrontend(fragment, null);
+    }
+
+    private ResponseEntity<Void> redirectToFrontend(String fragment,
+                                                    org.springframework.http.ResponseCookie cookie) {
         String base = properties.oauth2().google().frontendCallback();
         String target = (base == null || base.isBlank() ? "https://localhost:3000" : base)
                 + "#" + fragment;
-        return ResponseEntity.status(HttpStatus.FOUND)
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(HttpStatus.FOUND)
                 .header(HttpHeaders.LOCATION, target)
                 // La sesion no debe quedar cacheada en el navegador.
                 .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate")
-                .build();
+                .header(HttpHeaders.PRAGMA, "no-cache");
+        if (cookie != null) {
+            builder.header(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
+        return builder.build();
     }
 
     /** Percent-encoding para construir el fragmento de forma segura. */

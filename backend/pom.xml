@@ -41,10 +41,6 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-oauth2-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-mail</artifactId>
     </dependency>
     <dependency>
@@ -136,6 +132,21 @@
             </exclude>
           </excludes>
         </configuration>
+        <executions>
+          <!--
+            El objetivo `repackage` NO se hereda de spring-boot-starter-parent,
+            porque el pom raiz importa `spring-boot-dependencies`, no el parent.
+            Sin esta ejecucion explicita, `mvn package` produce un jar de 300 KB
+            sin atributo Main-Class: los tests pasan, el jar compila, y el
+            contenedor arranca y muere con "no hay ningun atributo de manifiesto
+            principal". Es un fallo de empaquetado invisible al ciclo de pruebas,
+            asi que la ejecucion se declara aqui y no se da por supuesta.
+          -->
+          <execution>
+            <id>repackage</id>
+            <goals><goal>repackage</goal></goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

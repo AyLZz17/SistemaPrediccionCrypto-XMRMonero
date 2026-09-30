@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ApiError } from '../api/errors'
+import { me } from '../api/auth'
+import { ApiError, toApiError } from '../api/errors'
 import { useAuthStore } from '../store/authStore'
 import { Button, Panel, SkeletonPanel, StatusDot } from '../components/ui'
 
@@ -13,12 +14,19 @@ import { Button, Panel, SkeletonPanel, StatusDot } from '../components/ui'
  * **fragment** (`#access_token=...`). The fragment is never sent to a server, never
  * lands in access logs or a `Referer` header, and is erased immediately below.
  *
+ * The fragment carries tokens, not a profile. The profile is therefore fetched
+ * from `GET /auth/me` before navigating: without that call the store would hold a
+ * session with `user === null`, every `RoleRoute` would deny the user, and an
+ * ADMIN who just signed in with Google would be treated as a VIEWER.
+ *
  * The client secret only ever exists in the backend; nothing about the exchange
  * is duplicated here.
  */
 export default function GoogleCallbackPage() {
   const navigate = useNavigate()
   const applyOAuthSession = useAuthStore((state) => state.applyOAuthSession)
+  const setUser = useAuthStore((state) => state.setUser)
+  const clearSession = useAuthStore((state) => state.clearSession)
   const [error, setError] = useState<ApiError | null>(null)
   const handled = useRef(false)
 
@@ -72,18 +80,28 @@ export default function GoogleCallbackPage() {
     const role =
       rawRole === 'ADMIN' || rawRole === 'ANALYST' || rawRole === 'VIEWER' ? rawRole : 'VIEWER'
 
-    try {
-      applyOAuthSession({
-        accessToken,
-        refreshToken,
-        expiresIn: Number(params.get('expires_in') ?? 900),
-        role,
-      })
-      navigate('/dashboard', { replace: true })
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught : new ApiError({ kind: 'network' }))
+    const establishSession = async () => {
+      try {
+        applyOAuthSession({
+          accessToken,
+          refreshToken,
+          expiresIn: Number(params.get('expires_in') ?? 900),
+          role,
+        })
+        // El fragmento no trae perfil: se pide al backend, que es la unica
+        // fuente de verdad sobre el rol efectivo.
+        setUser(await me())
+        navigate('/dashboard', { replace: true })
+      } catch (caught) {
+        // Una sesion con el token valido pero sin perfil legible no es usable:
+        // se cierra en vez de dejar al usuario en un estado a medias.
+        clearSession('oauth_profile_unavailable')
+        setError(toApiError(caught))
+      }
     }
-  }, [applyOAuthSession, navigate])
+
+    void establishSession()
+  }, [applyOAuthSession, clearSession, navigate, setUser])
 
   if (error) {
     return (

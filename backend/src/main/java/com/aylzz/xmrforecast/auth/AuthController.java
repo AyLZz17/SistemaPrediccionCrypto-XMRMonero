@@ -37,9 +37,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.aylzz.xmrforecast.config.AppProperties properties;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService,
+                          com.aylzz.xmrforecast.config.AppProperties properties) {
         this.authService = authService;
+        this.properties = properties;
+    }
+
+    /** Anade la cookie HttpOnly del refresh token a una respuesta de sesion. */
+    private ResponseEntity<TokenResponse> withRefreshCookie(TokenResponse tokens, long ttlSeconds) {
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE,
+                        RefreshCookie.issue(tokens.refreshToken(), ttlSeconds).toString())
+                .body(tokens);
     }
 
     @Operation(summary = "Perfil del usuario autenticado")
@@ -74,28 +85,48 @@ public class AuthController {
             @ApiResponse(responseCode = "429", description = "Rate limit excedido")
     })
     @PostMapping("/login")
-    public TokenResponse login(@Valid @RequestBody AuthRequests.LoginRequest request,
-                               HttpServletRequest httpRequest) {
-        return authService.login(request,
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody AuthRequests.LoginRequest request,
+                                               HttpServletRequest httpRequest) {
+        TokenResponse tokens = authService.login(request,
                 AuditService.clientIp(httpRequest), httpRequest.getHeader("User-Agent"));
+        return withRefreshCookie(tokens, properties.jwt().refreshTokenTtlSeconds());
     }
 
     @Operation(summary = "Renueva la sesion",
-            description = "Publica. Rota el refresh token; reutilizar uno ya rotado revoca la familia.")
+            description = "Publica. Rota el refresh token; reutilizar uno ya rotado revoca la familia. "
+                    + "El token se toma del cuerpo o, si falta, de la cookie HttpOnly `xmr_refresh`.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Sesion renovada"),
+            @ApiResponse(responseCode = "401", description = "Token ausente, invalido, expirado o reutilizado")
+    })
     @PostMapping("/refresh")
-    public TokenResponse refresh(@Valid @RequestBody AuthRequests.RefreshRequest request,
-                                 HttpServletRequest httpRequest) {
-        return authService.refresh(request,
+    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody AuthRequests.RefreshRequest request,
+                                                 HttpServletRequest httpRequest) {
+        TokenResponse tokens = authService.refresh(request, RefreshCookie.read(httpRequest),
                 AuditService.clientIp(httpRequest), httpRequest.getHeader("User-Agent"));
+        return withRefreshCookie(tokens, properties.jwt().refreshTokenTtlSeconds());
     }
 
-    @Operation(summary = "Cierra la sesion", description = "Revoca el refresh token indicado.")
+    @Operation(summary = "Cierra la sesion",
+            description = "Revoca el refresh token del cuerpo o de la cookie y borra la cookie. "
+                    + "Es idempotente: cerrar sesion sin token no es un error.")
     @ApiResponses(@ApiResponse(responseCode = "204", description = "Sesion cerrada"))
     @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@Valid @RequestBody AuthRequests.LogoutRequest request,
-                       @AuthenticationPrincipal AuthenticatedUser user) {
-        authService.logout(request, user == null ? null : user.id());
+    public ResponseEntity<Void> logout(@Valid @RequestBody(required = false) AuthRequests.LogoutRequest request,
+                                       HttpServletRequest httpRequest,
+                                       @AuthenticationPrincipal AuthenticatedUser user) {
+        authService.logout(request == null
+                        ? new AuthRequests.LogoutRequest(null) : request,
+                RefreshCookie.read(httpRequest),
+                user == null ? null : user.id());
+        // La cookie se borra siempre, se haya revocado o no un token. Dejarla
+        // puesta despues de cerrar sesion deja al navegador con una credencial
+        // que solo fallara mas tarde, en el proximo intento de renovacion, y el
+        // usuario ve un error de sesion expirada en lugar de "has cerrado sesion".
+        return ResponseEntity.noContent()
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE,
+                        RefreshCookie.clear().toString())
+                .build();
     }
 
     @Operation(summary = "Solicita recuperacion de contrasena",

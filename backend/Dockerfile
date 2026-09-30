@@ -8,17 +8,21 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 
-# Capa de dependencias: se reaprovecha mientras el pom no cambie.
-COPY pom.xml ../pom.xml
-COPY backend/pom.xml ./backend-pom.xml
-RUN set -eux; \
-    mkdir -p backend; \
-    cp backend-pom.xml backend/pom.xml; \
-    mvn -B -q dependency:go-offline -DskipTests || true
+# Capa de dependencias: se reaprovecha mientras los pom no cambien.
+#
+# El pom raiz es un AGREGADOR (packaging=pom) y el modulo es backend/. Por eso
+# la copia tiene que respetar esa estructura. La version anterior copiaba el pom
+# del backend a /build/backend-pom.xml y ejecutaba `mvn dependency:go-offline`
+# desde /build, donde no hay ningun pom: Maven abortaba con "there is no POM in
+# this directory" y el `|| true` se tragaba el fallo. La capa no cacheaba nada
+# y, peor, un fallo real de resolucion de dependencias tambien habria pasado
+# desapercibido hasta el empaquetado final.
+COPY pom.xml ./pom.xml
+COPY backend/pom.xml ./backend/pom.xml
+RUN mvn -B -q -pl backend -am dependency:go-offline -DskipTests
 
 # Codigo fuente y empaquetado real.
-COPY pom.xml ./pom.xml
-COPY backend ./backend
+COPY backend/src ./backend/src
 RUN set -eux; \
     mvn -B -pl backend -am clean package -DskipTests
 
@@ -43,9 +47,11 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/de
     SERVER_PORT=8443 \
     SERVER_SSL_KEYSTORE=/certs/backend/keystore.p12
 
-# Health check: wget de busybox contra HTTPS, validando la cadena de CA propia.
+# Health check: wget de GNU coreutils (Ubuntu) contra HTTPS, validando la cadena
+# de CA propia. No se usa --no-check-certificate: si el certificado no valida, el
+# contenedor debe considerarse unhealthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --ca-certificate=/certs/ca/ca.crt \
+  CMD wget --quiet --tries=1 --ca-certificate=/certs/ca/ca.crt \
       "https://127.0.0.1:${SERVER_PORT}/actuator/health" || exit 1
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

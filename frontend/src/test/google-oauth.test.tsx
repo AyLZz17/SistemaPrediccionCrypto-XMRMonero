@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useAuthStore } from '../store/authStore'
 import { renderApp } from './testUtils'
-import { installFetchStub, jsonResponse } from './fetchStub'
+import { installFetchStub, jsonResponse, errorResponse } from './fetchStub'
 
 /**
  * Google OAuth.
@@ -26,13 +26,38 @@ const DASHBOARD_STUBS = {
     jsonResponse({ json: { items: [], page: 0, size: 15, total: 0, totalPages: 0 } }),
 }
 
+/**
+ * The fragment carries tokens, not a profile, so the callback always follows up
+ * with `GET /auth/me`. The stub is part of the contract, not a convenience: if
+ * this route stopped being called, every `RoleRoute` would deny the user and an
+ * ADMIN would silently become a VIEWER.
+ */
+function withProfile(role: 'VIEWER' | 'ANALYST' | 'ADMIN' = 'VIEWER', email = 'ana@example.com') {
+  return {
+    ...DASHBOARD_STUBS,
+    '/api/v1/auth/me': () =>
+      jsonResponse({
+        json: {
+          id: '42',
+          email,
+          fullName: 'Ana Example',
+          role,
+          roles: [role],
+          status: 'ACTIVE',
+          emailVerified: true,
+          provider: 'GOOGLE',
+        },
+      }),
+  }
+}
+
 /** Sets the URL fragment the backend would have redirected to. */
 function arriveWithFragment(fragment: string): void {
   window.history.replaceState(null, '', `/auth/callback${fragment}`)
 }
 
 beforeEach(() => {
-  installFetchStub(DASHBOARD_STUBS)
+  installFetchStub(withProfile())
 })
 
 describe('Google OAuth', () => {
@@ -76,6 +101,38 @@ describe('Google OAuth', () => {
     expect(state.expiresAt).toBeGreaterThan(Date.now())
   })
 
+  it('fetches the profile, because the fragment carries no roles', async () => {
+    // The fragment's `role` is only a hint. The authoritative role comes from
+    // `GET /auth/me`; trusting the hint alone would let the UI gate on a value
+    // the client chose, and would leave `user` null for every RoleRoute.
+    const { calls } = installFetchStub(withProfile('ADMIN', 'admin@example.com'))
+    arriveWithFragment('#access_token=at-prof&refresh_token=rt-prof&expires_in=900&role=VIEWER')
+    renderApp('/auth/callback')
+
+    await waitFor(() => expect(useAuthStore.getState().user).not.toBeNull())
+
+    const state = useAuthStore.getState()
+    expect(state.user?.email).toBe('admin@example.com')
+    // The backend says ADMIN even though the fragment hinted VIEWER.
+    expect(state.user?.role).toBe('ADMIN')
+    expect(calls.some((call) => call.url === '/api/v1/auth/me' && call.method === 'GET')).toBe(true)
+  })
+
+  it('does not open a session it cannot profile', async () => {
+    // If /auth/me fails, the store must not be left authenticated with a null
+    // user: that state denies every route while looking like a valid session.
+    installFetchStub({
+      ...DASHBOARD_STUBS,
+      '/api/v1/auth/me': () => errorResponse(401, { code: 'UNAUTHENTICATED' }),
+    })
+    arriveWithFragment('#access_token=at-bad&refresh_token=rt-bad&expires_in=900&role=VIEWER')
+    renderApp('/auth/callback')
+
+    expect(await screen.findByText(/no pudimos iniciar sesion con google/i)).toBeInTheDocument()
+    expect(useAuthStore.getState().status).toBe('anonymous')
+    expect(useAuthStore.getState().user).toBeNull()
+  })
+
   it('erases the fragment from the address bar so tokens are not left in history', async () => {
     arriveWithFragment('#access_token=at-erase&refresh_token=rt-erase&expires_in=900&role=VIEWER')
     renderApp('/auth/callback')
@@ -88,7 +145,7 @@ describe('Google OAuth', () => {
   })
 
   it('never posts the authorization code from the browser', async () => {
-    const { calls } = installFetchStub(DASHBOARD_STUBS)
+    const { calls } = installFetchStub(withProfile())
     arriveWithFragment('#access_token=at-1&refresh_token=rt-1&expires_in=900&role=VIEWER')
     renderApp('/auth/callback')
 

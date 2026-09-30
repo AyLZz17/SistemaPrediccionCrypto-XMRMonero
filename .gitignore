@@ -59,6 +59,9 @@ notebooks/**/.ipynb_checkpoints/
 backups/
 
 # --- editores y SO ------------------------------------------------------
+# Estado local del agente (habilidades, historial): no es contenido del
+# proyecto y no debe viajar al repositorio.
+.opencode/
 .idea/
 *.iml
 *.ipr

@@ -20,6 +20,16 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
      */
     Page<Prediction> findAllByRequestedByOrderByCreatedAtDesc(Long requestedBy, Pageable pageable);
 
+    /**
+     * Filtro por simbolo <strong>siempre combinado con el propietario</strong>.
+     *
+     * <p>Existe como metodo derivado separado, y no como un filtro opcional
+     * aplicado en memoria, para que ningun camino de codigo pueda consultar por
+     * simbolo sin acotar por usuario (OWASP API1 / IDOR).
+     */
+    Page<Prediction> findAllByRequestedByAndSymbolOrderByTargetDateDesc(
+            Long requestedBy, String symbol, Pageable pageable);
+
     Optional<Prediction> findByModelVersionIdAndSymbolAndTargetDate(
             Long modelVersionId, String symbol, LocalDate targetDate);
 

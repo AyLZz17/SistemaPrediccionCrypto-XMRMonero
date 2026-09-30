@@ -74,9 +74,25 @@ public class Prediction {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
+    /**
+     * Estado del calculo. Una prediccion se persiste solo cuando el servicio ML
+     * ya respondio, asi que lo normal es {@code READY}; {@code FAILED} queda
+     * registrado para el caso de que una inferencia se complete a posteriori sin
+     * precio utilizable, y {@code PENDING} para trabajo encolado.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 12)
+    private Status status = Status.PENDING;
+
     public enum Direction {
         UP,
         DOWN,
         FLAT
+    }
+
+    public enum Status {
+        PENDING,
+        READY,
+        FAILED
     }
 }

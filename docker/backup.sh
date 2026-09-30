@@ -124,11 +124,38 @@ do_restore() {
 
   log "Restauracion completada. Comprobando integridad referencial:"
   # Una restauracion que deja datos huerfanos no es una restauracion valida.
-  docker exec "$CONTAINER" psql -U "$PGUSER" -d "$PGDATABASE" -t -c \
-    "SELECT count(*) FROM users" | while read -r n; do
-      log "Filas en 'users': ${n}"
-    done
-  log "OK"
+  # Se comprueban las relaciones que sostienen el dominio, no solo que la base
+  # responde: un 'users' con recuento correcto no dice nada de las metricas de
+  # una corrida que ya no existe.
+  local orphans=0
+  while IFS='|' read -r label total huerfanos; do
+    [ -n "${total:-}" ] || continue
+    log "  ${label}: ${total} filas, ${huerfanos} huerfanas"
+    orphans=$(( orphans + ${huerfanos:-0} ))
+  done <<EOF
+$(docker exec "$CONTAINER" psql -U "$PGUSER" -d "$PGDATABASE" -t -A -F'|' -c "
+  SELECT 'users',
+         (SELECT count(*) FROM users),
+         (SELECT count(*) FROM user_roles r WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = r.user_id));
+  SELECT 'predictions -> model_versions',
+         (SELECT count(*) FROM predictions),
+         (SELECT count(*) FROM predictions p WHERE NOT EXISTS (SELECT 1 FROM model_versions v WHERE v.id = p.model_version_id));
+  SELECT 'experiments -> dataset_versions',
+         (SELECT count(*) FROM experiments),
+         (SELECT count(*) FROM experiments e WHERE NOT EXISTS (SELECT 1 FROM dataset_versions d WHERE d.id = e.dataset_version_id));
+  SELECT 'metrics -> experiment_runs',
+         (SELECT count(*) FROM metrics),
+         (SELECT count(*) FROM metrics m WHERE NOT EXISTS (SELECT 1 FROM experiment_runs r WHERE r.id = m.run_id));
+  SELECT 'model_versions -> models',
+         (SELECT count(*) FROM model_versions),
+         (SELECT count(*) FROM model_versions v WHERE NOT EXISTS (SELECT 1 FROM models m WHERE m.id = v.model_id));
+" 2>/dev/null)
+EOF
+
+  if [ "$orphans" -gt 0 ]; then
+    fail "La restauracion dejo ${orphans} filas huerfanas: el dump es inconsistente"
+  fi
+  log "OK: sin filas huerfanas"
 }
 
 do_list() {

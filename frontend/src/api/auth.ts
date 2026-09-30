@@ -1,10 +1,15 @@
 /**
  * Authentication API — Spring Boot `/api/v1/auth/*`.
  *
- * No Google client secret ever reaches this module: the Authorization Code +
- * OIDC exchange is entirely backend-driven. The frontend only (a) navigates to
- * the backend authorize endpoint and (b) posts the callback URL back to the
- * backend, which returns a normal TokenResponse.
+ * No Google client secret ever reaches this module. The Authorization Code +
+ * OIDC exchange is entirely backend-driven: the browser is redirected to
+ * `/google/authorize`, Google redirects it to `/google/callback`, and the backend
+ * validates state + nonce, performs the exchange with the secret, and 302s back
+ * to `/auth/callback` with the session in the URL fragment. See GoogleCallbackPage.
+ *
+ * The refresh token is delivered twice on purpose: in the body (for non-browser
+ * clients) and in the HttpOnly `xmr_refresh` cookie. `logout` and `refresh` work
+ * with either, so a browser-only client can ignore the body entirely.
  */
 
 import { absoluteUrl, apiRequest } from './client'

@@ -23,4 +23,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<Role> findRolesById(@Param("userId") Long userId);
 
     long countByStatus(UserStatus status);
+
+    /**
+     * Numero de cuentas con un rol concreto, excluyendo las borradas. Es lo que
+     * impide que la ultima administradora se quede sin rol y deje la instalacion
+     * sin nadie capaz de administrarla.
+     */
+    @Query("select count(distinct u) from User u join u.roles r "
+            + "where r = :role and u.status <> :excluded")
+    long countByRoleAndStatusNot(@Param("role") Role role,
+                                 @Param("excluded") UserStatus excluded);
 }

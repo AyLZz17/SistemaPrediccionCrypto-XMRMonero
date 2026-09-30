@@ -5,9 +5,13 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * CORS se configura en {@code SecurityConfig} (single source of truth).
- * Esta clase existe solo para dejar constancia de que el MVC no debe relajar
- * los origenes permitidos mas alla de lo declarado alli.
+ * CORS se configura en {@code SecurityConfig} (single source of truth) mediante
+ * un {@code CorsConfigurationSource}, no mediante {@code addCorsMappings}.
+ *
+ * <p>Se declara el bean vacio a proposito. Si el origen de la configuracion fuera
+ * el dispatcher servlet del MVC y este filtro se quedara sin nada, Spring Boot
+ * registraria su propio {@code /mappings} con comodines en los metodos y en las
+ * cabeceras; ese bean es lo que impide que eso ocurra.
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {

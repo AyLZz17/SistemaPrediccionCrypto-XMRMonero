@@ -49,7 +49,6 @@ public class GoogleOAuthService {
     private static final String TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
     private static final String AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
     private static final String JWKS_URI = "https://www.googleapis.com/oauth2/v3/certs";
-    private static final String ISSUER = "https://accounts.google.com";
 
     private static final String STATE_TTL_KEY = "oauth:state:";
 
@@ -71,7 +70,10 @@ public class GoogleOAuthService {
     public GoogleOAuthService(AppProperties properties, RestClient.Builder builder,
                               AuthService authService, AuditService auditService) {
         this.properties = properties;
-        this.restClient = builder.build();
+        // Se fija un baseUrl explicito y vacio: aunque el builder llegue con uno
+        // heredado, todas las llamadas de este servicio usan una URI absoluta, y
+        // asi queda escrito en el codigo en lugar de depender de esa prioridad.
+        this.restClient = builder.baseUrl("").build();
         this.authService = authService;
         this.auditService = auditService;
     }
@@ -216,6 +218,9 @@ public class GoogleOAuthService {
         String alg = text(header, "alg");
         if (!"RS256".equals(alg)) {
             // Nunca aceptar HS256 con la clave publica como secreto: permite falsificar tokens.
+            // Google solo firma ID Tokens con RS256
+            // (accounts.google.com/.well-known/openid-configuration ->
+            // id_token_signing_alg_values_supported: ["RS256"]).
             throw ApiException.unauthorized("UNSUPPORTED_ALG",
                     "El ID Token usa un algoritmo de firma no admitido.");
         }
@@ -223,29 +228,56 @@ public class GoogleOAuthService {
         String kid = text(header, "kid");
         java.security.PublicKey key = resolveKey(kid);
 
+        // Un JWT es header.payload.firma. La FIRMA es la tercera parte; con la
+        // segunda, la verificacion comparaba el payload contra si mismo, fallaba
+        // siempre y ningun login con Google llegaba a completarse.
         byte[] signingInput = (parts[0] + "." + parts[1]).getBytes(StandardCharsets.US_ASCII);
-        byte[] signature = Base64.getUrlDecoder().decode(parts[1]);
+        byte[] signature = Base64.getUrlDecoder().decode(parts[2]);
         if (!verifySignature(key, signingInput, signature)) {
             throw ApiException.unauthorized("INVALID_ID_TOKEN_SIGNATURE",
                     "La firma del ID Token no es valida.");
         }
 
-        JsonNode claims = readJson(Base64.getUrlDecoder().decode(parts[2]));
+        // Los claims solo se leen DESPUES de verificar la firma: leerlos antes
+        // permitira que un atacante con un token falsificado eligiera el `nonce`
+        // que se le va a comparar.
+        JsonNode claims = readJson(Base64.getUrlDecoder().decode(parts[1]));
 
         String iss = text(claims, "iss");
         if (iss == null || !properties.oauth2().google().allowedIssuers().contains(iss)) {
             throw ApiException.unauthorized("INVALID_ISSUER", "El emisor del ID Token no es Google.");
         }
 
-        String aud = text(claims, "aud");
-        if (aud == null || !aud.equals(google().expectedAudience())) {
+        String expectedAudience = google().expectedAudience();
+        if (expectedAudience == null || expectedAudience.isBlank()) {
+            // Sin `expected-audience` la comprobacion no tendria sentido: se
+            // aceptaria cualquier `aud`. Se rechaza cerrado en vez de relajar el
+            // control. El valor por defecto de la propiedad es el client id.
+            throw ApiException.unauthorized("OAUTH_AUDIENCE_NOT_CONFIGURED",
+                    "La audiencia esperada del ID Token no esta configurada.");
+        }
+        if (!audienceMatches(claims, expectedAudience)) {
             throw ApiException.unauthorized("INVALID_AUDIENCE",
                     "La audiencia del ID Token no corresponde a esta aplicacion.");
+        }
+
+        // `iat` no es obligatorio en un ID Token de Google, pero si aparece se
+        // comprueba: un token emitido en el futuro indica un reloj desviado o un
+        // token reutilizado desde una respuesta anterior.
+        long iat = claims.path("iat").asLong(0);
+        if (iat != 0 && iat > System.currentTimeMillis() / 1000L + 60L) {
+            throw ApiException.unauthorized("ID_TOKEN_NOT_YET_VALID",
+                    "El ID Token de Google fue emitido en el futuro.");
         }
 
         long exp = claims.path("exp").asLong(0);
         if (exp == 0 || exp < System.currentTimeMillis() / 1000L) {
             throw ApiException.unauthorized("EXPIRED_ID_TOKEN", "El ID Token de Google expiro.");
+        }
+
+        if (!claims.path("email_verified").asBoolean(false)) {
+            throw ApiException.unauthorized("UNVERIFIED_GOOGLE_ACCOUNT",
+                    "La cuenta de Google no tiene un correo verificado.");
         }
 
         String nonce = text(claims, "nonce");
@@ -256,6 +288,29 @@ public class GoogleOAuthService {
         }
 
         return claims;
+    }
+
+    /**
+     * Comprueba el claim {@code aud}. OpenID Connect Core 3.1.3.7 admite las dos
+     * formas: una sola cadena cuando el token es para una aplicacion, o un
+     * arreglo cuando es para varias. Aceptar solo la cadena rechazaba tokens
+     * legitimos; aceptar el arreglo sin comprobar la pertenencia del client id
+     * abriria la puerta.
+     */
+    private boolean audienceMatches(JsonNode claims, String expectedAudience) {
+        JsonNode aud = claims.get("aud");
+        if (aud == null || aud.isNull()) {
+            return false;
+        }
+        if (aud.isArray()) {
+            for (JsonNode candidate : aud) {
+                if (expectedAudience.equals(candidate.asText())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return expectedAudience.equals(aud.asText());
     }
 
     private boolean verifySignature(java.security.PublicKey key, byte[] signingInput, byte[] signature) {

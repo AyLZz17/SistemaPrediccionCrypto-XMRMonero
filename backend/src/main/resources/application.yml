@@ -44,18 +44,24 @@ spring:
       repositories:
         enabled: false
 
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID:}
-            client-secret: ${GOOGLE_CLIENT_SECRET:}
-            scope:
-              - openid
-              - email
-              - profile
-            redirect-uri: ${GOOGLE_REDIRECT_URI:https://localhost:8443/api/v1/auth/google/callback}
+  # ------------------------------------------------------------------ oauth
+  # NO se declara spring.security.oauth2.client.registration a proposito.
+  #
+  # El flujo de Google lo implementa GoogleOAuthService por completo: construye
+  # la URL de autorizacion, canjea el codigo en oauth2.googleapis.com/token,
+  # valida el id_token contra el JWKS de Google y comprueba iss, aud, exp y
+  # nonce. No usa la infraestructura de cliente OAuth de Spring.
+  #
+  # Declarar aqui un `registration.google` con el client-id vacio hace que
+  # OAuth2ClientProperties lance "Client id must not be empty" en el arranque:
+  # la aplicacion no arranca sin credenciales de Google, cuando el propio codigo
+  # si contempla que Google no este configurado
+  # (AppProperties.OAuth2.Google.isConfigured()). Es decir, la configuracion
+  # imposibilitaba el escenario opcional que el diseno dice soportar.
+  #
+  # Las credenciales llegan del entorno y las lee GoogleOAuthService:
+  #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+  # Ver `app.oauth2.google` mas abajo, que si las enlaza de verdad.
 
   cache:
     type: redis
@@ -125,6 +131,12 @@ management:
       enabled: true
     redis:
       enabled: true
+    # El envio de correo es opcional: sin servidor SMTP configurado, el indicador
+    # de correo ponia el health en DOWN y el orquestador de Docker mataba un
+    # contenedor perfectamente sano. Con `MAIL_HOST` vacio el indicador se
+    # desactiva; en un despliegue con correo real se vuelve a activar.
+    mail:
+      enabled: ${MAIL_HEALTH_ENABLED:false}
   metrics:
     tags:
       application: xmr-forecast-backend

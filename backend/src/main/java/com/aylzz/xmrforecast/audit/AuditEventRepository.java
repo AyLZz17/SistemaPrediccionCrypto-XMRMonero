@@ -13,6 +13,9 @@ public interface AuditEventRepository extends JpaRepository<AuditEvent, Long> {
 
     Page<AuditEvent> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+    /** Pagina de los eventos de un actor concreto, para la vista de una cuenta. */
+    Page<AuditEvent> findAllByActorUserIdOrderByCreatedAtDesc(Long actorUserId, Pageable pageable);
+
     List<AuditEvent> findTop100ByActorUserIdOrderByCreatedAtDesc(Long actorUserId);
 
     @Query("""
