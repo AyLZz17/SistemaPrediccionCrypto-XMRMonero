@@ -71,6 +71,9 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 | R-35 | Toda ruta nueva requiere documentación de seguridad: autenticación, autorización, validación, límites, datos tratados, amenazas, controles y pruebas. |
 | R-36 | El backend Spring Boot usa Java 21 de forma consistente en desarrollo, CI y Docker; las imágenes de compilación y ejecución deben coincidir con esa versión. |
 | R-37 | El `pom.xml` raíz es el agregador Maven del backend y debe bloquear la compilación si el JDK activo no pertenece al rango Java 21. |
+| R-38 | **Contratos entre servicios verificados, no supuestos.** Los esquemas del servicio ML usan `extra='forbid'`: enviar un campo de más devuelve 422 y rompe la funcionalidad entera sin fallo de compilación. Todo contrato HTTP compartido (backend ↔ ML, backend ↔ frontend) debe tener una prueba que compare los campos realmente enviados con los realmente aceptados. |
+| R-39 | **Un registro de tarea afirma solo lo verificado en esa sesión.** Si una tarea se registra como "Hecho" sin que su artefacto exista en git o en disco, es un registro falso y debe retractarse en la tarea siguiente (aplicado en T-023). |
+| R-40 | **Los diagramas se validan con parse + render.** Un diagrama que parsea pero no renderiza está mal; `tools/validate_mermaid.py` ejecuta ambas fases y devuelve código de salida 1 ante cualquier fallo. El runner no puede escanearse a sí mismo en los validadores de CI, porque contiene sus propios patrones de búsqueda. |
 
 ---
 
@@ -102,27 +105,39 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 
 ```
 xmr-forecast/
-├── AGENTS.md · SKILLS.md · MEMORY.md · README.md
-├── docs/                    # documentación y diagramas (Mermaid)
-│   └── fuentes/             # documentos originales del cliente
-├── backend/
-│   ├── app/
-│   │   ├── api/             # routers: auth, market, experiments, predictions
-│   │   ├── core/            # config, seguridad, logging
-│   │   ├── db/              # modelos SQLAlchemy, sesión
-│   │   ├── schemas/         # Pydantic
-│   │   ├── services/        # lógica de aplicación
-│   │   ├── workers/         # tareas Celery
-│   │   └── ml/              # SIN dependencias de FastAPI/SQLAlchemy (R-13)
-│   │       ├── data/  models/  evaluation/  tracking/  pipelines/
-│   ├── alembic/  tests/  pyproject.toml
-├── frontend/                # src/pages, components, api, hooks
-├── tools/                   # utilidades (validate_mermaid.py)
-├── notebooks/               # solo EDA exploratorio
-├── configs/                 # YAML de experimentos
-├── data/                    # snapshots (git ignora datos; se versiona manifest)
-├── artifacts/               # modelos y reportes generados
-├── docker-compose.yml
+├── AGENTS.md · SKILLS.md · MEMORY.md · README.md · Makefile
+├── docs/                    # documentación (01-08) + diagramas
+│   ├── fuentes/             # documentos originales del cliente
+│   └── diagrams/            # diagramas drawio
+├── backend/                 # Spring Boot 3.2 / Java 21 (monolito modular)
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── src/
+│       ├── main/java/com/aylzz/xmrforecast/
+│       │   ├── auth/        # registro, login, refresh, OAuth Google, notificaciones
+│       │   ├── user/        # users, roles, oauth_accounts, tokens, login_attempts
+│       │   ├── security/    # JWT, filtros, roles, hash de tokens
+│       │   ├── market/ dataset/ experiment/ mlmodel/ prediction/ metrics/ job/
+│       │   ├── ml/          # cliente tipado del servicio ML (R-32)
+│       │   ├── audit/ common/ config/
+│       │   └── XmrForecastApplication.java
+│       ├── main/resources/
+│       │   ├── application.yml
+│       │   └── db/migration/  # Flyway: ÚNICA fuente del esquema (R-34)
+│       └── test/java/...      # JUnit 5
+├── ml-service/              # FastAPI (Python)
+│   ├── Dockerfile · requirements.txt (versiones fijadas, R-17)
+│   └── app/
+│       ├── main.py · config.py · services.py
+│       ├── api/ clients/            # capa HTTP
+│       └── ml/                      # PAQUETE PURO, sin frameworks (R-13)
+│           └── data/ models/ evaluation/ pipelines/
+├── frontend/                # React 18 + TS + Vite + Tailwind (tema oscuro)
+│   ├── Dockerfile · nginx.conf · vite.config.ts
+│   └── src/{api,auth,components,config,pages,store,styles,types,test}/
+├── docker/                  # certificados TLS, backup/restore, init de PostgreSQL
+├── loadtests/api.js         # k6 (cifras solo tras ejecutar)
+├── tools/validate_mermaid.py
 └── .github/workflows/ci.yml
 ```
 
@@ -158,7 +173,7 @@ xmr-forecast/
 | D-03 | Modelo recurrente final: LSTM vs. GRU | Abierta | LSTM principal, GRU alternativa. |
 | D-04 | Salida principal | Abierta | Implementar **ambas** tareas: regresión (cierre t+1) y dirección; comparar. |
 | D-05 | Proporciones de partición | Propuesta | 70 / 15 / 15 cronológico + `TimeSeriesSplit` (5) para ajuste. |
-| D-06 | Cola de tareas | Propuesta | Celery + Redis (entrenamiento no debe bloquear la API). Alternativa más ligera: RQ/ARQ. |
+| D-06 | Cola de tareas | **Resuelto** | Tabla `jobs` en PostgreSQL con `idempotency_key` única, estados PENDING/RUNNING/COMPLETED/FAILED/CANCELLED y `heartbeat_at` para detectar trabajos colgados. El backend Java no usa Celery. |
 | D-07 | Objetivos numéricos de calidad (cobertura ≥ 80 % en `ml/`, lecturas API p95 < 500 ms) | Propuesta | Ajustables por el cliente. |
 | D-08 | Extensiones fuera de alcance inicial | Diferidas | Multi-horizonte, indicadores técnicos vs. solo precio, BTC/ETH, exógenas, alertas. |
 
@@ -186,4 +201,7 @@ xmr-forecast/
 | T-021 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
 | T-022 | 2026-09-30 | **RETRACTADO (T-023)** — ver T-013 | — | Registro falso corregido |
 | T-023 | 2026-09-30 | Auditoría de continuidad: detectado registro falso, normalizada ruta `docs/`, recuperado el `frontend/` borrado del working tree | AGENTS.md, MEMORY.md, docs/, frontend/ | Hecho. Hallazgo: solo 3 commits en toda la historia, sin backend; `java` en PATH es JDK 8 (JDK 21 disponible en Adoptium); Python 3.12 (no 3.11); falta `tools/validate_mermaid.py` |
+| T-024 | 2026-09-30 | Construccion real del sistema: backend Spring Boot 3.2/Java 21, ml-service FastAPI, frontend oscuro, Docker Compose con HTTPS, CI/CD, k6, docs | backend/, ml-service/, frontend/, docker/, tools/, loadtests/, .github/workflows/ci.yml, README.md, docs/07, docs/08 | Hecho. Verificado: `mvn clean test` 40 tests OK; pytest 199+15 OK con ruff y mypy limpios; npm build/lint/test 145 OK; migraciones aplicadas sobre PostgreSQL 15.19 (22 tablas); backup+restore probado (0 huerfanos); 9 diagramas Mermaid validados (parse+render); Compose y CI YAML validos |
+| T-025 | 2026-09-30 | Sincronizacion del contrato OAuth entre backend y frontend | GoogleOAuthController.java, GoogleCallbackPage.tsx, api/auth.ts, store/authStore.ts, test/google-oauth.test.tsx | Hecho. Google redirige con GET; el backend responde 302 con la sesion en el fragmento. Corregido: el frontend canjeaba el codigo por POST y el backend exigia GET |
+| T-026 | 2026-09-30 | Correccion de un fallo de integracion detectado al cruzar los contratos | PredictionService.java, MlServiceClientContractTest.java | Hecho. El servicio ML usa `extra=forbid`: el backend enviaba `seed` y TODAS las predicciones fallarian con 422. Se elimino el campo y se fijo el contrato con un test |
 <!-- LOG:END -->
