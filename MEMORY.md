@@ -1,48 +1,47 @@
-# MEMORY.md Ã¢â‚¬â€ Memoria de corto plazo (mÃƒÂ¡x. 50 lÃƒÂ­neas)
-> Se reescribe tras cada tarea. Lo crÃƒÂ­tico y permanente se promueve a AGENTS.md.
+# MEMORY.md — Memoria de corto plazo (máx. 50 líneas)
+> Se reescribe tras cada tarea. Lo crítico y permanente se promueve a AGENTS.md.
 
 ## Contexto
-- LSTM/GRU vs. media mÃƒÂ³vil, regresiÃƒÂ³n lineal y ARIMA. MÃƒÂ©tricas MAE, RMSE, MAPE + acierto de direcciÃƒÂ³n.
-- **No es asesorÃƒÂ­a financiera**, no promete rentabilidad, no simula trading (R-11).
+- XMR-Forecast: análisis predictivo de series de tiempo para Monero (XMR).
+- LSTM/GRU vs. media móvil, regresión lineal y ARIMA. Métricas MAE, RMSE, MAPE + acierto de dirección.
+- **No es asesoría financiera**, no promete rentabilidad, no simula trading (R-11).
 
-## Tarea en curso (T-024): construcciÃƒÂ³n real del sistema
-El registro anterior (T-013Ã¢â‚¬Â¦T-022) afirmaba un backend inexistente: **RETRACTADO en T-023**.
-
-## Estado verificado
-- **Backend: `mvn -B clean test` Ã¢â€ â€™ 35 tests, BUILD SUCCESS.**
- `pom.xml` raÃƒÂ­z agregador + Enforcer `[21,22)` (R-37). 18 tablas Flyway (V1+V2). Auth completa (registro, login, refresh con rotaciÃƒÂ³n y detecciÃƒÂ³n de reutilizaciÃƒÂ³n, logout, reset/cambio de contraseÃƒÂ±a, verificaciÃƒÂ³n de correo, bloqueo progresivo). JWT HS512 con sub/iss/aud/iat/exp/jti/roles, `alg` estricto, revocaciÃƒÂ³n por jti. Google OAuth 2.0 Auth Code + OIDC: valida firma JWKS RS256, iss, aud, exp, nonce y state. BCrypt coste 12; refresh/reset/verify solo como HMAC-SHA256 en base de datos. Rate limiting Redis Ã¢â€ â€™ 429 + `Retry-After`; CORS solo HTTPS; `X-Request-Id` + MDC.
-- **Frontend: lint 0, build OK, 145 tests OK.** Tema oscuro permanente, 16 pÃƒÂ¡ginas,
- pie de pÃƒÂ¡gina obligatorio con 22 aserciones en `footer-on-every-route.test.tsx`.
-- **ml-service: `app/ml` con 19 mÃƒÂ³dulos, 0 imports de fastapi/pydantic/sqlalchemy (R-13).**
-- **Infra: `docker-compose.yml` vÃƒÂ¡lido (6 servicios), CI YAML vÃƒÂ¡lido (6 jobs).**
+## Estado verificado (T-024 a T-027)
+- **Backend:** `mvn clean verify` → 40 tests, BUILD SUCCESS, jar generado. Spring Boot 3.2.5 / Java 21.
+- **Servicio ML:** `pytest` 199 pasan + 15 con TF; `ruff` y `mypy` limpios; cobertura 80 %.
+- **Frontend:** `build` OK, `lint` 0, **145 tests**. Tema oscuro, 16 rutas.
+- **Pie de página:** 22 aserciones en `footer-on-every-route.test.tsx`.
+- **BD:** migraciones aplicadas sobre PostgreSQL 15.19 → 22 tablas, 27 FK, 71 índices.
+- **Backup/restore:** ciclo completo probado, 0 filas huérfanas al restaurar.
+- **Mermaid:** 9/9 diagramas validan con parse + render (R-25).
 
 ## Contrato OAuth (aplicado en ambos lados)
 Google redirige con **GET** `/api/v1/auth/google/callback`; el backend valida state+nonce
-y responde **302** al frontend con la sesiÃƒÂ³n en el **fragmento** `#access_token=Ã¢â‚¬Â¦`
-(el fragmento nunca llega al servidor ni a los logs); el frontend lo borra con
-`history.replaceState`. **No hay canje de cÃƒÂ³digo desde el navegador.**
+y responde **302** al frontend con la sesión en el **fragmento** `#access_token=…`
+(nunca llega al servidor ni a los logs); el frontend la borra con `history.replaceState`.
 
 ## Entorno (verificado, no asumir)
 - `java` en PATH = **JDK 8**. JDK 21: `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot`.
- Exportar `JAVA_HOME` antes de cada `mvn`.
-- Maven 3.9.16 Ã‚Â· Node 24.19 Ã‚Â· npm 11.17 Ã‚Â· Python **3.12.10** (la spec pide 3.11) Ã‚Â· Docker 29.6.2.
+  Exportar `JAVA_HOME` antes de cada `mvn`.
+- Maven 3.9.16 · Node 24.19 · npm 11.17 · Python **3.12.10** (la spec pide 3.11) · Docker 29.6.2.
 - **Siempre `mvn clean`**: hay clases compiladas por Eclipse (ECJ) en `target/` que Maven
- reutiliza por compilaciÃƒÂ³n incremental y producen fallos fantasma.
+  reutiliza por compilación incremental y producen fallos fantasma.
 
 ## Decisiones
-- D-00 Monero Ã‚Â· D-04 regresiÃƒÂ³n + direcciÃƒÂ³n Ã‚Â· D-05 split 70/15/15 cronolÃƒÂ³gico.
-- D-06 cola = tabla `jobs` con `idempotency_key` ÃƒÂºnica (no Celery en el backend Java).
-- Flyway 9.22.3 incluye PostgreSQL en `flyway-core`; `flyway-database-postgresql` es de Flyway 10 Ã¢â€ â€™ no aÃƒÂ±adir.
-- Lombok 1.18.34 `provided` en entidades; DTOs como `record`.
-- Los validadores de CI **no deben escanear el propio `ci.yml`**: contiene sus patrones.
+- D-00 Monero · D-04 regresión + dirección · D-05 split 70/15/15 cronológico.
+- D-06 cola = tabla `jobs` con `idempotency_key` única (no Celery en el backend Java).
+- `spring-boot-starter-data-validation` no existe → `spring-boot-starter-validation`.
+- Flyway 9.22.3 incluye PostgreSQL en `flyway-core`; `flyway-database-postgresql` es de Flyway 10.
+- `permissionsPolicyHeader` **no existe en Spring Security 6.2.4** (la de Boot 3.2.5), por eso
+  se quitó; sí existe en 6.5+. No es prohibición permanente: comprobar la versión antes de añadirlo.
+- `opencode.json` con MCP de proyecto: `context7` y `playwright` conectados; `postgres`
+  **desactivado** a propósito (ejecuta SQL y declara dependencias como `latest`, contra R-17).
 
 ## Pendiente
-- Cerrar `ml-service` (pytest/ruff/mypy) y verificar arranque HTTPS.
-- `docs/07_pruebas_carga.md`: **sin cifras hasta ejecutar k6**. No afirmar carga.
-- Actualizar `docs/01-06` para que coincidan con el cÃƒÂ³digo real.
-- `npm audit` reporta vulnerabilidades transitive (R-29): decidir con criterio.
-- Backups/restauraciÃƒÂ³n de PostgreSQL: script + prueba, aÃƒÂºn no ejecutados.
+- `docs/01-06` siguen describiendo el sistema anterior: actualizar a la realidad.
+- Pruebas de carga: `loadtests/api.js` escrito pero **no ejecutado**. Sin cifras hasta correrlo.
+- `npm audit`: vulnerabilidades transitivas en el árbol de desarrollo (R-29), por decidir.
 
-## Pie de pÃƒÂ¡gina obligatorio (Ã‚Â§7)
-`Sistema esta realizado por Ã‚Â© AyLZz17 - AyLZz Software Solutions. Todos los derechos reservados.`
-Componente ÃƒÂºnico reutilizable; debe aparecer en TODAS las rutas y estados.
+## Pie de página obligatorio (§7)
+`Sistema esta realizado por © AyLZz17 - AyLZz Software Solutions. Todos los derechos reservados.`
+Componente único reutilizable; debe aparecer en TODAS las rutas y estados.
