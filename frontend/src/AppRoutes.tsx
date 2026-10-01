@@ -12,6 +12,11 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import NotFoundPage from './pages/NotFoundPage'
+import TermsPage from './pages/TermsPage'
+import PrivacyPage from './pages/PrivacyPage'
+import DataPolicyPage from './pages/DataPolicyPage'
+import CookiesPage from './pages/CookiesPage'
+import LegalNoticePage from './pages/LegalNoticePage'
 
 /*
  * Both layouts always render <Footer />, so the mandatory footer is structurally
@@ -113,6 +118,50 @@ export function AppRoutes() {
           </PublicLayout>
         }
         path="/verify-email"
+      />
+
+      {/* ------------------------------------------------------ documentos legales
+          Publicos por definicion: son la contraparte de lo que se acepta en el
+          registro y el pie de pagina los enlaza desde cualquier pantalla. */}
+      <Route
+        element={
+          <PublicLayout>
+            <TermsPage />
+          </PublicLayout>
+        }
+        path="/terms"
+      />
+      <Route
+        element={
+          <PublicLayout>
+            <PrivacyPage />
+          </PublicLayout>
+        }
+        path="/privacy"
+      />
+      <Route
+        element={
+          <PublicLayout>
+            <DataPolicyPage />
+          </PublicLayout>
+        }
+        path="/data-policy"
+      />
+      <Route
+        element={
+          <PublicLayout>
+            <CookiesPage />
+          </PublicLayout>
+        }
+        path="/cookies"
+      />
+      <Route
+        element={
+          <PublicLayout>
+            <LegalNoticePage />
+          </PublicLayout>
+        }
+        path="/legal-notice"
       />
 
       {/* --------------------------------------------------- authenticated */}

@@ -91,9 +91,10 @@ class BeanValidationConstraintTest {
                 new JobController.EnqueueRequest("PREDICT", "clave-1", null),
                 new ModelController.PromoteRequest("1"),
                 new AuthRequests.RegisterRequest("user@example.com", "Clave#Fuerte2026",
-                        "Usuario"),
+                        "Usuario", true, true, false),
                 new AuthRequests.LoginRequest("user@example.com", "Clave#Fuerte2026"),
-                new AuthRequests.ForgotPasswordRequest("user@example.com"));
+                new AuthRequests.ForgotPasswordRequest("user@example.com"),
+                new AuthRequests.ResendVerificationRequest("user@example.com"));
 
         for (Object body : validBodies) {
             assertThatCode(() -> validator.validate(body))
@@ -199,6 +200,53 @@ class BeanValidationConstraintTest {
         assertThat("SinDigitos#Letras").as("sin digito").doesNotMatch(PasswordPolicy.REGEX);
         assertThat("Sin Simbolos 2026").as("con espacios y sin simbolo")
                 .doesNotMatch(PasswordPolicy.REGEX);
+    }
+
+    @Test
+    @DisplayName("El registro exige los dos aceptes, y los acepta solo cuando son true")
+    void registerConsentIsExecutableNotDecorative() {
+        // R-46: @AssertTrue sobre un componente de record debe PROBARSE sobre una
+        // instancia real. Si no llegara a ejecutarse, un cliente podria registrar
+        // cuentas sin aceptar nada y el servidor lo permitiria en silencio.
+        AuthRequests.RegisterRequest completo = new AuthRequests.RegisterRequest(
+                "user@example.com", "Clave#Fuerte2026", "Usuario", true, true, true);
+        assertThat(validator.validate(completo)).isEmpty();
+
+        AuthRequests.RegisterRequest sinTerminos = new AuthRequests.RegisterRequest(
+                "user@example.com", "Clave#Fuerte2026", "Usuario", false, true, false);
+        assertThat(validator.validate(sinTerminos))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("acceptTerms");
+
+        AuthRequests.RegisterRequest sinPolitica = new AuthRequests.RegisterRequest(
+                "user@example.com", "Clave#Fuerte2026", "Usuario", true, false, false);
+        assertThat(validator.validate(sinPolitica))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("acceptDataPolicy");
+
+        // Campo ausente en el JSON => null => rechazo. Es lo que le pasa a un
+        // cliente que no envia los campos nuevos (contrato R-38).
+        AuthRequests.RegisterRequest nulos = new AuthRequests.RegisterRequest(
+                "user@example.com", "Clave#Fuerte2026", "Usuario", null, null, null);
+        assertThat(validator.validate(nulos))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("acceptTerms", "acceptDataPolicy");
+
+        // Marketing opcional: null no es violacion.
+        AuthRequests.RegisterRequest sinMarketing = new AuthRequests.RegisterRequest(
+                "user@example.com", "Clave#Fuerte2026", "Usuario", true, true, null);
+        assertThat(validator.validate(sinMarketing)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("El reenvio de verificacion exige un correo valido")
+    void resendVerificationRequestIsValidated() {
+        assertThat(validator.validate(
+                new AuthRequests.ResendVerificationRequest(null))).isNotEmpty();
+        assertThat(validator.validate(
+                new AuthRequests.ResendVerificationRequest("no-es-correo"))).isNotEmpty();
+        assertThat(validator.validate(
+                new AuthRequests.ResendVerificationRequest("user@example.com"))).isEmpty();
     }
 
     @Test

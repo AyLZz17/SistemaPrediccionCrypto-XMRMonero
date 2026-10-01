@@ -170,6 +170,22 @@ public class AuthController {
         authService.verifyEmail(token);
     }
 
+    @Operation(summary = "Reenvia el correo de verificacion",
+            description = "Publica. Devuelve 204 exista o no la cuenta, para no "
+                    + "permitir enumerar correos registrados. Protegido con rate limit.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Solicitud registrada"),
+            @ApiResponse(responseCode = "429", description = "Rate limit excedido")
+    })
+    @PostMapping("/verify-email/resend")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendVerification(
+            @Valid @RequestBody AuthRequests.ResendVerificationRequest request,
+            HttpServletRequest httpRequest) {
+        authService.resendVerification(request,
+                AuditService.clientIp(httpRequest), httpRequest.getHeader("User-Agent"));
+    }
+
     @Operation(summary = "Identificador de correlacion de la peticion actual",
             description = "Util para verificar la correlacion frontend -> backend -> ML.")
     @GetMapping("/request-id")

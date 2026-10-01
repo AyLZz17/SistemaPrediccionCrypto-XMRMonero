@@ -39,6 +39,12 @@ const PUBLIC_ROUTES = [
   '/forgot-password',
   '/reset-password',
   '/auth/callback',
+  '/verify-email',
+  '/terms',
+  '/privacy',
+  '/data-policy',
+  '/cookies',
+  '/legal-notice',
 ]
 
 const AUTHENTICATED_ROUTES = [

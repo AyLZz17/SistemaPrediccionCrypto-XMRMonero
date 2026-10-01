@@ -2,6 +2,7 @@ export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from '.
 export { Panel, PanelHeader, type PanelProps, type PanelHeaderProps } from './Panel'
 export { Badge, type BadgeProps, type BadgeTone } from './Badge'
 export { TextField, SelectField, TextAreaField } from './Field'
+export { CheckboxField, type CheckboxFieldProps } from './CheckboxField'
 export { DataTable, Pagination, type Column, type DataTableProps } from './DataTable'
 export { Modal, type ModalProps } from './Modal'
 export { Alert, ApiErrorAlert, Notice, type AlertProps, type AlertTone } from './Alert'

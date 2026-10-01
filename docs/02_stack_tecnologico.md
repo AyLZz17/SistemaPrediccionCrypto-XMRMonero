@@ -517,11 +517,14 @@ produccion, con datos de un usuario en pantalla, o no se descubre.
 | `MAIL_USERNAME` | Usuario SMTP |
 | `MAIL_PASSWORD` | Contrasena SMTP |
 | `MAIL_SMTP_AUTH` | Autenticacion SMTP |
-| `MAIL_STARTTLS` | Activar STARTTLS |
+| `MAIL_STARTTLS` | Activar STARTTLS (alias: `MAIL_USE_TLS`, que tiene prioridad) |
 | `MAIL_CONNECT_TIMEOUT_MS` | Timeout de conexion SMTP (5000) |
 | `MAIL_READ_TIMEOUT_MS` | Timeout de lectura SMTP (8000) |
 | `MAIL_WRITE_TIMEOUT_MS` | Timeout de escritura SMTP (5000) |
 | `MAIL_FROM` | Remitente de los correos de cuenta |
+| `MAIL_FROM_NAME` | Nombre visible del remitente en la cabecera `From` (opcional, se sanitiza contra inyeccion de cabeceras) |
+| `APP_PUBLIC_URL` | URL publica para los enlaces de los correos; si no esta, se usa `FRONTEND_BASE_URL` |
+| `LEGAL_CONTACT_EMAIL` | Canal de atencion a titulares; por defecto el de `LegalDocuments.DEFAULT_CONTACT_EMAIL` |
 | `GOOGLE_MAIL_CLIENT_ID` / `GOOGLE_MAIL_CLIENT_SECRET` | Cliente OAuth de la Gmail API; por defecto reutilizan `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |
 | `GOOGLE_MAIL_REFRESH_TOKEN` | Refresh token de la Gmail API |
 

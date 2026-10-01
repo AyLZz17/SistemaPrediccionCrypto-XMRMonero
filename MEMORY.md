@@ -5,46 +5,44 @@
 - LSTM/GRU frente a media movil, regresion lineal y ARIMA. MAE, RMSE, MAPE y
   acierto de direccion. **No es asesoria financiera**, no simula trading
   (R-11/R-12): aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
+- Documentos legales en `/terms`, `/privacy`, `/data-policy`, `/cookies`,
+  `/legal-notice`, enlazados desde el pie en TODAS las rutas. Version unica:
+  `LegalDocuments.CURRENT_VERSION` (backend) = `LEGAL_VERSION` (frontend) =
+  `GET /api/v1/meta/legal`; version 2026-10-01. Redaccion propia, **pendiente de
+  revisar por abogado colombiano**.
 
-## Tarea en curso
-- T-041 (registro/login en produccion): **arreglado y subido (`d83d053`, `a417fe1`)**.
-  **Pendiente del cliente**: habilitar la Gmail API con scope `gmail.send`,
-  anadir `https://developers.google.com/oauthplayground` a los redirect URIs,
-  generar el refresh token en el Playground y fijar en Render
-  `MAIL_TRANSPORT=gmail` + `GOOGLE_MAIL_REFRESH_TOKEN`. Entonces reintentar registro.
-- Sin resolver: URI de callback en Google Cloud (si no se anadio), rotacion de
-  credenciales expuestas, `ML_SERVICE_URL` con `sync: false`.
+## Tarea en curso (T-042, hecha)
+- Legalidad + consentimiento + reenvio de verificacion + arreglo de Google.
+- Registro exige `acceptTerms` y `acceptDataPolicy` (400 `VALIDATION_FAILED` con los
+  dos campos; el servicio responde ademas `400 CONSENT_REQUIRED`, que es el codigo del
+  flujo de Google). Filas en `consent_records` (V6) con version/IP en la MISMA
+  transaccion (R-53).
+- `POST /auth/verify-email/resend` publico: 204 exista o no la cuenta, rate
+  limit, caduca el token anterior. Pantalla de reenvio en `VerifyEmailPage`.
+- Google: consentimiento dentro del `state`; cuenta nueva solo con el y si no
+  `error_code=CONSENT_REQUIRED` (panel con checkboxes en `GoogleCallbackPage`).
 
-## Estado verificado en esta sesion
-- Backend `mvn test` = **158 tests, BUILD SUCCESS** (Corretto 21.0.12).
-- E2E local con el canal de correo MUERTO: registro **201 en 0,53 s**, fila en
-  `users`, notificacion WARNING creada desde `task-1`, login `403
-  EMAIL_NOT_VERIFIED`, `password/forgot` = 204.
-- En Render Free el arranque tarda ~170 s: el "timeout" del primer login era el
-  arranque del servicio, no un bug. DBeaver conectado al Postgres de Render.
+## Verificado en esta sesion
+- Backend `mvn clean verify` = **186 tests, BUILD SUCCESS** (Corretto 21.0.12).
+- Frontend `npm run lint` = 0 · `npm test` = **169/169** · `npm run build` OK.
+- Pila completa Docker (6 servicios healthy) + `tools/verify-stack.ps1` =
+  **53/53 comprobaciones OK**; Flyway `V1..V6` sobre PostgreSQL 15.19, **23 tablas**.
+- Inventario real: 48 metodos de mapeo en 13 controladores (docs/01 y 05
+  actualizados de 46 a 48).
+- Contratos nuevos: `RegisterPayloadContractTest`, `LegalVersionsContractTest`.
+- Correccion de contrato: por HTTP el registro sin aceptes da `400 VALIDATION_FAILED`
+  con los dos campos (va la validacion de bean), no `CONSENT_REQUIRED`; ese codigo
+  es el del servicio y del flujo de Google. Arreglado en docs/01, README y E2E.
 
-## Lo que NO se pudo verificar (no inventarlo)
-- Ningun correo ha llegado aun: la Gmail API no esta habilitada ni hay refresh
-  token. El envio real en produccion esta **sin probar**.
-- Render y Google Cloud: sin sesion en Chrome, no se leen logs ni variables.
+## Pendiente inmediato
+- Commit + push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).
+- Cliente: habilitar Gmail API con scope `gmail.send`, redirect URI del OAuth
+  Playground, refresh token, y fijar en Render `MAIL_TRANSPORT=gmail` +
+  `GOOGLE_MAIL_REFRESH_TOKEN`. Entonces reintentar registro y Google.
+- Sin resolver: rotacion de credenciales expuestas, `ML_SERVICE_URL` con
+  `sync: false`, callback de Google Cloud, supuesto **D-14** (dashboard publico),
+  revision juridica de los cinco documentos legales.
 
-## Bloqueantes historicos (ningun test los detectaba)
-1. Cola muerta (@Modifying sin @Transactional + auto-invocacion sin proxy).
-2. `build(true)` de `UriComponentsBuilder` = "ya codificado" (R-49/R-50/R-51).
-3. Correo dentro de la transaccion sin timeouts: 2 min de cuelgue + 503 + alta
-   revertida (T-041); Render Free ademas bloquea 25/465/587 (D-13).
-4. `afterCommit` en el hilo de la peticion **pierde la escritura en silencio**
-   (R-52): descubierto al medirlo, no por un test.
-
-## Decisiones
-- D-00 Monero · D-04 regresion + direccion · D-05 split 70/15/15 cronologico.
-- D-06 cola = tabla `jobs`; ids opacos; estados traducidos en servidor (R-43).
-- D-13 correo por Gmail API; `MAIL_TRANSPORT=smtp` solo en local. Sin bandera
-  para desactivar TLS (R-33). `RestClient.Builder` prototype.
-
-## Entorno (verificado, no asumir)
-- `JAVA_HOME` = Corretto 21.0.12. **Siempre `mvn clean` con backend detenido.**
-- Maven 3.9.16 · Node 24.19 · Docker 29.6.2 · Python 3.12.10 · PG local en 5432
-  (el contenedor de pruebas usa **55432**).
-- URLs: Vercel `sistema-prediccion-crypto-xmr-moner` · backend `xmr-backend-bcml`
-  · ml-service `ml-service-adbd`.
+## Reglas nuevas promovidas
+- R-53 consentimiento en servidor/ misma transaccion; reenvio anti-enumeracion.
+- R-54 el pie y lo que debe sobrevivir a fallos usan `<a href>`, nunca `<Link>`.

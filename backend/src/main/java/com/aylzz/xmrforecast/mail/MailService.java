@@ -34,18 +34,67 @@ public class MailService {
     private final MailTransport transport;
     private final String requestedTransport;
     private final String from;
+    private final String fromName;
     private final String frontendBaseUrl;
 
+    /**
+     * @param fromName nombre visible del remitente ({@code MAIL_FROM_NAME}).
+     *        Vacio por defecto: un {@code From} sin nombre es valido en ambos
+     *        canales y no inventa una identidad que el buzon no verifico.
+     * @param frontendBaseUrl URL publica del servicio usada para construir los
+     *        enlaces. {@code APP_PUBLIC_URL} es el nombre generico y manda si
+     *        esta presente; si no, se usa {@code FRONTEND_BASE_URL}. Son la
+     *        misma pieza de estado con dos nombres de entorno, no dos piezas.
+     */
     public MailService(List<MailTransport> transports,
                        @Value("${MAIL_TRANSPORT:smtp}") String requestedTransport,
                        @Value("${MAIL_FROM:}") String from,
-                       @Value("${FRONTEND_BASE_URL:}") String frontendBaseUrl) {
+                       @Value("${MAIL_FROM_NAME:}") String fromName,
+                       @Value("${APP_PUBLIC_URL:${FRONTEND_BASE_URL:}}") String frontendBaseUrl) {
         this.requestedTransport = requestedTransport == null || requestedTransport.isBlank()
                 ? "smtp" : requestedTransport.trim().toLowerCase(Locale.ROOT);
         this.from = from == null ? "" : from.trim();
+        this.fromName = fromName == null ? "" : fromName.trim();
         this.frontendBaseUrl = frontendBaseUrl == null
                 ? "" : frontendBaseUrl.trim().replaceAll("/$", "");
         this.transport = pick(transports, this.requestedTransport);
+    }
+
+    /**
+     * Remitente efectivo: {@code Nombre <correo>} o solo el correo.
+     *
+     * <p>El nombre se limpia de saltos de linea antes de entrar en la cabecera
+     * {@code From} (inyeccion de cabeceras) y se codifica como palabra RFC 2047
+     * cuando no es ASCII puro. Eso deja la cadena final siempre en ASCII, que
+     * es la condicion bajo la cual {@code MimeUtility.encodeText} de la Gmail API
+     * y {@code setFrom} de JavaMail la dejan pasar sin re-codificarla entera y
+     * romper la direccion.
+     */
+    private String sender() {
+        if (fromName.isEmpty() || from.contains("<")) {
+            return from;
+        }
+        String encoded = encodeDisplayName(fromName);
+        return encoded.isEmpty() ? from : encoded + " <" + from + ">";
+    }
+
+    private static String encodeDisplayName(String name) {
+        String safe = name.replaceAll("[\\r\\n\"<>]", " ").trim();
+        if (safe.isEmpty()) {
+            return "";
+        }
+        boolean ascii = true;
+        for (int i = 0; i < safe.length(); i++) {
+            if (safe.charAt(i) > 127) {
+                ascii = false;
+                break;
+            }
+        }
+        if (ascii) {
+            return safe;
+        }
+        return "=?UTF-8?B?" + java.util.Base64.getEncoder()
+                .encodeToString(safe.getBytes(java.nio.charset.StandardCharsets.UTF_8)) + "?=";
     }
 
     private static MailTransport pick(List<MailTransport> transports, String wanted) {
@@ -100,14 +149,15 @@ public class MailService {
             return false;
         }
         if (from.isBlank() || frontendBaseUrl.isBlank()) {
-            log.warn("Correo no configurado (MAIL_FROM{} y FRONTEND_BASE_URL{}); no se envia mensaje a {}",
+            log.warn("Correo no configurado (MAIL_FROM{} y APP_PUBLIC_URL/FRONTEND_BASE_URL{}); "
+                    + "no se envia mensaje a {}",
                     from.isBlank() ? " vacio" : " presente",
                     frontendBaseUrl.isBlank() ? " vacio" : " presente",
                     recipient);
             return false;
         }
         try {
-            transport.send(from, recipient, subject, body);
+            transport.send(sender(), recipient, subject, body);
             return true;
         } catch (MailTransportException | RuntimeException ex) {
             log.error("No se pudo enviar el correo de cuenta a {} por el canal {}",

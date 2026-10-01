@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { googleAuthorizeUrl } from '../../api/auth'
+import { googleAuthorizeUrl, type GoogleConsentParams } from '../../api/auth'
 
 /**
  * "Continuar con Google" trigger.
@@ -14,18 +14,26 @@ import { googleAuthorizeUrl } from '../../api/auth'
 export function GoogleButton({
   returnTo = '/dashboard',
   label = 'Continuar con Google',
+  consent,
 }: {
   returnTo?: string
   label?: string
+  /**
+   * Consent ticks gathered on OUR page before leaving for Google. The backend
+   * stores them inside the one-time `state`; without them the callback will
+   * still sign an existing account in, but it will NOT create a new one and
+   * answers `CONSENT_REQUIRED` instead.
+   */
+  consent?: GoogleConsentParams
 }) {
   const href = useMemo(() => {
     try {
-      return googleAuthorizeUrl(returnTo)
+      return googleAuthorizeUrl(returnTo, consent)
     } catch {
       // A misconfigured env must not leave a dead link without explanation.
       return '#configuracion-invalida'
     }
-  }, [returnTo])
+  }, [returnTo, consent])
 
   return (
     <a

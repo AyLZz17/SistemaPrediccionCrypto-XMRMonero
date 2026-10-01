@@ -25,11 +25,26 @@ public class MetaController {
 
     private final String appName;
     private final String version;
+    private final String contactEmail;
 
     public MetaController(@Value("${info.app.name:XMR-Forecast}") String appName,
-                          @Value("${info.app.version:1.0.0}") String version) {
+                          @Value("${info.app.version:1.0.0}") String version,
+                          @Value("${app.legal.contact-email:}") String contactEmail) {
         this.appName = appName;
         this.version = version;
+        this.contactEmail = contactEmail;
+    }
+
+    @Operation(summary = "Documentos legales publicados y sus versiones vigentes",
+            description = "Publica. Es la misma fuente que registra el consentimiento "
+                    + "en el registro: el frontend no guarda una copia propia.")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Documentos vigentes"))
+    @GetMapping("/legal")
+    public LegalDocuments.LegalResponse legal() {
+        return new LegalDocuments.LegalResponse(
+                LegalDocuments.published(),
+                contactEmail == null || contactEmail.isBlank()
+                        ? LegalDocuments.DEFAULT_CONTACT_EMAIL : contactEmail);
     }
 
     @Operation(summary = "Aviso legal obligatorio",

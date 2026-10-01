@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api/auth'
 import { toApiError, type FieldError } from '../api/errors'
 import { useAuthStore } from '../store/authStore'
-import { ApiErrorAlert, Button, Notice, Panel, TextField } from '../components/ui'
+import { ApiErrorAlert, Button, CheckboxField, Notice, Panel, TextField } from '../components/ui'
 import { GoogleButton } from '../components/auth/GoogleButton'
 import { Disclaimer } from '../components/common/Disclaimer'
 
@@ -12,6 +12,7 @@ interface RegisterErrors {
   email?: string
   password?: string
   confirmPassword?: string
+  consent?: string
 }
 
 export default function RegisterPage() {
@@ -21,6 +22,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [acceptTerms, setAcceptTerms] = useState(false)
+  const [acceptDataPolicy, setAcceptDataPolicy] = useState(false)
+  const [acceptMarketing, setAcceptMarketing] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<RegisterErrors>({})
   const [error, setError] = useState<unknown>(null)
   const [done, setDone] = useState(false)
@@ -35,12 +39,24 @@ export default function RegisterPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.email = 'Introduce un correo valido.'
     if (password.length < 12) nextErrors.password = 'La contrasena debe tener al menos 12 caracteres.'
     if (password !== confirm) nextErrors.confirmPassword = 'Las contrasenas no coinciden.'
+    if (!acceptTerms) nextErrors.consent = 'Debes aceptar los terminos y condiciones.'
+    else if (!acceptDataPolicy)
+      nextErrors.consent = 'Debes aceptar la politica de tratamiento de datos personales.'
     setFieldErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
 
     setSubmitting(true)
     try {
-      await register({ email: email.trim(), password, fullName: fullName.trim() })
+      await register({
+        email: email.trim(),
+        password,
+        fullName: fullName.trim(),
+        // The two mandatory consents travel with the request: the backend
+        // rejects the registration without them and records the version.
+        acceptTerms,
+        acceptDataPolicy,
+        acceptMarketing,
+      })
       setDone(true)
       // Registration does not return a token in this contract: send to login.
       setStatus('anonymous')
@@ -52,6 +68,8 @@ export default function RegisterPage() {
         if (fieldError.field === 'email') mapped.email = fieldError.message
         if (fieldError.field === 'password') mapped.password = fieldError.message
         if (fieldError.field === 'fullName') mapped.fullName = fieldError.message
+        if (fieldError.field === 'acceptTerms' || fieldError.field === 'acceptDataPolicy')
+          mapped.consent = fieldError.message
       }
       setFieldErrors(mapped)
       setError(apiError)
@@ -118,6 +136,61 @@ export default function RegisterPage() {
             onChange={(event) => setConfirm(event.target.value)}
             error={fieldErrors.confirmPassword}
           />
+
+          {/* Consentimiento: los dos primeros son obligatorios y el servidor los
+              vuelve a comprobar; ninguno viene precargado ni se marca solo. */}
+          <div
+            className="space-y-3 border-t border-hairline-subtle pt-4"
+            data-testid="register-consent"
+          >
+            <p className="label-caps">Consentimiento</p>
+            <CheckboxField
+              data-testid="accept-terms"
+              name="acceptTerms"
+              required
+              checked={acceptTerms}
+              onChange={(event) => setAcceptTerms(event.target.checked)}
+              label={
+                <>
+                  He leido y acepto los{' '}
+                  <Link to="/terms" className="link-accent" data-testid="terms-link">
+                    terminos y condiciones
+                  </Link>
+                  .
+                </>
+              }
+            />
+            <CheckboxField
+              data-testid="accept-data-policy"
+              name="acceptDataPolicy"
+              required
+              checked={acceptDataPolicy}
+              onChange={(event) => setAcceptDataPolicy(event.target.checked)}
+              label={
+                <>
+                  Acepto la{' '}
+                  <Link to="/data-policy" className="link-accent" data-testid="data-policy-link">
+                    politica de tratamiento de datos personales
+                  </Link>
+                  .
+                </>
+              }
+            />
+            <CheckboxField
+              data-testid="accept-marketing"
+              name="acceptMarketing"
+              checked={acceptMarketing}
+              onChange={(event) => setAcceptMarketing(event.target.checked)}
+              label="Quiero recibir novedades y comunicaciones comerciales (opcional)."
+              hint="Puedes revocarlo en cualquier momento sin que eso afecte tu acceso al servicio."
+            />
+            {fieldErrors.consent ? (
+              <p role="alert" data-testid="consent-error" className="pl-6 text-xs text-accent-red">
+                {fieldErrors.consent}
+              </p>
+            ) : null}
+          </div>
+
           <Button type="submit" loading={submitting} fullWidth>
             Crear cuenta
           </Button>
@@ -129,7 +202,11 @@ export default function RegisterPage() {
           <span className="h-px flex-1 bg-hairline" />
         </div>
 
-        <GoogleButton returnTo="/dashboard" label="Continuar con Google" />
+        <GoogleButton
+          returnTo="/dashboard"
+          label="Continuar con Google"
+          consent={{ acceptTerms, acceptDataPolicy, acceptMarketing }}
+        />
 
         <p className="mt-5 text-center text-xs text-ink-secondary">
           Ya tienes cuenta?{' '}

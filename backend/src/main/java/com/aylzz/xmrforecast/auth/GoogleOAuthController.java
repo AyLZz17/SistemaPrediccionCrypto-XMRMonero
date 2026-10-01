@@ -31,12 +31,29 @@ public class GoogleOAuthController {
         this.properties = properties;
     }
 
-    /** Redirige al formulario de consentimiento de Google. */
+    /**
+     * Redirige al formulario de consentimiento de Google.
+     *
+     * <p>Los aceptes vienen de <nuestra</nuestra> pagina, no de Google: un usuario
+     * que pulse "Continuar con Google" desde el registro los trae aqui y viajan
+     * dentro del {@code state} de un solo uso. Sin ellos el callback puede
+     * iniciar sesion en una cuenta existente pero <strong>no crea</strong> una
+     * nueva: devolvera {@code CONSENT_REQUIRED} al frontend.
+     */
     @Operation(summary = "Inicia el flujo de Google OAuth 2.0",
-            description = "Publica. Devuelve 307 con la URL de autorizacion de Google.")
+            description = "Publica. Devuelve 307 con la URL de autorizacion de Google. "
+                    + "Los parametros de consentimiento son opcionales y solo se usan "
+                    + "si el navegador va a crear una cuenta nueva.")
     @GetMapping("/authorize")
-    public ResponseEntity<Void> authorize() {
-        var uri = oauthService.buildAuthorizationUri();
+    public ResponseEntity<Void> authorize(
+            @RequestParam(required = false) Boolean acceptTerms,
+            @RequestParam(required = false) Boolean acceptDataPolicy,
+            @RequestParam(required = false) Boolean acceptMarketing) {
+        var consent = new AuthService.GoogleConsent(
+                Boolean.TRUE.equals(acceptTerms),
+                Boolean.TRUE.equals(acceptDataPolicy),
+                Boolean.TRUE.equals(acceptMarketing));
+        var uri = oauthService.buildAuthorizationUri(consent);
         return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                 .header(HttpHeaders.LOCATION, uri.toString())
                 .build();

@@ -22,6 +22,7 @@ import type {
   LoginRequest,
   RefreshRequest,
   RegisterRequest,
+  ResendVerificationRequest,
   ResetPasswordRequest,
   TokenResponse,
   User,
@@ -101,13 +102,39 @@ export async function verifyEmail(token: string): Promise<void> {
   })
 }
 
+/**
+ * Re-sends the verification mail. The backend answers 204 whether or not the
+ * account exists (anti-enumeration), so a silent success is the normal result.
+ */
+export async function resendVerification(payload: ResendVerificationRequest): Promise<void> {
+  await rawRequest<null>(`${BASE}/verify-email/resend`, {
+    method: 'POST',
+    body: payload,
+    skipAuth: true,
+    requestId: newRequestId(),
+  })
+}
+
 export async function changePassword(payload: ChangePasswordRequest): Promise<void> {
   await apiRequest<null>(`${BASE}/password/change`, { method: 'POST', body: payload })
 }
 
+/** Consent checkboxes ticked before leaving for Google (new accounts only). */
+export interface GoogleConsentParams {
+  acceptTerms?: boolean
+  acceptDataPolicy?: boolean
+  acceptMarketing?: boolean
+}
+
 /** Where the "Continuar con Google" button sends the browser. */
-export function googleAuthorizeUrl(returnTo = '/'): string {
-  const target = `${BASE}/google/authorize?returnTo=${encodeURIComponent(returnTo)}`
+export function googleAuthorizeUrl(returnTo = '/', consent?: GoogleConsentParams): string {
+  const params = new URLSearchParams({ returnTo })
+  // Only the affirmative values are sent: an absent parameter means "not
+  // accepted", which is exactly what the backend assumes.
+  if (consent?.acceptTerms) params.set('acceptTerms', 'true')
+  if (consent?.acceptDataPolicy) params.set('acceptDataPolicy', 'true')
+  if (consent?.acceptMarketing) params.set('acceptMarketing', 'true')
+  const target = `${BASE}/google/authorize?${params.toString()}`
   return absoluteUrl(target)
 }
 

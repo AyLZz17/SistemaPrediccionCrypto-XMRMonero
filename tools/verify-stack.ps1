@@ -138,6 +138,19 @@ $disc = Invoke-Check GET '/api/v1/meta/disclaimer'
 Check 'GET /api/v1/meta/disclaimer responde SIN sesion (R-11)' `
   ($disc.Status -eq 200 -and $disc.Body -match 'asesoria financiera') "status=$($disc.Status) $($disc.Body)"
 
+# Los documentos legales y su version vigente son publicos: es lo que el
+# usuario acepta y lo que queda guardado en consent_records (R-43).
+$legal = Invoke-Check GET '/api/v1/meta/legal'
+$legalDocs = @()
+$legalVersions = @()
+if ($legal.Status -eq 200) {
+  $legalDocs = @(($legal.Body | ConvertFrom-Json).documents)
+  $legalVersions = @($legalDocs | ForEach-Object { $_.version } | Select-Object -Unique)
+}
+Check 'GET /api/v1/meta/legal responde SIN sesion: 5 documentos con la MISMA version' `
+  ($legalDocs.Count -eq 5 -and $legalVersions.Count -eq 1 -and "$($legalVersions[0])" -match '^\d{4}-\d{2}-\d{2}$') `
+  "status=$($legal.Status) documentos=$($legalDocs.Count) version=$($legalVersions -join ',')"
+
 # ------------------------------------------------------------ 3. ruta protegida
 $unauth = Invoke-Check GET '/api/v1/market/latest'
 Check 'una ruta protegida sin token devuelve 401' ($unauth.Status -eq 401) "status=$($unauth.Status)"
@@ -152,12 +165,46 @@ try { $c2 = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 80); $plainRefu
 Check 'no hay listener HTTP plano en el puerto 80' $plainRefused
 
 # ------------------------------------------------------------ 5. registro y login
+#
+# Sin los dos aceptes no hay cuenta: primero se comprueba el rechazo (regla
+# negativa, R-53) y solo despues se registra con el consentimiento.
+#
+# El codigo que sale por HTTP es VALIDATION_FAILED con los dos campos senalados,
+# porque la validacion de bean (sobre una instancia real, R-46) va antes que el
+# servicio. En el servicio sigue existiendo CONSENT_REQUIRED: es el que ve el
+# flujo de Google, que no tiene cuerpo que validar.
+$noConsent = Invoke-Check POST '/api/v1/auth/register' `
+  (@{ email = ('sinconsent' + (Get-Random) + '@example.com'); password = 'Verificacion#2026segura'; fullName = 'Sin Consentimiento' } | ConvertTo-Json -Compress)
+Check 'POST /api/v1/auth/register rechaza el alta sin aceptar terminos y datos' `
+  ($noConsent.Status -eq 400 -and $noConsent.Body -match 'acceptTerms' -and $noConsent.Body -match 'acceptDataPolicy') `
+  "status=$($noConsent.Status) $($noConsent.Body)"
+
 $email = 'verificacion' + (Get-Random) + '@example.com'
 $password = 'Verificacion#2026segura'
 $register = Invoke-Check POST '/api/v1/auth/register' `
-  (@{ email = $email; password = $password; fullName = 'Prueba Verificacion' } | ConvertTo-Json -Compress)
+  (@{ email = $email; password = $password; fullName = 'Prueba Verificacion'; acceptTerms = $true; acceptDataPolicy = $true; acceptMarketing = $false } | ConvertTo-Json -Compress)
 Check 'POST /api/v1/auth/register crea la cuenta' `
   ($register.Status -eq 201 -and $register.Body -match '"id"') "status=$($register.Status) $($register.Body)"
+
+# El efecto, no solo la existencia (R-48): la aceptacion queda demostrable en
+# base de datos con la version vigente del documento.
+$consentCount = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+  "SELECT count(*) FROM consent_records cr JOIN users u ON u.id = cr.user_id WHERE u.email = '$email' AND cr.accepted = true;"
+Check 'los dos aceptes quedan registrados en consent_records con su version' `
+  ("$consentCount".Trim() -eq '2') "filas=$($consentCount)"
+
+# Reenvio de verificacion: publico, limitado y con la misma respuesta exista o
+# no la cuenta (anti-enumeracion).
+$resendKnown = Invoke-Check POST '/api/v1/auth/verify-email/resend' `
+  (@{ email = $email } | ConvertTo-Json -Compress)
+Check 'POST /verify-email/resend responde 204 para una cuenta existente' `
+  ($resendKnown.Status -eq 204) "status=$($resendKnown.Status) $($resendKnown.Body)"
+
+$resendUnknown = Invoke-Check POST '/api/v1/auth/verify-email/resend' `
+  (@{ email = ('nadie' + (Get-Random) + '@example.com') } | ConvertTo-Json -Compress)
+Check 'el reenvio responde igual con un correo inexistente (anti-enumeracion)' `
+  ($resendUnknown.Status -eq 204 -and $resendUnknown.Body -eq $resendKnown.Body) `
+  "status=$($resendUnknown.Status) body=$($resendUnknown.Body)"
 
 # El alta nace PENDING_VERIFICATION: el login debe rechazarse hasta confirmar el
 # correo. Se comprueba ese rechazo ANTES de confirmar, porque un gate que no se
@@ -177,7 +224,7 @@ Check 'el login se rechaza con 403 mientras el correo no esta verificado' `
 #
 # Lo que esto SUSTITUYE es unicamente el transporte del correo. Lo que NO se
 # sustituye, y por tanto si se verifica: el gate de verificacion (el 403
-# anterior), la emision del JWT, la cookie, los roles y las 46 rutas.
+# anterior), la emision del JWT, la cookie, los roles y las 48 rutas.
 docker exec xmr-postgres psql -U xmr -d xmr_forecast -q -c `
   "UPDATE users SET status='ACTIVE', email_verified=true, email_verified_at=NOW() WHERE email='$email';" | Out-Null
 Write-Host "      (cuenta marcada como verificada en la base de datos: no hay SMTP en este entorno)"

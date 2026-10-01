@@ -6,12 +6,17 @@ import com.aylzz.xmrforecast.auth.dto.AuthRequests;
 import com.aylzz.xmrforecast.auth.dto.TokenResponse;
 import com.aylzz.xmrforecast.auth.dto.UserResponse;
 import com.aylzz.xmrforecast.common.ApiException;
+import com.aylzz.xmrforecast.common.LegalDocuments;
 import com.aylzz.xmrforecast.config.AppProperties;
 import com.aylzz.xmrforecast.mail.MailService;
 import com.aylzz.xmrforecast.security.JwtService;
 import com.aylzz.xmrforecast.security.Role;
 import com.aylzz.xmrforecast.security.TokenHasher;
 import com.aylzz.xmrforecast.user.AuthProvider;
+import com.aylzz.xmrforecast.user.ConsentRecord;
+import com.aylzz.xmrforecast.user.ConsentRecordRepository;
+import com.aylzz.xmrforecast.user.ConsentSource;
+import com.aylzz.xmrforecast.user.ConsentType;
 import com.aylzz.xmrforecast.user.LoginAttempt;
 import com.aylzz.xmrforecast.user.LoginAttemptRepository;
 import com.aylzz.xmrforecast.user.OAuthAccount;
@@ -80,6 +85,7 @@ public class AuthService {
     private final LoginAttemptRepository loginAttemptRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final RevokedTokenRepository revokedTokenRepository;
+    private final ConsentRecordRepository consentRecordRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenHasher tokenHasher;
@@ -103,6 +109,7 @@ public class AuthService {
                        LoginAttemptRepository loginAttemptRepository,
                        PasswordResetTokenRepository passwordResetTokenRepository,
                        RevokedTokenRepository revokedTokenRepository,
+                       ConsentRecordRepository consentRecordRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        TokenHasher tokenHasher,
@@ -115,6 +122,7 @@ public class AuthService {
         this.loginAttemptRepository = loginAttemptRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.revokedTokenRepository = revokedTokenRepository;
+        this.consentRecordRepository = consentRecordRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.tokenHasher = tokenHasher;
@@ -127,6 +135,11 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(AuthRequests.RegisterRequest request, String ip, String userAgent) {
+        // El consentimiento se comprueba AQUI, no solo en el controlador: una
+        // ruta que construya el objeto sin @Valid no debe poder crear una cuenta
+        // sin registro de aceptacion (R-16 y R-46).
+        requireConsent(request.acceptTerms(), request.acceptDataPolicy());
+
         String email = normalizeEmail(request.email());
         if (userRepository.existsByEmailIgnoreCase(email)) {
             // Mensaje generico: no se revela que el correo ya existe (anti-enumeracion).
@@ -149,6 +162,16 @@ public class AuthService {
             // Carrera entre dos registros simultaneos con el mismo correo.
             throw ApiException.conflict("REGISTRATION_REJECTED",
                     "No se puede completar el registro con esos datos.");
+        }
+
+        // Se registran en la MISMA transaccion que el usuario: sin aceptacion no
+        // hay cuenta, y con ella la prueba queda escrita antes de responder 201.
+        recordConsent(saved, ConsentType.TERMS, true, ConsentSource.REGISTER, ip, userAgent);
+        recordConsent(saved, ConsentType.DATA_POLICY, true, ConsentSource.REGISTER, ip, userAgent);
+        if (Boolean.TRUE.equals(request.acceptMarketing())) {
+            // Solo la aceptacion genera fila: la ausencia ya significa
+            // "no quiere comunicaciones comerciales".
+            recordConsent(saved, ConsentType.MARKETING, true, ConsentSource.REGISTER, ip, userAgent);
         }
 
         String verificationToken = issueVerificationToken(saved);
@@ -565,6 +588,67 @@ public class AuthService {
                 String.valueOf(user.getId()), AuditEvent.Outcome.SUCCESS, Map.of());
     }
 
+    /**
+     * Reenvia el correo de verificacion.
+     *
+     * <p><strong>La respuesta es identica exista o no la cuenta, y tambien si
+     * esta ya esta verificada.</strong> Cualquier otra cosa permitiria averiguar
+     * que correos estan registrados simplemente preguntando por ellos. El
+     * rate limit del filtro (ruta sensible) es lo que impide usar este endpoint
+     * como generador de envios masivos.
+     *
+     * <p>El token anterior queda revocado: el reenvio emite uno nuevo y
+     * caduca los anteriores, de modo que solo el ultimo enlace recibido sirve.
+     */
+    @Transactional
+    public void resendVerification(AuthRequests.ResendVerificationRequest request,
+                                   String ip, String userAgent) {
+        String email = normalizeEmail(request.email());
+        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+            if (user.getStatus() != UserStatus.PENDING_VERIFICATION || user.isEmailVerified()) {
+                // Nada que verificar: se ignora en silencio.
+                return;
+            }
+            String token = issueVerificationToken(user);
+            User target = user;
+            afterCommit(() -> deliverVerificationMail(target, token));
+            auditService.record(user.getId(), primaryRole(user), "AUTH_EMAIL_RESENT", "User",
+                    String.valueOf(user.getId()), AuditEvent.Outcome.SUCCESS,
+                    Map.of("ip", truncateIp(ip), "user_agent", String.valueOf(truncate(userAgent))));
+        });
+    }
+
+    /** Exige los dos aceptes obligatorios. Lanza 400 con codigo estable. */
+    private static void requireConsent(Boolean acceptTerms, Boolean acceptDataPolicy) {
+        if (!Boolean.TRUE.equals(acceptTerms)) {
+            throw ApiException.badRequest("CONSENT_REQUIRED",
+                    "Debe aceptar los terminos y condiciones para crear la cuenta.");
+        }
+        if (!Boolean.TRUE.equals(acceptDataPolicy)) {
+            throw ApiException.badRequest("CONSENT_REQUIRED",
+                    "Debe aceptar la politica de tratamiento de datos para crear la cuenta.");
+        }
+    }
+
+    /**
+     * Escribe la aceptacion de un documento con su version vigente (V6).
+     *
+     * <p>Se hace dentro de la transaccion que crea la cuenta: si la escritura
+     * fallara, no debe quedar una cuenta sin prueba de su consentimiento.
+     */
+    private void recordConsent(User user, ConsentType type, boolean accepted,
+                               ConsentSource source, String ip, String userAgent) {
+        ConsentRecord record = new ConsentRecord();
+        record.setUser(user);
+        record.setConsentType(type);
+        record.setVersion(LegalDocuments.CURRENT_VERSION);
+        record.setAccepted(accepted);
+        record.setSource(source);
+        record.setIpAddress(truncateIp(ip));
+        record.setUserAgent(truncate(userAgent));
+        consentRecordRepository.save(record);
+    }
+
     // ----------------------------------------------------- google oauth 2.0
 
     /**
@@ -574,9 +658,21 @@ public class AuthService {
      * entre aplicaciones. El correo solo permite enlazar una cuenta local ya
      * existente: nunca concede acceso por si solo, y solo si Google afirma
      * {@code email_verified}.
+     *
+     * <p><strong>Los tres caminos posibles.</strong>
+     * <ol>
+     *   <li>Ya existe la vinculacion {@code (GOOGLE, sub)}: se usa esa cuenta.</li>
+     *   <li>No existe, pero hay una cuenta local con ese correo <em>y Google
+     *       afirma que esta verificado</em>: se vincula, sin duplicar.</li>
+     *   <li>No existe nada: se crea la cuenta con rol {@code VIEWER}, siempre
+     *       que el navegador haya traido el consentimiento de los terminos y de
+     *       la politica de datos en el {@code state} del flujo. Sin eso no se
+     *       crea nada y se devuelve {@code CONSENT_REQUIRED}.</li>
+     * </ol>
      */
     @Transactional
-    public TokenResponse loginWithGoogle(GoogleIdentity identity, String ip, String userAgent) {
+    public TokenResponse loginWithGoogle(GoogleIdentity identity, GoogleConsent consent,
+                                         String ip, String userAgent) {
         if (identity == null || identity.subject() == null || identity.subject().isBlank()) {
             throw ApiException.unauthorized("INVALID_ID_TOKEN", "El ID Token de Google no es valido.");
         }
@@ -594,21 +690,41 @@ public class AuthService {
                         "La cuenta de Google no tiene un correo verificado.");
             }
 
-            // Solo vinculacion: se exige una cuenta local previa con ese correo.
-            user = userRepository.findByEmailIgnoreCase(email).orElseThrow(() ->
-                    ApiException.forbidden("NO_LOCAL_ACCOUNT",
-                            "No existe una cuenta asociada a este correo de Google. "
-                                    + "Registrese primero con correo y contrasena."));
+            Optional<User> existing = userRepository.findByEmailIgnoreCase(email);
+            if (existing.isPresent()) {
+                // Vinculacion de una cuenta local previa: su consentimiento ya
+                // quedo registrado cuando se creo, asi que no se vuelve a pedir.
+                user = existing.get();
+                linkGoogleAccount(user, identity, email);
+                auditService.record(user.getId(), primaryRole(user), "AUTH_GOOGLE_LINK",
+                        "OAuthAccount", identity.subject(), AuditEvent.Outcome.SUCCESS, Map.of());
+            } else {
+                // Cuenta nueva: sin aceptacion registrada no se crea nada (R-11
+                // y Ley 1581 art. 8: la autorizacion debe ser previa y expresa).
+                requireGoogleConsent(consent);
+                user = createGoogleUser(identity, email, consent, ip, userAgent);
+                linkGoogleAccount(user, identity, email);
+            }
+        }
 
-            OAuthAccount account = new OAuthAccount();
-            account.setUser(user);
-            account.setProvider(AuthProvider.GOOGLE);
-            account.setProviderSubject(identity.subject());
-            account.setProviderEmail(email);
-            oauthAccountRepository.save(account);
+        if (user.getStatus() == UserStatus.SUSPENDED || user.getStatus() == UserStatus.DELETED) {
+            auditService.record(user.getId(), primaryRole(user), "AUTH_GOOGLE_LOGIN", "User",
+                    String.valueOf(user.getId()), AuditEvent.Outcome.DENIED,
+                    Map.of("reason", "ACCOUNT_" + user.getStatus()));
+            throw ApiException.forbidden("ACCOUNT_UNAVAILABLE", "La cuenta no esta disponible.");
+        }
 
-            auditService.record(user.getId(), primaryRole(user), "AUTH_GOOGLE_LINK",
-                    "OAuthAccount", identity.subject(), AuditEvent.Outcome.SUCCESS, Map.of());
+        if (!user.isEmailVerified()) {
+            // Google afirma haber verificado el correo (exigido por
+            // verifyIdToken): se acepta como confirmacion ANTES de mirar si la
+            // cuenta esta activa. Antes de este cambio el orden era al reves y
+            // una cuenta local sin confirmar recibia ACCOUNT_UNAVAILABLE aunque
+            // Google acabara de demostrar su identidad.
+            user.setEmailVerified(true);
+            user.setEmailVerifiedAt(Instant.now());
+            if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+                user.setStatus(UserStatus.ACTIVE);
+            }
         }
 
         if (!user.isActive()) {
@@ -618,14 +734,6 @@ public class AuthService {
             throw ApiException.forbidden("ACCOUNT_UNAVAILABLE", "La cuenta no esta disponible.");
         }
 
-        if (!user.isEmailVerified()) {
-            // Google afirma haber verificado el correo: se acepta como confirmacion.
-            user.setEmailVerified(true);
-            user.setEmailVerifiedAt(Instant.now());
-            if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
-                user.setStatus(UserStatus.ACTIVE);
-            }
-        }
         user.setFailedLoginCount(0);
         user.setLockedUntil(null);
         user.setLastLoginAt(Instant.now());
@@ -638,10 +746,75 @@ public class AuthService {
         return issueTokens(user, UUID.randomUUID().toString(), ip, userAgent);
     }
 
+    /** Crea la cuenta local de un usuario que llega por Google por primera vez. */
+    private User createGoogleUser(GoogleIdentity identity, String email, GoogleConsent consent,
+                                  String ip, String userAgent) {
+        User user = new User();
+        user.setEmail(email);
+        user.setFullName(displayName(identity, email));
+        // Sin contrasena local: esta cuenta solo se autentica con Google, y
+        // exigir una clave aqui seria pedir un secreto que nadie usara.
+        user.setPasswordHash(null);
+        user.setProvider(AuthProvider.GOOGLE);
+        // Google ya verifico el correo (verifyIdToken lo exige), asi que la
+        // cuenta nace activa: no tiene sentido pedirle que confirme otra vez.
+        user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerified(true);
+        user.setEmailVerifiedAt(Instant.now());
+        user.setRoles(new LinkedHashSet<>(Set.of(Role.VIEWER)));
+
+        User saved = userRepository.saveAndFlush(user);
+        recordConsent(saved, ConsentType.TERMS, true, ConsentSource.GOOGLE_OAUTH, ip, userAgent);
+        recordConsent(saved, ConsentType.DATA_POLICY, true, ConsentSource.GOOGLE_OAUTH, ip, userAgent);
+        if (consent.marketing()) {
+            recordConsent(saved, ConsentType.MARKETING, true, ConsentSource.GOOGLE_OAUTH, ip, userAgent);
+        }
+        auditService.success(saved.getId(), Role.VIEWER.name(), "AUTH_GOOGLE_REGISTER", "User",
+                String.valueOf(saved.getId()), Map.of("provider", "GOOGLE"));
+        return saved;
+    }
+
+    private void linkGoogleAccount(User user, GoogleIdentity identity, String email) {
+        OAuthAccount account = new OAuthAccount();
+        account.setUser(user);
+        account.setProvider(AuthProvider.GOOGLE);
+        account.setProviderSubject(identity.subject());
+        account.setProviderEmail(email);
+        oauthAccountRepository.save(account);
+    }
+
+    private static void requireGoogleConsent(GoogleConsent consent) {
+        if (consent == null || !consent.terms() || !consent.dataPolicy()) {
+            throw ApiException.forbidden("CONSENT_REQUIRED",
+                    "Debe aceptar los terminos y condiciones y la politica de "
+                            + "tratamiento de datos para crear la cuenta con Google.");
+        }
+    }
+
+    /** Nombre visible: el claim {@code name} de Google, o la parte local del correo. */
+    private static String displayName(GoogleIdentity identity, String email) {
+        if (identity.name() != null && !identity.name().isBlank()) {
+            String trimmed = identity.name().trim();
+            return trimmed.length() > 120 ? trimmed.substring(0, 120) : trimmed;
+        }
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : "usuario";
+    }
+
     // ------------------------------------------------------------- helpers
 
     /** Identidad ya validada extraida del ID Token de Google. */
-    public record GoogleIdentity(String subject, String email, boolean emailVerified) {
+    public record GoogleIdentity(String subject, String email, String name, boolean emailVerified) {
+    }
+
+    /**
+     * Consentimiento traido desde el {@code state} del flujo OAuth.
+     *
+     * <p>No lo aporta Google: lo aporta el navegador cuando el usuario marco los
+     * checkboxes en nuestra pagina <em>antes</em> de ser redirigido, y viaja en
+     * el mismo state de un solo uso que ya protege el flujo contra CSRF.
+     */
+    public record GoogleConsent(boolean terms, boolean dataPolicy, boolean marketing) {
     }
 
     /** Carga el usuario para el perfil. Lanza 404 si ya no existe. */
@@ -774,6 +947,14 @@ public class AuthService {
             return null;
         }
         return value.length() > 255 ? value.substring(0, 255) : value;
+    }
+
+    /** {@code X-Forwarded-For} puede traer toda la cadena: la columna admite 45. */
+    private static String truncateIp(String ip) {
+        if (ip == null) {
+            return null;
+        }
+        return ip.length() > 45 ? ip.substring(0, 45) : ip;
     }
 
     private static String primaryRole(User user) {

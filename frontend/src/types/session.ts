@@ -24,6 +24,16 @@ export interface RegisterRequest {
   email: string
   password: string
   fullName: string
+  /** Mandatory: terms and conditions. The backend records the version. */
+  acceptTerms: boolean
+  /** Mandatory: personal data treatment policy. */
+  acceptDataPolicy: boolean
+  /** Optional commercial communications. */
+  acceptMarketing: boolean
+}
+
+export interface ResendVerificationRequest {
+  email: string
 }
 
 export interface LoginRequest {

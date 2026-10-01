@@ -98,8 +98,13 @@ public class SecurityConfig {
                                 "/api/v1/auth/google/**",
                                 "/api/v1/auth/password/forgot",
                                 "/api/v1/auth/password/reset",
+                                // Cubre tambien /verify-email/resend: el reenvio es
+                                // publico por definicion (el usuario aun no tiene
+                                // sesion) y su proteccion es el rate limit, no la sesion.
                                 "/api/v1/auth/verify-email",
-                                "/api/v1/meta/disclaimer"
+                                "/api/v1/auth/verify-email/resend",
+                                "/api/v1/meta/disclaimer",
+                                "/api/v1/meta/legal"
                         ).permitAll()
 
                         // Autenticado: el resto de la API.

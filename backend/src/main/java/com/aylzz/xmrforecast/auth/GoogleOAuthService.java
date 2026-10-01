@@ -143,10 +143,46 @@ public class GoogleOAuthService {
      * coincidiendo exactamente con la registrada en Google Cloud.
      */
     public URI buildAuthorizationUri() {
+        return buildAuthorizationUri(null);
+    }
+
+    /**
+     * Construye la URL de autorizacion de Google con state y nonce de un solo uso.
+     *
+     * <p><strong>Por que {@code build()} y no {@code build(true)}.</strong> El
+     * booleano de {@code build} no es "codifica o no": es "las partes que te he
+     * dado ya estan codificadas". Con {@code true}, Spring <em>valida</em> cada
+     * valor como si lo estuviera, y el espacio de {@code scope=openid email
+     * profile} es un caracter ilegal en un parametro de consulta:
+     *
+     * <pre>
+     * java.lang.IllegalArgumentException: Invalid character ' ' for QUERY_PARAM in
+     * "openid email profile"
+     * </pre>
+     *
+     * <p>La excepcion salia del controlador, nadie la capturaba y el manejador
+     * global lo traducía a {@code 500 INTERNAL_ERROR}. El login con Google estaba
+     * roto en todos los entornos y con cualquier valor de las variables, incluido
+     * un despliegue correctamente configurado. Compilaba, arrancaba, y las
+     * pruebas pasaban porque {@code buildAuthorizationUri()} no se invocaba en
+     * ninguna.
+     *
+     * <p>Con {@code build()} Spring codifica los valores: el espacio de {@code scope}
+     * sale como {@code %20}, que Google acepta, y {@code :} y {@code /} del redirect
+     * URI se dejan tal cual, de modo que la URI sigue coincidiendo exactamente con
+     * la registrada en Google Cloud.
+     *
+     * @param consent aceptes marcados en nuestra pagina antes de salir hacia
+     *        Google. {@code null} (o incompleto) significa "sin consentimiento":
+     *        el state se guarda igual, pero el callback no creara cuenta nueva.
+     */
+    public URI buildAuthorizationUri(AuthService.GoogleConsent consent) {
         requireConfigured();
         String state = UUID.randomUUID().toString();
         String nonce = UUID.randomUUID().toString();
-        storeState(state, new OAuthState(nonce, System.currentTimeMillis()));
+        AuthService.GoogleConsent effective = consent != null && consent.terms() && consent.dataPolicy()
+                ? consent : null;
+        storeState(state, new OAuthState(nonce, System.currentTimeMillis(), effective));
 
         return UriComponentsBuilder.fromUriString(AUTH_ENDPOINT)
                 .queryParam("client_id", google().clientId())
@@ -200,6 +236,7 @@ public class GoogleOAuthService {
         AuthService.GoogleIdentity identity = new AuthService.GoogleIdentity(
                 text(claims, "sub"),
                 text(claims, "email"),
+                text(claims, "name"),
                 claims.path("email_verified").asBoolean(false));
 
         if (identity.subject() == null) {
@@ -207,7 +244,7 @@ public class GoogleOAuthService {
                     "El ID Token de Google no incluye un identificador de sujeto.");
         }
 
-        return authService.loginWithGoogle(identity,
+        return authService.loginWithGoogle(identity, expected.consent(),
                 AuditService.clientIp(request), request.getHeader("User-Agent"));
     }
 
@@ -226,12 +263,24 @@ public class GoogleOAuthService {
         return ageMillis <= STATE_TTL.toMillis() ? stored : null;
     }
 
-    /** Guarda el state en Redis con TTL; si Redis no esta, en memoria. */
+    /**
+     * Guarda el state en Redis con TTL; si Redis no esta, en memoria.
+     *
+     * <p>El valor serializa tambien el consentimiento recogido en nuestra pagina
+     * ({@code nonce|createdAt|terms|policy|marketing}), de modo que el callback
+     * sepa si el usuario acepto los documentos <em>antes</em> de salir hacia
+     * Google. Al ser parte del state de un solo uso, no puede alterarse por el
+     * cliente entre la ida y la vuelta.
+     */
     private void storeState(String state, OAuthState value) {
+        AuthService.GoogleConsent consent = value.consent();
+        String payload = value.nonce() + "|" + value.createdAtMillis() + "|"
+                + (consent == null ? "" : "1") + "|"
+                + (consent == null ? "" : "1") + "|"
+                + (consent != null && consent.marketing() ? "1" : "0");
         if (redis != null) {
             try {
-                redis.opsForValue().set(STATE_TTL_KEY + state,
-                        value.nonce() + "|" + value.createdAtMillis(), STATE_TTL);
+                redis.opsForValue().set(STATE_TTL_KEY + state, payload, STATE_TTL);
                 return;
             } catch (RuntimeException ex) {
                 // Redis caido: se degrada a memoria, que es lo que habia antes.
@@ -253,18 +302,27 @@ public class GoogleOAuthService {
                 if (raw == null) {
                     return null;
                 }
-                int separator = raw.lastIndexOf('|');
-                if (separator <= 0) {
-                    return null;
-                }
-                return new OAuthState(raw.substring(0, separator),
-                        Long.parseLong(raw.substring(separator + 1)));
+                return parseState(raw);
             } catch (RuntimeException ex) {
                 log.warn("OAuth state no leido de Redis: {}", ex.getMessage());
             }
         }
         OAuthState stored = pendingStates.remove(state);
         return stored;
+    }
+
+    /** Reconstruye el state; un valor antiguo de dos campos queda sin consentimiento. */
+    private static OAuthState parseState(String raw) {
+        String[] parts = raw.split("\\|", -1);
+        if (parts.length < 2) {
+            return null;
+        }
+        OAuthState state = new OAuthState(parts[0], Long.parseLong(parts[1]), null);
+        if (parts.length >= 5 && "1".equals(parts[2]) && "1".equals(parts[3])) {
+            return new OAuthState(parts[0], Long.parseLong(parts[1]),
+                    new AuthService.GoogleConsent(true, true, "1".equals(parts[4])));
+        }
+        return state;
     }
 
     /** Canje del codigo por tokens. El client secret no sale del servidor (R-14). */
@@ -510,6 +568,7 @@ public class GoogleOAuthService {
         return value == null || value.isNull() ? null : value.asText();
     }
 
-    private record OAuthState(String nonce, long createdAtMillis) {
+    private record OAuthState(String nonce, long createdAtMillis,
+                              AuthService.GoogleConsent consent) {
     }
 }

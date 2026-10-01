@@ -226,7 +226,7 @@ class GoogleOAuthFlowTest {
 
         assertThat(location).startsWith(FRONTEND_CALLBACK + "#");
         assertThat(location).contains("error_code=OAUTH_DENIED");
-        verify(authService, never()).loginWithGoogle(any(), any(), anyString());
+        verify(authService, never()).loginWithGoogle(any(), any(), any(), anyString());
     }
 
     @Test
@@ -250,7 +250,7 @@ class GoogleOAuthFlowTest {
 
         assertThat(location).contains("error_code=OAUTH_INVALID_STATE");
         // El canje con Google no llega a intentarse: el state se valida primero.
-        verify(authService, never()).loginWithGoogle(any(), any(), anyString());
+        verify(authService, never()).loginWithGoogle(any(), any(), any(), anyString());
     }
 
     @Test
@@ -268,7 +268,7 @@ class GoogleOAuthFlowTest {
                 .param("code", "codigo").param("state", state));
 
         assertThat(location).contains("error_code=OAUTH_INVALID_STATE");
-        verify(authService, never()).loginWithGoogle(any(), any(), anyString());
+        verify(authService, never()).loginWithGoogle(any(), any(), any(), anyString());
     }
 
     @Test

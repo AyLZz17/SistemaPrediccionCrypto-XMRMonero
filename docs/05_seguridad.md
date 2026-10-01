@@ -142,11 +142,30 @@ TLS en produccion (R-33).
 - **Los intentos fallidos se asocian a la cuenta**, no solo al correo:
   `login_attempts.user_id` existe con su indice para correlacionar ataques contra
   una cuenta concreta. Guardar solo el correo dejaba ese indice sin usar.
+- **Consentimiento previo y demostrable.** El registro exige los dos aceptes
+  (terminos y politica de datos) y cada aceptacion se escribe en
+  `consent_records` con documento, version, fecha, cuenta, canal e IP dentro de
+  la misma transaccion que crea la cuenta: sin fila no hay cuenta. Si la
+  escritura fallara, no queda un usuario sin prueba de su autorizacion.
+  `acceptMarketing` es opcional y solo genera fila si se acepta.
+- **El reenvio del correo de verificacion es publico y responde igual exista o
+  no la cuenta** (`POST /api/v1/auth/verify-email/resend` -> `204`): cualquier
+  otra respuesta permite enumerar correos registrados. Va en la lista de rutas
+  sensibles del limitador, porque ademas genera un token nuevo cada vez, y
+  caduca los anteriores.
+- **Google OAuth: sin consentimiento registrado no se crea la cuenta.** Los
+  aceptes se recogen en nuestra pagina y viajan dentro del `state` de un solo
+  uso; el callback devuelve `error_code=CONSENT_REQUIRED` y el frontend presenta
+  los documentos antes de reintentar. La identidad se resuelve por `sub`; el
+  correo solo enlaza cuentas existentes y solo si Google afirma
+  `email_verified`. La verificacion aportada por Google se acepta **antes** de
+  comprobar el estado de la cuenta, de modo que una cuenta local sin confirmar
+  no se bloquea a si misma.
 
 ### 4.2 API REST (Spring Boot)
 
 - Mantener OpenAPI y rutas bajo `/api/v1`; retirar endpoints no usados. El
-  inventario vivo son **13 controladores y 46 rutas**, y
+  inventario vivo son **13 controladores y 48 rutas**, y
   **`docs/01_documentacion.md` seccion 3.1 debe listar esas 46 rutas reales**
   (R-35). Un inventario desalineado es un inventario inservible: es lo que
   permite que rutas ausentes convivan con la suite en verde.
@@ -393,6 +412,8 @@ raiz, impacto y acciones correctivas es parte del runbook, no un extra (R-30).
 | SEC-019 | Runbook de incidente ejercitado | Simulacro | Semestral |
 | SEC-020 | Revision de accesos y excepciones | Acta firmada | Mensual y trimestral |
 | SEC-021 | Verificacion de extremo a extremo del artefacto | `tools/verify-stack.ps1` en verde | Cada release |
+| SEC-022 | Consentimiento demostrable y sincronizado | `consent_records` con version + `LegalVersionsContractTest` y `RegisterPayloadContractTest` en verde | Cada cambio legal o de registro |
+| SEC-023 | Reenvio de verificacion sin enumeracion y limitado | Pruebas `ConsentRegistrationTest` (anti-enumeracion, token anterior caducado, 429) | Cada release |
 
 ---
 

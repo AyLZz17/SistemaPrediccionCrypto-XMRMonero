@@ -92,6 +92,9 @@ services:
         value: "true"
       - key: MAIL_FROM
         sync: false
+      # Nombre visible del remitente (no es secreto).
+      - key: MAIL_FROM_NAME
+        value: XMR-Forecast
       - key: FRONTEND_BASE_URL
         value: https://sistema-prediccion-crypto-xmr-moner.vercel.app
       # El backend valida al ML con la CA publica del borde: no necesita

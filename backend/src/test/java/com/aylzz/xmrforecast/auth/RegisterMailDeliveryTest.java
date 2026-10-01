@@ -6,6 +6,7 @@ import com.aylzz.xmrforecast.auth.dto.UserResponse;
 import com.aylzz.xmrforecast.mail.MailService;
 import com.aylzz.xmrforecast.security.JwtService;
 import com.aylzz.xmrforecast.security.TokenHasher;
+import com.aylzz.xmrforecast.user.ConsentRecordRepository;
 import com.aylzz.xmrforecast.user.LoginAttemptRepository;
 import com.aylzz.xmrforecast.user.OAuthAccountRepository;
 import com.aylzz.xmrforecast.user.PasswordResetToken;
@@ -67,6 +68,7 @@ class RegisterMailDeliveryTest {
     private final PasswordResetTokenRepository passwordResetTokenRepository =
             mock(PasswordResetTokenRepository.class);
     private final RevokedTokenRepository revokedTokenRepository = mock(RevokedTokenRepository.class);
+    private final ConsentRecordRepository consentRecordRepository = mock(ConsentRecordRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final JwtService jwtService = mock(JwtService.class);
     private final TokenHasher tokenHasher = mock(TokenHasher.class);
@@ -82,7 +84,8 @@ class RegisterMailDeliveryTest {
         // lo consulta, asi que se inyecta null a proposito.
         service = new AuthService(userRepository, refreshTokenRepository, oauthAccountRepository,
                 loginAttemptRepository, passwordResetTokenRepository, revokedTokenRepository,
-                passwordEncoder, jwtService, tokenHasher, auditService, notificationService, null);
+                consentRecordRepository, passwordEncoder, jwtService, tokenHasher, auditService,
+                notificationService, null);
         ReflectionTestUtils.setField(service, "mailService", mailService);
 
         when(userRepository.saveAndFlush(any(User.class)))
@@ -106,7 +109,8 @@ class RegisterMailDeliveryTest {
     }
 
     private static AuthRequests.RegisterRequest request() {
-        return new AuthRequests.RegisterRequest(EMAIL, "Correcta-2026!", "Daniel Prueba");
+        return new AuthRequests.RegisterRequest(EMAIL, "Correcta-2026!", "Daniel Prueba",
+                true, true, false);
     }
 
     @Test

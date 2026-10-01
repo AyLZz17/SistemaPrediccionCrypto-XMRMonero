@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { me } from '../api/auth'
+import { googleAuthorizeUrl, me, type GoogleConsentParams } from '../api/auth'
 import { ApiError, toApiError } from '../api/errors'
 import { useAuthStore } from '../store/authStore'
-import { Button, Panel, SkeletonPanel, StatusDot } from '../components/ui'
+import { Button, CheckboxField, Panel, SkeletonPanel, StatusDot } from '../components/ui'
+
+/** authorize URL, or `#` if the env is broken (never a blank dead end). */
+function safeAuthorizeUrl(consent: GoogleConsentParams): string {
+  try {
+    return googleAuthorizeUrl('/dashboard', consent)
+  } catch {
+    return '#configuracion-invalida'
+  }
+}
 
 /**
  * `/auth/callback` — landing route of the backend-driven Google OAuth flow.
@@ -28,6 +37,17 @@ export default function GoogleCallbackPage() {
   const setUser = useAuthStore((state) => state.setUser)
   const clearSession = useAuthStore((state) => state.clearSession)
   const [error, setError] = useState<ApiError | null>(null)
+  /**
+   * The backend refused to CREATE a new Google account because the one-time
+   * `state` carried no acceptance of the terms and the data policy. Signing in
+   * an existing account never reaches this state, so the only user who lands
+   * here is someone whose account does not exist yet — exactly the moment when
+   * the documents must be presented (Ley 1581 art. 8: prior, express consent).
+   */
+  const [needsConsent, setNeedsConsent] = useState(false)
+  const [acceptTerms, setAcceptTerms] = useState(false)
+  const [acceptDataPolicy, setAcceptDataPolicy] = useState(false)
+  const [acceptMarketing, setAcceptMarketing] = useState(false)
   const handled = useRef(false)
 
   useEffect(() => {
@@ -46,6 +66,10 @@ export default function GoogleCallbackPage() {
 
     const errorCode = params.get('error_code')
     if (errorCode) {
+      if (errorCode === 'CONSENT_REQUIRED') {
+        setNeedsConsent(true)
+        return
+      }
       setError(
         new ApiError({
           kind: 'http',
@@ -102,6 +126,83 @@ export default function GoogleCallbackPage() {
 
     void establishSession()
   }, [applyOAuthSession, clearSession, navigate, setUser])
+
+  if (needsConsent) {
+    // Nada se marca solo: los dos aceptes se vuelven a pedir aqui porque el
+    // backend no tiene constancia de ellos para esta cuenta nueva.
+    const authorizeHref = safeAuthorizeUrl({ acceptTerms, acceptDataPolicy, acceptMarketing })
+    return (
+      <div className="mx-auto w-full max-w-md space-y-5">
+        <Panel>
+          <p className="label-caps">Alta de cuenta con Google</p>
+          <h1 className="mt-2 text-xl font-semibold text-ink">
+            Acepta los documentos para crear tu cuenta
+          </h1>
+          <p className="mt-2 text-sm text-ink-secondary">
+            Google ha confirmado tu identidad, pero todavia no existe una cuenta en el sistema.
+            Para crearla necesitamos tu aceptacion expresa de los siguientes documentos.
+          </p>
+
+          <div className="mt-4 space-y-3" data-testid="google-consent">
+            <CheckboxField
+              data-testid="google-accept-terms"
+              name="acceptTerms"
+              required
+              checked={acceptTerms}
+              onChange={(event) => setAcceptTerms(event.target.checked)}
+              label={
+                <>
+                  He leido y acepto los{' '}
+                  <Link to="/terms" className="link-accent">
+                    terminos y condiciones
+                  </Link>
+                  .
+                </>
+              }
+            />
+            <CheckboxField
+              data-testid="google-accept-data-policy"
+              name="acceptDataPolicy"
+              required
+              checked={acceptDataPolicy}
+              onChange={(event) => setAcceptDataPolicy(event.target.checked)}
+              label={
+                <>
+                  Acepto la{' '}
+                  <Link to="/data-policy" className="link-accent">
+                    politica de tratamiento de datos personales
+                  </Link>
+                  .
+                </>
+              }
+            />
+            <CheckboxField
+              data-testid="google-accept-marketing"
+              name="acceptMarketing"
+              checked={acceptMarketing}
+              onChange={(event) => setAcceptMarketing(event.target.checked)}
+              label="Quiero recibir novedades y comunicaciones comerciales (opcional)."
+            />
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            {/* Navegacion completa: el endpoint de autorizacion responde 307 y
+                el navegador debe salir hacia Google con state y consentimiento. */}
+            <Button
+              data-testid="google-consent-retry"
+              disabled={!acceptTerms || !acceptDataPolicy}
+              onClick={() => window.location.assign(authorizeHref)}
+            >
+              Aceptar y continuar
+            </Button>
+            <Link to="/register">
+              <Button variant="secondary">Registrarme con correo</Button>
+            </Link>
+          </div>
+        </Panel>
+      </div>
+    )
+  }
 
   if (error) {
     return (

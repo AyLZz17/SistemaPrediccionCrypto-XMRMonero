@@ -87,7 +87,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/v1/auth/register")
                 || path.startsWith("/api/v1/auth/refresh")
                 || path.startsWith("/api/v1/auth/password/forgot")
-                || path.startsWith("/api/v1/auth/password/reset");
+                || path.startsWith("/api/v1/auth/password/reset")
+                // El reenvio del correo de verificacion es publico y genera un
+                // token cada vez: sin limite, un script regenera tokens a voluntad
+                // y dispara envios masivos contra una lista de correos.
+                || path.startsWith("/api/v1/auth/verify-email");
     }
 
     /**

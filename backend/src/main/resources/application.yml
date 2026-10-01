@@ -86,7 +86,9 @@ spring:
           timeout: ${MAIL_READ_TIMEOUT_MS:8000}
           writetimeout: ${MAIL_WRITE_TIMEOUT_MS:5000}
           starttls:
-            enable: ${MAIL_STARTTLS:false}
+            # MAIL_USE_TLS es el nombre generico del contrato de entorno;
+            # MAIL_STARTTLS, el historico. Si los dos estan, manda el primero.
+            enable: ${MAIL_USE_TLS:${MAIL_STARTTLS:false}}
     hibernate:
       mail:
         host: ${MAIL_HOST:localhost}
@@ -215,3 +217,8 @@ app:
   jobs:
     max-attempts: 3
     heartbeat-timeout-seconds: 900
+
+  legal:
+    # Canal de atencion a titulares de datos que aparece en el pie de pagina y
+    # en las politicas. Vacio = se usa el buzon operativo por defecto.
+    contact-email: ${LEGAL_CONTACT_EMAIL:}

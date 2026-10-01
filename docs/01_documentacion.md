@@ -61,7 +61,7 @@ Se adopta un **monolito modular Spring Boot** en lugar de microservicios complet
 
 ### 3.1 Spring Boot (`/api/v1`)
 
-**Inventario real: 13 controladores y 46 rutas de metodo.** Todas exigen `Authorization: Bearer <JWT>` salvo las marcadas **PUBLICA**. Los identificadores que aparecen en las respuestas y en las variables de ruta son **cadenas opacas** (`common/Ids.java`), no numeros: el cliente no debe asumir que son enteros.
+**Inventario real: 13 controladores y 48 rutas de metodo.** Todas exigen `Authorization: Bearer <JWT>` salvo las marcadas **PUBLICA**. Los identificadores que aparecen en las respuestas y en las variables de ruta son **cadenas opacas** (`common/Ids.java`), no numeros: el cliente no debe asumir que son enteros.
 
 Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administrador), `ADMIN` (solo administrador).
 
@@ -70,13 +70,14 @@ Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administr
 | Metodo | Ruta | Rol | Descripcion |
 |--------|------|-----|-------------|
 | GET | `/api/v1/meta/disclaimer` | **PUBLICA** | Aviso legal: no es asesoria financiera, no promete rentabilidad y no simula operaciones (R-11) |
+| GET | `/api/v1/meta/legal` | **PUBLICA** | Documentos legales publicados con su **version vigente**, fecha y canal de contacto; es la misma fuente que registra el consentimiento (R-43) |
 | GET | `/api/v1/meta/info` | VIEWER+ | Nombre y version de la aplicacion mas el aviso legal |
 
 #### 3.1.2 Autenticacion
 
 | Metodo | Ruta | Rol | Descripcion |
 |--------|------|-----|-------------|
-| POST | `/api/v1/auth/register` | **PUBLICA** | Crea la cuenta -> `201`; nace `PENDING_VERIFICATION` con rol `VIEWER` |
+| POST | `/api/v1/auth/register` | **PUBLICA** | Crea la cuenta -> `201`; nace `PENDING_VERIFICATION` con rol `VIEWER`. **Exige** `acceptTerms` y `acceptDataPolicy`: sin ellos `400 VALIDATION_FAILED` con `fieldErrors` que senalan ambos campos (la validacion de bean va antes, R-46) y el servicio responde ademas `400 CONSENT_REQUIRED`, que es el codigo que ve el flujo de Google. `acceptMarketing` es opcional. Cada aceptacion se guarda en `consent_records` con version, fecha, IP y agente |
 | POST | `/api/v1/auth/login` | **PUBLICA** | Credenciales -> `200` con JWT; emite la cookie `HttpOnly` `xmr_refresh` |
 | POST | `/api/v1/auth/refresh` | **PUBLICA** | Rota el refresh token -> `200`; reutilizar uno ya rotado revoca la familia completa |
 | POST | `/api/v1/auth/logout` | VIEWER+ (principal opcional) | `204`; revoca el refresh token y borra la cookie. Idempotente |
@@ -84,10 +85,11 @@ Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administr
 | POST | `/api/v1/auth/password/reset` | **PUBLICA** | `204`; restablece la contrasena con un token opaco |
 | POST | `/api/v1/auth/password/change` | VIEWER+ | `204`; cambia la contrasena del autenticado y revoca sus sesiones |
 | POST | `/api/v1/auth/verify-email` | **PUBLICA** | `204`; confirma el correo con el parametro de consulta `token` |
+| POST | `/api/v1/auth/verify-email/resend` | **PUBLICA** | `204` exista o no la cuenta (anti-enumeracion); caduca el token anterior y envia uno nuevo. `429` por rate limit |
 | GET | `/api/v1/auth/me` | VIEWER+ | Perfil del autenticado; `UserResponse` trae `role` (efectiva, la mayor) y `roles` (conjunto completo) |
 | GET | `/api/v1/auth/request-id` | VIEWER+ | Identificadores de correlacion de la peticion actual |
-| GET | `/api/v1/auth/google/authorize` | **PUBLICA** | `307` hacia el formulario de consentimiento de Google |
-| GET | `/api/v1/auth/google/callback` | **PUBLICA** | `302` al frontend con la sesion en el **fragmento** de la URL y `Set-Cookie: xmr_refresh` |
+| GET | `/api/v1/auth/google/authorize` | **PUBLICA** | `307` hacia el formulario de consentimiento de Google. Acepta `acceptTerms`, `acceptDataPolicy` y `acceptMarketing`, que viajan dentro del `state` de un solo uso |
+| GET | `/api/v1/auth/google/callback` | **PUBLICA** | `302` al frontend con la sesion en el **fragmento** de la URL y `Set-Cookie: xmr_refresh`. Sin consentimiento en el `state` y sin cuenta previa responde `error_code=CONSENT_REQUIRED` |
 
 > La cookie `xmr_refresh` se emite en el login, en el refresh y en el callback de Google con `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, y se borra en el logout.
 
@@ -285,6 +287,10 @@ activa. Antes existia `ML_VERIFY_TLS`, que el codigo leia y no usaba.
 | `MAIL_READ_TIMEOUT_MS` | Timeout de lectura SMTP (8000) |
 | `MAIL_WRITE_TIMEOUT_MS` | Timeout de escritura SMTP (5000) |
 | `MAIL_FROM` | Remitente de los correos de cuenta |
+| `MAIL_FROM_NAME` | Nombre visible del remitente en la cabecera `From` (opcional) |
+| `MAIL_USE_TLS` | Alias generico de `MAIL_STARTTLS`; si estan los dos, manda el primero |
+| `APP_PUBLIC_URL` | URL publica para los enlaces de los correos. Si no esta, se usa `FRONTEND_BASE_URL` |
+| `LEGAL_CONTACT_EMAIL` | Canal de atencion a titulares mostrado en el pie y en las politicas |
 | `GOOGLE_MAIL_REFRESH_TOKEN` | Refresh token de la Gmail API (`MAIL_TRANSPORT=gmail`) |
 
 **Limites y bloqueo de cuentas**
@@ -308,8 +314,11 @@ activa. Antes existia `ML_VERIFY_TLS`, que el codigo leia y no usaba.
 - **CORS:** allowlist de origenes HTTPS.
 - **TLS local:** los certificados de desarrollo son autofirmados y solo sirven para el entorno local; produccion debe usar certificados emitidos por una autoridad confiable.
 - **Conexiones internas:** Spring Boot usa `ML_SERVICE_URL=https://ml-service:8443` y ML usa `MLFLOW_TRACKING_URI=https://mlflow:5000`.
-- **Rate limiting:** en login y en los endpoints de trabajo.
+- **Rate limiting:** en login, en los endpoints de trabajo y en `password/forgot`, `password/reset` y `verify-email` (incluido el reenvio), que son publicos y generan tokens.
 - **Auditoria:** registro de acciones sensibles en `audit_events` con resultado `SUCCESS`/`DENIED`/`FAILURE`.
+- **Consentimiento:** cada aceptacion de terminos o de politica de datos queda en `consent_records` (migracion `V6`) con documento, version, fecha y hora, cuenta, canal y IP. El servidor lo comprueba dos veces: con `@AssertTrue` sobre una instancia real y de nuevo en `AuthService`, de modo que un registro sin aceptacion es imposible aunque se salte el formulario (R-46).
+- **Documentos legales:** cinco paginas publicas (`/terms`, `/privacy`, `/data-policy`, `/cookies`, `/legal-notice`) enlazadas desde el pie en todas las rutas; la version que muestran es la misma que sirve `GET /api/v1/meta/legal` y la que se guarda al aceptar (`LegalVersionsContractTest` compara los dos archivos de origen).
+- **Google OAuth:** identidad por `sub` (no por correo), `state` y `nonce` de un solo uso en Redis, y creacion de cuenta nueva solo si el `state` trae los dos aceptes; la verificacion del correo por parte de Google se acepta **antes** de comprobar si la cuenta esta activa.
 - **Secretos:** solo por variables de entorno; ninguno en git, artefactos ni logs.
 
 ---

@@ -92,9 +92,17 @@ sequenceDiagram
     participant BE as Backend
     participant DB as PostgreSQL
 
-    FE->>BE: POST /api/v1/auth/register
+    FE->>BE: POST /api/v1/auth/register (acceptTerms, acceptDataPolicy)
+    Note over BE: 400 CONSENT_REQUIRED si falta alguno
     BE->>DB: INSERT users status=PENDING_VERIFICATION, rol VIEWER
+    BE->>DB: INSERT consent_records (mismo COMMIT: version, IP, canal)
+    Note right of DB: si la fila de consentimiento falla, no se crea la cuenta
     BE-->>FE: 201 cuenta creada
+    BE--)FE: correo de verificacion (hilo propio, pos-commit)
+
+    FE->>BE: POST /api/v1/auth/verify-email/resend (email)
+    BE->>DB: UPDATE tokens anteriores consumed_at = now()
+    BE-->>FE: 204 exista o no la cuenta (anti-enumeracion)
 
     FE->>BE: POST /api/v1/auth/login
     BE->>DB: Busca por email, verifica BCrypt
@@ -153,6 +161,7 @@ erDiagram
     users ||--o{ login_attempts : "registra"
     users ||--o{ password_reset_tokens : "recupera"
     users ||--o{ email_verification_tokens : "verifica"
+    users ||--o{ consent_records : "autoriza"
 
     %% --- audit ---
     users ||--o{ audit_events : "actua"
@@ -261,6 +270,17 @@ erDiagram
         varchar token_hash UK
         timestamptz expires_at
         timestamptz verified_at
+    }
+    consent_records {
+        bigint id PK
+        bigint user_id FK
+        varchar consent_type "TERMS, DATA_POLICY, MARKETING"
+        varchar version "version vigente aceptada"
+        boolean accepted
+        varchar source "REGISTER, GOOGLE_OAUTH, EXPLICIT"
+        varchar ip_address
+        varchar user_agent
+        timestamptz accepted_at
     }
     audit_events {
         bigint id PK

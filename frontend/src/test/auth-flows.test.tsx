@@ -93,6 +93,10 @@ describe('register flow', () => {
     await user.type(screen.getByLabelText(/correo electronico/i), 'nuevo@ejemplo.com')
     await user.type(screen.getByLabelText(/^contrasena/i), 'contrasena-larga-1')
     await user.type(screen.getByLabelText(/repetir contrasena/i), 'contrasena-larga-1')
+    await user.click(screen.getByLabelText(/he leido y acepto los terminos y condiciones/i))
+    await user.click(
+      screen.getByLabelText(/acepto la politica de tratamiento de datos personales/i),
+    )
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
@@ -102,6 +106,9 @@ describe('register flow', () => {
       email: 'nuevo@ejemplo.com',
       password: 'contrasena-larga-1',
       fullName: 'Nuevo Usuario',
+      acceptTerms: true,
+      acceptDataPolicy: true,
+      acceptMarketing: false,
     })
   })
 
@@ -137,10 +144,53 @@ describe('register flow', () => {
     await user.type(screen.getByLabelText(/correo electronico/i), 'duplicado@ejemplo.com')
     await user.type(screen.getByLabelText(/^contrasena/i), 'contrasena-larga-1')
     await user.type(screen.getByLabelText(/repetir contrasena/i), 'contrasena-larga-1')
+    await user.click(screen.getByLabelText(/he leido y acepto los terminos y condiciones/i))
+    await user.click(
+      screen.getByLabelText(/acepto la politica de tratamiento de datos personales/i),
+    )
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     // Shown twice on purpose: on the field and in the summary alert.
     expect(screen.getAllByText(/ya existe una cuenta con ese correo/i).length).toBeGreaterThan(0)
+  })
+
+  it('never submits without the two mandatory consents', async () => {
+    const { calls } = installFetchStub({
+      'POST /api/v1/auth/register': () =>
+        jsonResponse({
+          status: 201,
+          json: { id: 'u-10', email: 'nuevo@ejemplo.com', fullName: 'Nuevo Usuario', role: 'VIEWER' },
+        }),
+    })
+    renderApp('/register')
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText(/nombre completo/i), 'Nuevo Usuario')
+    await user.type(screen.getByLabelText(/correo electronico/i), 'nuevo@ejemplo.com')
+    await user.type(screen.getByLabelText(/^contrasena/i), 'contrasena-larga-1')
+    await user.type(screen.getByLabelText(/repetir contrasena/i), 'contrasena-larga-1')
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+
+    expect(await screen.findByTestId('consent-error')).toHaveTextContent(
+      /debes aceptar los terminos y condiciones/i,
+    )
+    expect(calls.filter((call) => call.url === '/api/v1/auth/register')).toHaveLength(0)
+
+    // Accepting only the terms is still not enough.
+    await user.click(screen.getByLabelText(/he leido y acepto los terminos y condiciones/i))
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    expect(await screen.findByTestId('consent-error')).toHaveTextContent(
+      /debes aceptar la politica de tratamiento de datos personales/i,
+    )
+    expect(calls.filter((call) => call.url === '/api/v1/auth/register')).toHaveLength(0)
+
+    // The marketing box is optional: not ticking it must not block anything.
+    await user.click(
+      screen.getByLabelText(/acepto la politica de tratamiento de datos personales/i),
+    )
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(calls.filter((call) => call.url === '/api/v1/auth/register')).toHaveLength(1)
   })
 })
 
