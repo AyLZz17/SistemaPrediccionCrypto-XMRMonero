@@ -8,31 +8,32 @@
   (R-11/R-12). Aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
 
 ## Tarea en curso
-- T-038: validador acepta `VITE_VERCEL_*` (pagina en blanco en Vercel).
-  Auto-deploy en curso; falta probar registro contra Render.
+- T-040: corregido el 500 de `GET /api/v1/auth/google/authorize` (causa raiz en
+  codigo, no en variables). **Pendiente**: push a main y verificar el 307 real
+  contra el backend desplegado + pantalla de Google en Chrome.
 
 ## Estado verificado en esta sesion
-- **Stack Docker UP**: 6/6 `healthy`. **`tools/verify-stack.ps1`: 48/48.**
-- Frontend TLS verificado con la CA de desarrollo: `200` en `/` y en
-  `/api/v1/meta/disclaimer` via proxy (aviso legal intacto).
-- Backend: `mvn clean verify` = 129 tests, BUILD SUCCESS (Java 21).
+- Backend `mvn clean verify` = **146 tests**, BUILD SUCCESS (Java 21).
+- Frontend **148/148** + `npm run build` OK. (Un test de `route-protection`
+  dio timeout con la suite entera y pasa aislado: carga, no regresion.)
+- `GoogleOAuthFlowTest` (nueva, 15 tests) falla con el codigo viejo y pasa con
+  el arreglo: comprobado con `git stash`, no supuesto.
+- `curl` al backend de Render **antes** del arreglo = 500 `INTERNAL_ERROR`.
+
+## Lo que NO se pudo verificar (no inventarlo)
+- Panel de Render: sin sesion en Chrome, no se pudieron leer logs, variables ni
+  el estado del deploy. **No se modifico ninguna variable de entorno.**
+- Google Cloud: sin acceso, no se reviso el cliente OAuth ni sus redirect URIs.
+- `ML_SERVICE_URL` sigue con `sync: false`; el nombre real del servicio ML no
+  esta confirmado (`ml-service-h6u5` responde 404). **PENDIENTE PARA EL CLIENTE.**
 
 ## Bloqueantes historicos (ningun test los detectaba)
 1. Cola muerta (@Modifying sin @Transactional + auto-invocacion sin proxy).
 2. OAuth: firma con parts[1]; @Valid ausente + List<@Size Integer>; catch
    dentro de la transaccion (R-44/R-45/R-46/R-47).
-
-## Fallos del primer despliegue (solo en local, nunca en tests)
-1. mlflow v2.8.0 inexistente → v2.8.1. 2. Pins py3.12 vs base 3.11 → 3.12.
-3. mkdir tras USER ml. 4. truststore OpenSSL3 vacio → keytool. 5. MLflow
-   sin psycopg2 → SQLite local. 6. wget sin -O; healthz en 8080 http.
-7. assume-unchanged ocultaba cambios. 8. VITE_* en BUILD → build-arg.
-9. CORS: http://localhost:3000 en .env. 10. Frontend sin TLS → nginx 8443
-   ssl + cert `frontend`, 3000→8443. 11. Upstream `xmr_backend` rompia el
-   SNI (Tomcat: illegal_parameter) → upstream `backend` = SAN del cert.
-12. HTTP en claro al puerto TLS daba el 400 en crudo → `error_page 497`
-    redirige a https; 500/502/503/504 sirven `50x.html` propia (oscura,
-    con pie R-11, sin secretos). La SPA ya tenia NotFound/ErrorBoundary.
+3. **`build(true)` de `UriComponentsBuilder`**: no es "codifica", es "ya esta
+   codificado" → `scope=openid email profile` con espacios → 500 (R-49). El
+   mismo error estaba en `MlServiceClient.get()`; corregido tambien.
 
 ## Decisiones
 - D-00 Monero · D-04 regresion + direccion · D-05 split 70/15/15 cronologico.
@@ -44,7 +45,4 @@
 - `JAVA_HOME` = Corretto 21.0.12. **Siempre `mvn clean` con backend detenido.**
 - Maven 3.9.16 · Node 24.19 · Docker 29.6.2 · Python 3.12.10.
 - PostgreSQL nativo en 5432: el contenedor de pruebas usa **55432**.
-## Pendiente / riesgos
-- k6 sin ejecutar; `npm audit` por decidir; OAuth sin probar en Google.
-- Entrenamiento CLI; OAuth en memoria; sin circuit breaker; sin MFA admin.
-- T-039: SMTP para cuenta/recuperacion, pantalla `/verify-email`; Google requiere credenciales reales.
+- Spring Boot 3.2.5 (Spring 6.1.6): `build(true)` valida caracteres; ver R-49.

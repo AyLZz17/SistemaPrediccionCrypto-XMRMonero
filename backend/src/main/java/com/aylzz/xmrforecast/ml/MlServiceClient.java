@@ -128,7 +128,12 @@ public class MlServiceClient {
         var builder = org.springframework.web.util.UriComponentsBuilder.fromPath(path);
         // queryParam(String, Object...) no admite un Map: se anade cada clave por separado.
         query.forEach((name, value) -> builder.queryParam(name, value));
-        var uri = builder.build(true).toUri();
+        // build() y no build(true): el booleano declara que los valores ya estan
+        // codificados, y entonces Spring los valida como tales y rechaza con
+        // IllegalArgumentException cualquier caracter ilegal en la consulta (un
+        // espacio, por ejemplo). Google sufria exactamente ese fallo al construir
+        // la URL de autorizacion con `scope=openid email profile`.
+        var uri = builder.build().toUri();
         return restClient.get()
                 .uri(uri)
                 .headers(this::propagateCorrelation)

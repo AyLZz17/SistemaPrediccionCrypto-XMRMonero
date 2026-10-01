@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
  * firma) como si fueran los claims. El resultado era que <strong>ningun login con
  * Google podia completarse</strong>: la firma nunca cuadraba y se respondia
  * INVALID_ID_TOKEN_SIGNATURE el 100 % de las veces. Compilaba, arrancaba, y
- *最长 toda la cadena de pruebas pasaba porque el flujo OAuth nunca se ejecutaba
+ * toda la cadena de pruebas pasaba porque el flujo OAuth nunca se ejecutaba
  * contra Google.
  *
  * <p>Un JWT es {@code base64url(header) . base64url(payload) . base64url(firma)}.

@@ -83,9 +83,41 @@ public class GoogleOAuthService {
             throw ApiException.unavailable("OAUTH_NOT_CONFIGURED",
                     "El inicio de sesion con Google no esta configurado en este entorno.");
         }
+        if (google().redirectUri() == null || google().redirectUri().isBlank()) {
+            // Sin redirect URI, Google rechaza la peticion con su propia pagina de
+            // error. Un 503 controlado dice en el log que falta la variable; un 400
+            // de Google, no.
+            throw ApiException.unavailable("OAUTH_REDIRECT_URI_NOT_CONFIGURED",
+                    "El inicio de sesion con Google no tiene configurada la URI de retorno.");
+        }
     }
 
-    /** Construye la URL de autorizacion de Google con state y nonce de un solo uso. */
+    /**
+     * Construye la URL de autorizacion de Google con state y nonce de un solo uso.
+     *
+     * <p><strong>Por que {@code build()} y no {@code build(true)}.</strong> El
+     * booleano de {@code build} no es "codifica o no": es "las partes que te he
+     * dado ya estan codificadas". Con {@code true}, Spring <em>valida</em> cada
+     * valor como si lo estuviera, y el espacio de {@code scope=openid email
+     * profile} es un caracter ilegal en un parametro de consulta:
+     *
+     * <pre>
+     * java.lang.IllegalArgumentException: Invalid character ' ' for QUERY_PARAM in
+     * "openid email profile"
+     * </pre>
+     *
+     * <p>La excepcion salia del controlador, nadie la capturaba y el manejador
+     * global lo traducía a {@code 500 INTERNAL_ERROR}. El login con Google estaba
+     * roto en todos los entornos y con cualquier valor de las variables, incluido
+     * un despliegue correctamente configurado. Compilaba, arrancaba, y las
+     * pruebas pasaban porque {@code buildAuthorizationUri()} no se invocaba en
+     * ninguna.
+     *
+     * <p>Con {@code build()} Spring codifica los valores: el espacio de
+     * {@code scope} sale como {@code %20}, que Google acepta, y {@code :} y
+     * {@code /} del redirect URI se dejan tal cual, de modo que la URI sigue
+     * coincidiendo exactamente con la registrada en Google Cloud.
+     */
     public URI buildAuthorizationUri() {
         requireConfigured();
         String state = UUID.randomUUID().toString();
@@ -101,7 +133,7 @@ public class GoogleOAuthService {
                 .queryParam("nonce", nonce)
                 .queryParam("prompt", "select_account")
                 .queryParam("access_type", "offline")
-                .build(true)
+                .build()
                 .toUri();
     }
 
