@@ -44,7 +44,7 @@
 - `JAVA_HOME` = Corretto 21.0.12. **Siempre `mvn clean` con backend detenido.**
 - Maven 3.9.16 · Node 24.19 · Docker 29.6.2 · Python 3.12.10.
 - PostgreSQL nativo en 5432: el contenedor de pruebas usa **55432**.
-
 ## Pendiente / riesgos
-- k6 sin ejecutar; `npm audit` por decidir (R-29); OAuth sin probar en Google.
-- Entrenamiento solo CLI; OAuth en memoria; sin circuit breaker; sin MFA admin.
+- k6 sin ejecutar; `npm audit` por decidir; OAuth sin probar en Google.
+- Entrenamiento CLI; OAuth en memoria; sin circuit breaker; sin MFA admin.
+- T-039: SMTP para cuenta/recuperacion, pantalla `/verify-email`; Google requiere credenciales reales.

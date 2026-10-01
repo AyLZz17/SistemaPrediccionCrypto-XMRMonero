@@ -5,8 +5,8 @@ import { useAuthStore } from '../store/authStore'
 
 const FEATURES = [
   {
-    title: 'LSTM y GRU frente a baselines',
-    body: 'Comparamos modelos recurrentes contra media movil, regresion lineal y ARIMA sobre la misma particion cronologica (R-01, R-05).',
+    title: 'Comparamos varios modelos',
+    body: 'Probamos LSTM y GRU frente a media movil, regresion lineal y ARIMA con los mismos datos y fechas (R-01, R-05).',
   },
   {
     title: 'Metricas obligatorias',
@@ -106,7 +106,7 @@ export default function LandingPage() {
         <div>
           <p className="label-caps">Principios</p>
           <h2 id="landing-features" className="mt-1 text-2xl font-semibold text-ink">
-            Lo que guarantee la plataforma
+            Lo que ofrece la plataforma
           </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">

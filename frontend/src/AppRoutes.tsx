@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 /*
@@ -104,6 +105,14 @@ export function AppRoutes() {
           </PublicLayout>
         }
         path="/auth/callback"
+      />
+      <Route
+        element={
+          <PublicLayout variant="auth">
+            <VerifyEmailPage />
+          </PublicLayout>
+        }
+        path="/verify-email"
       />
 
       {/* --------------------------------------------------- authenticated */}

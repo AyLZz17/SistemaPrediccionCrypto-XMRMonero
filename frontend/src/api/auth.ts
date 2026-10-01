@@ -93,6 +93,14 @@ export async function resetPassword(payload: ResetPasswordRequest): Promise<void
   })
 }
 
+export async function verifyEmail(token: string): Promise<void> {
+  await rawRequest<null>(`${BASE}/verify-email?token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    skipAuth: true,
+    requestId: newRequestId(),
+  })
+}
+
 export async function changePassword(payload: ChangePasswordRequest): Promise<void> {
   await apiRequest<null>(`${BASE}/password/change`, { method: 'POST', body: payload })
 }

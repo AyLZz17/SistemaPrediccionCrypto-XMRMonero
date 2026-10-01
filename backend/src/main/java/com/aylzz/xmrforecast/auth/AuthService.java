@@ -7,6 +7,7 @@ import com.aylzz.xmrforecast.auth.dto.TokenResponse;
 import com.aylzz.xmrforecast.auth.dto.UserResponse;
 import com.aylzz.xmrforecast.common.ApiException;
 import com.aylzz.xmrforecast.config.AppProperties;
+import com.aylzz.xmrforecast.mail.MailService;
 import com.aylzz.xmrforecast.security.JwtService;
 import com.aylzz.xmrforecast.security.Role;
 import com.aylzz.xmrforecast.security.TokenHasher;
@@ -66,6 +67,9 @@ public class AuthService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final AppProperties properties;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private MailService mailService;
 
     /**
      * Tokens opacos pendientes de entrega por correo. Solo viven en memoria del
@@ -128,7 +132,10 @@ public class AuthService {
                     "No se puede completar el registro con esos datos.");
         }
 
-        issueVerificationToken(saved);
+        String verificationToken = issueVerificationToken(saved);
+        if (mailService != null) {
+            mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationToken);
+        }
         notificationService.notify(saved.getId(), NotificationService.NotificationType.ACCOUNT,
                 "Confirme su correo",
                 "Enviamos un enlace de verificacion a " + saved.getEmail(),
@@ -321,6 +328,10 @@ public class AuthService {
             token.setExpiresAt(Instant.now().plus(RESET_TOKEN_TTL));
             passwordResetTokenRepository.save(token);
             pendingResetTokens.put(user.getId(), plain);
+
+            if (mailService != null) {
+                mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), plain);
+            }
 
             notificationService.notify(user.getId(), NotificationService.NotificationType.ACCOUNT,
                     "Recuperacion de contrasena",
@@ -587,7 +598,7 @@ public class AuthService {
                 String.valueOf(user.getId()), AuditEvent.Outcome.DENIED, Map.of("reason", reason));
     }
 
-    private void issueVerificationToken(User user) {
+    private String issueVerificationToken(User user) {
         invalidatePending(user.getId(), PasswordResetToken.Purpose.VERIFY_EMAIL);
         String plain = TokenHasher.newOpaqueToken();
         PasswordResetToken token = new PasswordResetToken();
@@ -597,6 +608,7 @@ public class AuthService {
         token.setExpiresAt(Instant.now().plus(VERIFY_TOKEN_TTL));
         passwordResetTokenRepository.save(token);
         pendingVerificationTokens.put(user.getId(), plain);
+        return plain;
     }
 
     public UserResponse toResponse(User user) {

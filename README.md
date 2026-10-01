@@ -137,6 +137,9 @@ caracteres con mayúscula, minúscula, dígito y símbolo, sin espacios.
 - **Bloqueo progresivo**: tras N fallos consecutivos la cuenta se bloquea temporalmente
   y se notifica al usuario.
 - Cada intento (exitoso o no) queda en `login_attempts`.
+- El enlace de confirmacion se envia automaticamente por SMTP. Configura `MAIL_HOST`,
+  `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH`, `MAIL_STARTTLS`,
+  `MAIL_FROM` y `FRONTEND_BASE_URL` en el entorno del backend.
 
 ### JWT propio
 
@@ -171,6 +174,11 @@ Authorization Code Flow, con el canje **siempre en el backend**:
 La **identidad es el `sub`**, no el correo. El correo solo permite *enlazar* una cuenta
 local ya existente: nunca concede acceso por sí solo, y solo si Google afirma
 `email_verified`. El `client_secret` no sale del servidor.
+
+Para activar el boton en un entorno concreto tambien deben configurarse
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URI`. Si faltan las
+credenciales, `/auth/google/authorize` responde `503 OAUTH_NOT_CONFIGURED` de forma
+intencionada; no es posible completar OAuth sin una aplicacion registrada en Google.
 
 ### Roles
 

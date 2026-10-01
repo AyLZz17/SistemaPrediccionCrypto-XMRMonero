@@ -56,13 +56,29 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         value: https://sistema-prediccion-crypto-xmr-moner.vercel.app
       - key: GOOGLE_CLIENT_ID
-        value: ""
+        sync: false
       - key: GOOGLE_CLIENT_SECRET
-        value: ""
+        sync: false
       - key: GOOGLE_REDIRECT_URI
         value: https://xmr-backend.onrender.com/api/v1/auth/google/callback
       - key: FRONTEND_OAUTH_CALLBACK
         value: https://sistema-prediccion-crypto-xmr-moner.vercel.app/auth/callback
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_SMTP_AUTH
+        value: "true"
+      - key: MAIL_STARTTLS
+        value: "true"
+      - key: MAIL_FROM
+        sync: false
+      - key: FRONTEND_BASE_URL
+        value: https://sistema-prediccion-crypto-xmr-moner.vercel.app
       # El backend valida al ML con la CA publica del borde: no necesita
       # truststore casero (TRUSTSTORE_B64 solo para topologias con CA propia).
       - key: JAVA_OPTS
