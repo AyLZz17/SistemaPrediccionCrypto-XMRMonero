@@ -27,6 +27,10 @@
 - Frontend `npm run lint` = 0 · `npm test` = **169/169** · `npm run build` OK.
 - Pila completa Docker (6 servicios healthy) + `tools/verify-stack.ps1` =
   **53/53 comprobaciones OK**; Flyway `V1..V6` sobre PostgreSQL 15.19, **23 tablas**.
+- Produccion tras el push `2faa49d`: `meta/legal` 200 (5 docs, `2026-10-01`);
+  registro sin aceptes 400 con los dos campos, con aceptes 201; reenvio 204 x2
+  con cuerpos identicos; Vercel `/terms` 200, pie literal + 5 enlaces, boxes sin
+  marcar.
 - Inventario real: 48 metodos de mapeo en 13 controladores (docs/01 y 05
   actualizados de 46 a 48).
 - Contratos nuevos: `RegisterPayloadContractTest`, `LegalVersionsContractTest`.
