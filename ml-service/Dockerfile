@@ -27,12 +27,14 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 # ---- capa de dependencias (se reaprovecha si no cambian los requisitos)
-COPY requirements.txt ./
+# Contexto RAIZ del repo (igual que el backend): Render construye siempre
+# desde la raiz, asi que las rutas van con prefijo `ml-service/`.
+COPY ml-service/requirements.txt ./
 RUN set -eux; \
     pip install --no-cache-dir -r requirements.txt
 
 # ---- codigo de aplicacion
-COPY app ./app
+COPY ml-service/app ./app
 
 # ---- usuario sin privilegios
 RUN groupadd --system --gid 1001 ml \

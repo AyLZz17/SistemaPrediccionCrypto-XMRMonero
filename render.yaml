@@ -1,0 +1,94 @@
+# =====================================================================
+# XMR-Forecast :: Blueprint de Render (solo computo; datos ya creados a mano)
+#
+# USO
+#   Render → New → Blueprint → repo → Apply. Los valores `sync: false` se
+#   rellenan en el dashboard (vienen de las paginas de Postgres/Key Value del
+#   paso 1). Los ficheros `docker/certs` NO estan en git (ignorado): se suben
+#   como Secret Files en el dashboard con las rutas exactas de abajo.
+#
+# TOPOLOGIA
+#   internet (TLS del borde) → xmr-backend (HTTP interno, SERVER_SSL_ENABLED)
+#   xmr-backend → ml-service (HTTPS con CA propia, nombre `ml-service` = SAN)
+#   MLflow no se despliega: tracking en modo degradado (ML_MLFLOW_ENABLED).
+# =====================================================================
+
+services:
+  # ------------------------------------------------------- backend (publico)
+  - type: web
+    name: xmr-backend
+    runtime: docker
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SERVER_SSL_ENABLED
+        value: "false"
+      - key: SERVER_PORT
+        value: "10000"
+      - key: DB_URL
+        sync: false # jdbc:postgresql://<host-interno>:5432/<db> (pagina Postgres)
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        sync: false # hostname interno del Key Value (sin puerto ni esquema)
+      - key: REDIS_PORT
+        value: "6379"
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_SSL_ENABLED
+        value: "false"
+      - key: JWT_SECRET
+        sync: false # generar: openssl rand -base64 64
+      - key: JWT_ISSUER
+        value: https://xmr-backend.onrender.com
+      - key: JWT_AUDIENCE
+        value: xmr-forecast-api
+      - key: ML_SERVICE_URL
+        value: https://ml-service:8443
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://sistema-prediccion-crypto-xmr-moner.vercel.app
+      - key: GOOGLE_CLIENT_ID
+        value: ""
+      - key: GOOGLE_CLIENT_SECRET
+        value: ""
+      - key: GOOGLE_REDIRECT_URI
+        value: https://xmr-backend.onrender.com/api/v1/auth/google/callback
+      - key: FRONTEND_OAUTH_CALLBACK
+        value: https://sistema-prediccion-crypto-xmr-moner.vercel.app/auth/callback
+      # Requiere el Secret File /etc/secrets/truststore.p12 (contenido de
+      # docker/certs/ca/truststore.p12 local).
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=75 -Djavax.net.ssl.trustStore=/etc/secrets/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12"
+
+  # -------------------------------------------------- ml-service (privado)
+  - type: pserv
+    name: ml-service
+    runtime: docker
+    branch: main
+    dockerfilePath: ./ml-service/Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: free
+    envVars:
+      - key: ML_ENVIRONMENT
+        value: prod
+      - key: ML_MLFLOW_ENABLED
+        value: "false"
+      - key: ML_ALLOW_PLAINTEXT_DEV
+        value: "false"
+      # Secret Files (contenido de docker/certs local, rutas exactas):
+      #   /certs/ml-service/cert.pem  <- cert.pem
+      #   /certs/ml-service/key.pem   <- key.pem
+      #   /certs/ca/ca.crt            <- ca.crt
+      - key: ML_SSL_CERTFILE
+        value: /certs/ml-service/cert.pem
+      - key: ML_SSL_KEYFILE
+        value: /certs/ml-service/key.pem
+      - key: ML_SSL_CAFILE
+        value: /certs/ca/ca.crt

@@ -123,8 +123,10 @@ services:
   # ==================================================================
   ml-service:
     build:
-      context: ./ml-service
-      dockerfile: Dockerfile
+      # Contexto raiz (igual que el backend y que Render): el Dockerfile usa
+      # rutas con prefijo `ml-service/`.
+      context: .
+      dockerfile: ml-service/Dockerfile
     container_name: xmr-ml-service
     restart: unless-stopped
     environment:

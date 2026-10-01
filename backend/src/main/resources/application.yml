@@ -88,7 +88,10 @@ spring:
 server:
   port: ${SERVER_PORT:8443}
   ssl:
-    enabled: true
+    # R-33: TLS siempre activo por defecto. Solo se desactiva donde un borde
+    # externo ya termina TLS (p. ej. Render): el trafico publico sigue siendo
+    # HTTPS y el tramo interno va por la red privada del proveedor.
+    enabled: ${SERVER_SSL_ENABLED:true}
     key-store: ${SERVER_SSL_KEYSTORE:file:/certs/backend/keystore.p12}
     key-store-password: ${SERVER_SSL_KEYSTORE_PASSWORD:}
     key-store-type: ${SERVER_SSL_KEYSTORE_TYPE:PKCS12}
