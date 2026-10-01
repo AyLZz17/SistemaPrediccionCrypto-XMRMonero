@@ -46,11 +46,16 @@ services:
       - key: JWT_SECRET
         sync: false # generar: openssl rand -base64 64
       - key: JWT_ISSUER
-        value: https://xmr-backend.onrender.com
+        # Render asigno el sufijo `-h6u5` porque `xmr-backend` ya estaba ocupado.
+        # Con el nombre corto, el siguiente Apply devolveria estas variables a un
+        # host que no existe y volveria a romper el login con Google.
+        value: https://xmr-backend-h6u5.onrender.com
       - key: JWT_AUDIENCE
         value: xmr-forecast-api
       - key: ML_SERVICE_URL
-        sync: false # https://<ml-service>.onrender.com (se conoce al crearlo)
+        # Sufijo `-adbd` asignado por Render. Verificado: /health responde 200 y
+        # /v1/models responde 401 sin el secreto, como exige R-32.
+        value: https://ml-service-adbd.onrender.com
       - key: ML_INTERNAL_TOKEN
         sync: false # MISMO valor que en ml-service
       - key: CORS_ALLOWED_ORIGINS
@@ -60,7 +65,10 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        value: https://xmr-backend.onrender.com/api/v1/auth/google/callback
+        # Debe coincidir EXACTAMENTE con el URI registrado en Google Cloud
+        # (cliente web 1038592254376-...). Verificado en produccion: es el valor
+        # que devuelve el 307 de /authorize y el que Google acepta.
+        value: https://xmr-backend-h6u5.onrender.com/api/v1/auth/google/callback
       - key: FRONTEND_OAUTH_CALLBACK
         value: https://sistema-prediccion-crypto-xmr-moner.vercel.app/auth/callback
       - key: MAIL_HOST

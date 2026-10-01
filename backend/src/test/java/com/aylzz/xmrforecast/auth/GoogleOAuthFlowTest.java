@@ -309,6 +309,84 @@ class GoogleOAuthFlowTest {
                 .containsEntry("state", "a+b");
     }
 
+    @Test
+    @DisplayName("El state se guarda en Redis, no en memoria: sobrevive a un reinicio")
+    void stateIsStoredInRedisSoItSurvivesARestart() {
+        // Defecto medido: con el state solo en memoria, un login fallaba si la
+        // instancia se reiniciaba entre /authorize y /callback. En el plan
+        // gratuito de Render eso pasa de forma rutinaria. Este test fija que el
+        // estado se escribe en Redis con TTL y que alli se consume, de modo que
+        // el reinicio de la instancia deje de importar.
+        org.springframework.data.redis.core.StringRedisTemplate redis =
+                mock(org.springframework.data.redis.core.StringRedisTemplate.class);
+        org.springframework.data.redis.core.ValueOperations<String, String> ops =
+                mock(org.springframework.data.redis.core.ValueOperations.class);
+        org.mockito.Mockito.when(redis.opsForValue()).thenReturn(ops);
+
+        GoogleOAuthService service = new GoogleOAuthService(properties(google()),
+                RestClient.builder(), mock(AuthService.class),
+                mock(com.aylzz.xmrforecast.audit.AuditService.class), redis);
+
+        String state = queryOf(service.buildAuthorizationUri().toString()).get("state");
+
+        verify(ops).set(org.mockito.ArgumentMatchers.eq("oauth:state:" + state),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.eq(java.time.Duration.ofMinutes(10)));
+
+        // Sin valor en Redis (porque la instancia se reinicio) el state se
+        // rechaza: es exactamente el caso que antes fallaba por el reinicio.
+        org.mockito.Mockito.when(ops.getAndDelete("oauth:state:" + state)).thenReturn(null);
+        Object trasReinicio = ReflectionTestUtils.invokeMethod(service, "consumeState", state);
+        assertThat(trasReinicio).isNull();
+    }
+
+    @Test
+    @DisplayName("El state se consume una sola vez tambien en Redis (GETDEL atomico)")
+    void stateIsConsumedAtomicallyInRedis() {
+        org.springframework.data.redis.core.StringRedisTemplate redis =
+                mock(org.springframework.data.redis.core.StringRedisTemplate.class);
+        org.springframework.data.redis.core.ValueOperations<String, String> ops =
+                mock(org.springframework.data.redis.core.ValueOperations.class);
+        org.mockito.Mockito.when(redis.opsForValue()).thenReturn(ops);
+
+        GoogleOAuthService service = new GoogleOAuthService(properties(google()),
+                RestClient.builder(), mock(AuthService.class),
+                mock(com.aylzz.xmrforecast.audit.AuditService.class), redis);
+        String state = queryOf(service.buildAuthorizationUri().toString()).get("state");
+
+        String nonce = "nonce-de-prueba";
+        String stored = nonce + "|" + System.currentTimeMillis();
+        // GETDEL borra: la segunda llamada ya no devuelve nada.
+        org.mockito.Mockito.when(ops.getAndDelete("oauth:state:" + state))
+                .thenReturn(stored).thenReturn(null);
+
+        Object first = ReflectionTestUtils.invokeMethod(service, "consumeState", state);
+        Object second = ReflectionTestUtils.invokeMethod(service, "consumeState", state);
+
+        assertThat(first).isNotNull();
+        assertThat(second).isNull();
+    }
+
+    @Test
+    @DisplayName("Si Redis falla, el login sigue funcionando en memoria")
+    void redisFailureDegradesToMemoryInsteadOfBreakingLogin() {
+        // Un fallo de Redis no puede convertir el login en un error: se degrada,
+        // igual que hace RateLimitFilter, y el usuario si puede entrar.
+        org.springframework.data.redis.core.StringRedisTemplate redis =
+                mock(org.springframework.data.redis.core.StringRedisTemplate.class);
+        org.mockito.Mockito.when(redis.opsForValue())
+                .thenThrow(new org.springframework.data.redis.RedisConnectionFailureException("caido"));
+
+        GoogleOAuthService service = new GoogleOAuthService(properties(google()),
+                RestClient.builder(), mock(AuthService.class),
+                mock(com.aylzz.xmrforecast.audit.AuditService.class), redis);
+
+        String state = queryOf(service.buildAuthorizationUri().toString()).get("state");
+
+        Object recuperado = ReflectionTestUtils.invokeMethod(service, "consumeState", state);
+        assertThat(recuperado).isNotNull();
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static AppProperties.OAuth2.Google google() {
@@ -345,7 +423,7 @@ class GoogleOAuthFlowTest {
     private static GoogleOAuthService service(AppProperties.OAuth2.Google google,
                                               AuthService authService) {
         return new GoogleOAuthService(properties(google), RestClient.builder(),
-                authService, mock(com.aylzz.xmrforecast.audit.AuditService.class));
+                authService, mock(com.aylzz.xmrforecast.audit.AuditService.class), null);
     }
 
     private static MockMvc mvc(AppProperties.OAuth2.Google google) {

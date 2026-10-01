@@ -52,13 +52,35 @@ public class GoogleOAuthService {
 
     private static final String STATE_TTL_KEY = "oauth:state:";
 
+    /** Ventana de validez del state: el ida y vuelta a Google y de vuelta. */
+    private static final java.time.Duration STATE_TTL = java.time.Duration.ofMinutes(10);
+
     private final AppProperties properties;
     private final RestClient restClient;
     private final AuthService authService;
     private final AuditService auditService;
 
-    /** Estados de un solo uso. En produccion deben vivir en Redis, no en memoria. */
+    /**
+     * Estados de un solo uso, respaldados por Redis.
+     *
+     * <p><strong>Por que Redis y no memoria.</strong> El state es la defensa
+     * contra CSRF del flujo OAuth: se genera en {@code /authorize} y se consume en
+     * {@code /callback}, y para entonces el navegador ha ido a Google y ha vuelto.
+     * En memoria, ese ida y vuelta atraviesa una frontera que el proceso no
+     * controla: un reinicio. En Render el plan gratuito apaga la instancia tras
+     * unos minutos de inactividad y la vuelve a levantar al recibir la peticion,
+     * de modo que el mapa llegaba vacio y todo login fallaba con
+     * {@code OAUTH_INVALID_STATE}. Medido, no supuesto: un state capturado y
+     * reutilizado 17 minutos despues devolvio {@code OAUTH_INVALID_STATE}.
+     *
+     * <p>Redis ademas cubre el despliegue con varias instancias, donde el
+     * callback puede recibir otra distinta de la que emitio el state. Cierra
+     * D-09 y aplica R-27.
+     */
     private final Map<String, OAuthState> pendingStates = new ConcurrentHashMap<>();
+
+    /** Redis, cuando esta disponible. Es opcional para que las pruebas no lo necesiten. */
+    private final org.springframework.data.redis.core.StringRedisTemplate redis;
 
     /** Cache del JWKS de Google: URI -> (kid -> campos del JWK). */
     private final Map<String, Map<String, Map<String, Object>>> jwksCache = new ConcurrentHashMap<>();
@@ -68,7 +90,8 @@ public class GoogleOAuthService {
     }
 
     public GoogleOAuthService(AppProperties properties, RestClient.Builder builder,
-                              AuthService authService, AuditService auditService) {
+                              AuthService authService, AuditService auditService,
+                              org.springframework.data.redis.core.StringRedisTemplate redis) {
         this.properties = properties;
         // Se fija un baseUrl explicito y vacio: aunque el builder llegue con uno
         // heredado, todas las llamadas de este servicio usan una URI absoluta, y
@@ -76,6 +99,7 @@ public class GoogleOAuthService {
         this.restClient = builder.baseUrl("").build();
         this.authService = authService;
         this.auditService = auditService;
+        this.redis = redis;
     }
 
     private void requireConfigured() {
@@ -122,7 +146,7 @@ public class GoogleOAuthService {
         requireConfigured();
         String state = UUID.randomUUID().toString();
         String nonce = UUID.randomUUID().toString();
-        pendingStates.put(state, new OAuthState(nonce, System.currentTimeMillis()));
+        storeState(state, new OAuthState(nonce, System.currentTimeMillis()));
 
         return UriComponentsBuilder.fromUriString(AUTH_ENDPOINT)
                 .queryParam("client_id", google().clientId())
@@ -191,13 +215,56 @@ public class GoogleOAuthService {
         if (state == null || state.isBlank()) {
             return null;
         }
-        OAuthState stored = pendingStates.remove(state);
+        OAuthState stored = takeState(state);
         if (stored == null) {
             return null;
         }
         // Ventana de 10 minutos: suficiente para el ida y vuelta de OAuth.
+        // En Redis la caducidad la impose el propio TTL, asi que la edad solo se
+        // comprueba en el camino en memoria, que no puede expirar por si solo.
         long ageMillis = System.currentTimeMillis() - stored.createdAtMillis();
-        return ageMillis <= 600_000L ? stored : null;
+        return ageMillis <= STATE_TTL.toMillis() ? stored : null;
+    }
+
+    /** Guarda el state en Redis con TTL; si Redis no esta, en memoria. */
+    private void storeState(String state, OAuthState value) {
+        if (redis != null) {
+            try {
+                redis.opsForValue().set(STATE_TTL_KEY + state,
+                        value.nonce() + "|" + value.createdAtMillis(), STATE_TTL);
+                return;
+            } catch (RuntimeException ex) {
+                // Redis caido: se degrada a memoria, que es lo que habia antes.
+                // Perder un login es malo; no poder iniciar sesion es peor.
+                log.warn("OAuth state sin Redis, se usa memoria: {}", ex.getMessage());
+            }
+        }
+        pendingStates.put(state, value);
+    }
+
+    /**
+     * Consume el state de forma atomica (un solo uso). En Redis se usa
+     * GETDEL, que no deja pasar dos callbacks con el mismo state.
+     */
+    private OAuthState takeState(String state) {
+        if (redis != null) {
+            try {
+                String raw = redis.opsForValue().getAndDelete(STATE_TTL_KEY + state);
+                if (raw == null) {
+                    return null;
+                }
+                int separator = raw.lastIndexOf('|');
+                if (separator <= 0) {
+                    return null;
+                }
+                return new OAuthState(raw.substring(0, separator),
+                        Long.parseLong(raw.substring(separator + 1)));
+            } catch (RuntimeException ex) {
+                log.warn("OAuth state no leido de Redis: {}", ex.getMessage());
+            }
+        }
+        OAuthState stored = pendingStates.remove(state);
+        return stored;
     }
 
     /** Canje del codigo por tokens. El client secret no sale del servidor (R-14). */
@@ -220,7 +287,17 @@ public class GoogleOAuthService {
         } catch (ApiException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.warn("Fallo al canjear el codigo de autorizacion: {}", ex.getMessage());
+            // Diagnostico del canje que NO filtra ni el codigo ni el secreto: se
+            // registra su longitud, si llega recodificado con porcentaje y si
+            // tiene la forma de un codigo de Google. Google responde
+            // "Malformed auth code." cuando el codigo que recibe no es el que
+            // emitio, y las dos causas posibles (un proxy que lo recodifique o
+            // uno que lo recorte) se distinguen con estos tres datos, que no
+            // permiten reconstruir el codigo.
+            log.warn("Fallo al canjear el codigo de autorizacion "
+                            + "(longitud={}, llevaPorcentaje={}, empiezaPor4_0={}): {}",
+                    code.length(), code.indexOf('%') >= 0, code.startsWith("4/0"),
+                    ex.getMessage());
             throw ApiException.unauthorized("OAUTH_CODE_EXCHANGE_FAILED",
                     "No se pudo completar el inicio de sesion con Google.");
         }

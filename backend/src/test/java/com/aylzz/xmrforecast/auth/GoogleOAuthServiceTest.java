@@ -114,7 +114,8 @@ class GoogleOAuthServiceTest {
 
         GoogleOAuthService service = new GoogleOAuthService(properties,
                 org.springframework.web.client.RestClient.builder(),
-                mock(AuthService.class), mock(com.aylzz.xmrforecast.audit.AuditService.class));
+                mock(AuthService.class), mock(com.aylzz.xmrforecast.audit.AuditService.class),
+                null);
 
         // Se inyecta la clave publica directamente en la cache del JWKS: la firma
         // la produce el propio test, sin llamadas de red (R-18). El formato es el
