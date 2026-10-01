@@ -78,6 +78,13 @@ spring:
       mail:
         smtp:
           auth: ${MAIL_SMTP_AUTH:false}
+          # Sin timeouts, un servidor que no responde deja la peticion colgada
+          # hasta el timeout del SO (~2 min). En Render el puerto esta bloqueado,
+          # asi que el registro de usuario tardaba dos minutos y terminaba en 503.
+          # En milisegundos: conexion, lectura y escritura.
+          connectiontimeout: ${MAIL_CONNECT_TIMEOUT_MS:5000}
+          timeout: ${MAIL_READ_TIMEOUT_MS:8000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT_MS:5000}
           starttls:
             enable: ${MAIL_STARTTLS:false}
     hibernate:

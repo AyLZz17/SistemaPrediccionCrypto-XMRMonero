@@ -118,7 +118,7 @@ class GoogleOAuthFlowTest {
         // `:` y `/` no se codifican, de modo que la URI de la peticion es
         // identica a la registrada en Google Cloud. Codificarla haria que Google
         // respondiera redirect_uri_mismatch.
-        String deployed = "https://xmr-backend-h6u5.onrender.com/api/v1/auth/google/callback";
+        String deployed = "https://xmr-backend-bcml.onrender.com/api/v1/auth/google/callback";
         MockMvc mvc = mvc(google("client-id-de-prueba", "client-secret", deployed));
 
         String location = locationOf(mvc, get("/api/v1/auth/google/authorize"));

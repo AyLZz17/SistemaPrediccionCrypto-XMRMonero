@@ -137,9 +137,15 @@ caracteres con mayúscula, minúscula, dígito y símbolo, sin espacios.
 - **Bloqueo progresivo**: tras N fallos consecutivos la cuenta se bloquea temporalmente
   y se notifica al usuario.
 - Cada intento (exitoso o no) queda en `login_attempts`.
-- El enlace de confirmacion se envia automaticamente por SMTP. Configura `MAIL_HOST`,
-  `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH`, `MAIL_STARTTLS`,
-  `MAIL_FROM` y `FRONTEND_BASE_URL` en el entorno del backend.
+- El enlace de confirmacion se envia automaticamente. El canal se elige con
+  `MAIL_TRANSPORT`: `smtp` (desarrollo local: `MAIL_HOST`, `MAIL_PORT`,
+  `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH`, `MAIL_STARTTLS`) o `gmail`
+  (Gmail API por HTTPS, que es lo que usa Render Free porque bloquea los puertos
+  SMTP 25/465/587; requiere `GOOGLE_MAIL_REFRESH_TOKEN`). En ambos casos hacen
+  falta `MAIL_FROM` y `FRONTEND_BASE_URL`.
+- El envio se hace **despues** de confirmar la transaccion: si el canal falla, la
+  cuenta se crea igualmente y la bandeja de notificaciones lo indica en lugar de
+  anunciar un enlace que no salio.
 
 ### JWT propio
 

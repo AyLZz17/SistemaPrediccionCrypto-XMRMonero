@@ -274,12 +274,18 @@ activa. Antes existia `ML_VERIFY_TLS`, que el codigo leia y no usaba.
 | `SERVER_SSL_KEY_ALIAS` | Alias de la clave |
 | `SERVER_SSL_KEYSTORE_TYPE` | Tipo de keystore (`PKCS12`) |
 | `CORS_ALLOWED_ORIGINS` | Lista de origenes permitidos |
-| `MAIL_HOST` | Servidor SMTP |
+| `MAIL_TRANSPORT` | Canal de envio: `smtp` (desarrollo) o `gmail` (Gmail API por HTTPS) |
+| `MAIL_HOST` | Servidor SMTP (solo `MAIL_TRANSPORT=smtp`) |
 | `MAIL_PORT` | Puerto SMTP |
 | `MAIL_USERNAME` | Usuario SMTP |
 | `MAIL_PASSWORD` | Contrasena SMTP |
 | `MAIL_SMTP_AUTH` | Autenticacion SMTP |
 | `MAIL_STARTTLS` | STARTTLS en SMTP |
+| `MAIL_CONNECT_TIMEOUT_MS` | Timeout de conexion SMTP (5000) |
+| `MAIL_READ_TIMEOUT_MS` | Timeout de lectura SMTP (8000) |
+| `MAIL_WRITE_TIMEOUT_MS` | Timeout de escritura SMTP (5000) |
+| `MAIL_FROM` | Remitente de los correos de cuenta |
+| `GOOGLE_MAIL_REFRESH_TOKEN` | Refresh token de la Gmail API (`MAIL_TRANSPORT=gmail`) |
 
 **Limites y bloqueo de cuentas**
 

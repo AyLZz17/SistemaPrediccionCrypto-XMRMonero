@@ -24,10 +24,17 @@ import com.aylzz.xmrforecast.user.RevokedTokenRepository;
 import com.aylzz.xmrforecast.user.User;
 import com.aylzz.xmrforecast.user.UserRepository;
 import com.aylzz.xmrforecast.user.UserStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -51,7 +58,19 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private static final Duration FAILED_LOGIN_WINDOW = Duration.ofMinutes(15);
+
+    /**
+     * Executor de la aplicacion (bean {@code applicationTaskExecutor} de Spring
+     * Boot). Es opcional: sin el —solo en pruebas unitarias— las tareas
+     * pos-commit corren en el mismo hilo, que es correcto cuando no hay
+     * transaccion real que haya dejado recursos atados.
+     */
+    @Autowired(required = false)
+    @Qualifier("applicationTaskExecutor")
+    private TaskExecutor taskExecutor;
     private static final Duration RESET_TOKEN_TTL = Duration.ofHours(2);
     private static final Duration VERIFY_TOKEN_TTL = Duration.ofHours(48);
 
@@ -133,18 +152,122 @@ public class AuthService {
         }
 
         String verificationToken = issueVerificationToken(saved);
-        if (mailService != null) {
-            mailService.sendVerificationEmail(saved.getEmail(), saved.getFullName(), verificationToken);
-        }
-        notificationService.notify(saved.getId(), NotificationService.NotificationType.ACCOUNT,
-                "Confirme su correo",
-                "Enviamos un enlace de verificacion a " + saved.getEmail(),
-                NotificationService.Severity.INFO);
+        // El correo se entrega DESPUES de confirmar la transaccion, nunca dentro.
+        // Dentro, un fallo del canal (SMTP bloqueado en Render, Gmail API caida)
+        // marcaba la transaccion rollback-only: el alta de usuario se perdia con
+        // un 503 y la peticion se quedaba colgada hasta el timeout del SO.
+        User created = saved;
+        afterCommit(() -> deliverVerificationMail(created, verificationToken));
 
         auditService.success(saved.getId(), Role.VIEWER.name(), "AUTH_REGISTER", "User",
                 String.valueOf(saved.getId()), Map.of("provider", "LOCAL"));
 
         return toResponse(saved);
+    }
+
+    /**
+     * Entrega el enlace de verificacion y refleja el resultado en la bandeja.
+     *
+     * <p>Nunca lanza: el usuario ya esta confirmado en base de datos y el correo
+     * no debe poder deshacerlo. Si el envio falla, la notificacion lo dice
+     * claramente en lugar de anunciar un enlace que no salio (R-21: no se afirma
+     * lo que no ocurrio).
+     */
+    private void deliverVerificationMail(User user, String token) {
+        boolean delivered = false;
+        try {
+            delivered = mailService != null
+                    && mailService.sendVerificationEmail(user.getEmail(), user.getFullName(), token);
+        } catch (RuntimeException ex) {
+            log.error("La entrega del correo de verificacion fallo para el usuario {}", user.getId(), ex);
+        }
+        if (delivered) {
+            notify(user.getId(), NotificationService.NotificationType.ACCOUNT,
+                    "Confirme su correo",
+                    "Enviamos un enlace de verificacion a " + user.getEmail(),
+                    NotificationService.Severity.INFO);
+        } else {
+            notify(user.getId(), NotificationService.NotificationType.ACCOUNT,
+                    "Correo de verificacion no enviado",
+                    "No pudimos enviarte el enlace de verificacion a " + user.getEmail()
+                            + ". Tu cuenta queda pendiente de confirmacion.",
+                    NotificationService.Severity.WARNING);
+        }
+    }
+
+    /**
+     * Ejecuta {@code task} justo despues de confirmar la transaccion actual, o de
+     * inmediato si no hay transaccion activa (caso de las pruebas unitarias).
+     *
+     * <p>La tarea corre en un hilo propio (ver {@link #dispatch}). Un fallo
+     * dentro de la fase pos-commit no puede propagarse: la transaccion ya esta
+     * confirmada y la excepcion se convertiria en un 500 que oculta que el
+     * registro si se guardo. Por eso todo lo que corre aqui pasa por
+     * {@link #runSafely}.
+     */
+    private void afterCommit(Runnable task) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    dispatch(task);
+                }
+            });
+        } else {
+            dispatch(task);
+        }
+    }
+
+    /**
+     * Pone la tarea en un hilo aparte; sin executor, la ejecuta donde esta.
+     *
+     * <p><strong>Por que no en el propio hilo.</strong> Los callbacks
+     * {@code afterCommit} corren con los recursos de la transaccion todavia
+     * atados al hilo de la peticion (se desatan en {@code cleanupAfterCompletion},
+     * que va despues). Una escritura hecha ahi —la notificacion— se enlaza con la
+     * transaccion que acabo de cerrarse: se queda en el {@code EntityManager} sin
+     * llegar a flush ni a commit, y la conexion la revierte al volver al pool.
+     * El resultado es un INSERT que no falla nunca y que tampoco existe nunca,
+     * verificado con {@code REGISTER} en local: la cuenta se creaba y la
+     * notificacion no aparecia. En un hilo distinto no hay transaccion atada, asi
+     * que {@code NotificationService.notify} abre la suya, la confirma y el
+     * enlace sigue llegando.
+     *
+     * <p>Ademas libera la peticion: el envio por la Gmail API (o el intento SMTP
+     * con sus timeouts) ya no ocupa la conexion de base de datos ni el tiempo de
+     * respuesta del registro.
+     */
+    private void dispatch(Runnable task) {
+        if (taskExecutor == null) {
+            runSafely(task);
+            return;
+        }
+        try {
+            taskExecutor.execute(() -> runSafely(task));
+        } catch (RuntimeException ex) {
+            // El executor rechaza bajo carga o en apagado: mejor intentarlo aqui
+            // que perder el correo sin mas.
+            log.error("No se pudo despachar la tarea pos-commit; se ejecuta en el hilo actual", ex);
+            runSafely(task);
+        }
+    }
+
+    private void runSafely(Runnable task) {
+        try {
+            task.run();
+        } catch (RuntimeException ex) {
+            log.error("Tarea pos-commit fallida; la operacion principal ya esta confirmada", ex);
+        }
+    }
+
+    /** Notifica sin dejar que el fallo de la bandeja rompa el flujo que la origino. */
+    private void notify(Long userId, NotificationService.NotificationType type,
+                        String title, String body, NotificationService.Severity severity) {
+        try {
+            notificationService.notify(userId, type, title, body, severity);
+        } catch (RuntimeException ex) {
+            log.error("No se pudo registrar la notificacion '{}' para el usuario {}", title, userId, ex);
+        }
     }
 
     // ---------------------------------------------------------------- login
@@ -330,7 +453,15 @@ public class AuthService {
             pendingResetTokens.put(user.getId(), plain);
 
             if (mailService != null) {
-                mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), plain);
+                // Fuera de la transaccion, por la misma razon que en el registro:
+                // ademas, un error de correo aqui respondria 503 SOLO cuando la
+                // cuenta existe, que es exactamente la fuga de enumeracion que el
+                // comentario de este metodo dice evitar.
+                afterCommit(() -> {
+                    if (!mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), plain)) {
+                        log.warn("No se entrego el correo de recuperacion al usuario {}", user.getId());
+                    }
+                });
             }
 
             notificationService.notify(user.getId(), NotificationService.NotificationType.ACCOUNT,

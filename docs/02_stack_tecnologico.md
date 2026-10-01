@@ -511,12 +511,33 @@ produccion, con datos de un usuario en pantalla, o no se descubre.
 
 | Variable | Descripcion |
 |----------|-------------|
-| `MAIL_HOST` | Servidor SMTP |
+| `MAIL_TRANSPORT` | Canal de envio: `smtp` o `gmail` |
+| `MAIL_HOST` | Servidor SMTP (solo `smtp`) |
 | `MAIL_PORT` | Puerto SMTP |
 | `MAIL_USERNAME` | Usuario SMTP |
 | `MAIL_PASSWORD` | Contrasena SMTP |
 | `MAIL_SMTP_AUTH` | Autenticacion SMTP |
 | `MAIL_STARTTLS` | Activar STARTTLS |
+| `MAIL_CONNECT_TIMEOUT_MS` | Timeout de conexion SMTP (5000) |
+| `MAIL_READ_TIMEOUT_MS` | Timeout de lectura SMTP (8000) |
+| `MAIL_WRITE_TIMEOUT_MS` | Timeout de escritura SMTP (5000) |
+| `MAIL_FROM` | Remitente de los correos de cuenta |
+| `GOOGLE_MAIL_CLIENT_ID` / `GOOGLE_MAIL_CLIENT_SECRET` | Cliente OAuth de la Gmail API; por defecto reutilizan `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |
+| `GOOGLE_MAIL_REFRESH_TOKEN` | Refresh token de la Gmail API |
+
+**Por que existen los dos canales.** Render bloquea el trafico saliente a los
+puertos SMTP 25, 465 y 587 en los servicios gratuitos (vigente desde el
+26/09/2025), de modo que `smtp.gmail.com:587` responde `Connection timed out`.
+En produccion el correo sale por la **Gmail API** (`MAIL_TRANSPORT=gmail`), que
+usa el puerto 443 y firma el mensaje el propio Google; en desarrollo local sigue
+usandose SMTP (`MAIL_TRANSPORT=smtp`). En ambos casos el envio ocurre **despues
+de confirmar la transaccion** y un fallo del canal nunca deshace el alta de
+usuario.
+
+**Limite conocido.** Con la pantalla de consentimiento de Google en modo
+*Testing*, el refresh token caduca a los 7 dias (`invalid_grant` en los logs);
+hay que generar uno nuevo con el OAuth Playground y actualizar
+`GOOGLE_MAIL_REFRESH_TOKEN`.
 
 Las variables de **nivel de contenedor** (`POSTGRES_DB`, `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, `ML_SSL_CERTFILE`, `ML_SSL_KEYFILE`, `ML_SSL_CAFILE`,
