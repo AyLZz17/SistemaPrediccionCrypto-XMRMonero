@@ -8,7 +8,8 @@
   (R-11/R-12). Aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
 
 ## Tarea en curso
-- T-034: `main` fusionado y subido a origin (listo para Vercel).
+- T-035: repo preparado para Render (SSL opcional, ml-service root-context,
+  `render.yaml`; sin MLflow por modo degradado). En main y rama, pusheado.
 
 ## Estado verificado en esta sesion
 - **Stack Docker UP**: 6/6 `healthy`. **`tools/verify-stack.ps1`: 48/48.**
