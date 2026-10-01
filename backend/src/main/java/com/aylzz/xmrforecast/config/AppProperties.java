@@ -81,7 +81,15 @@ public record AppProperties(
         public record RateLimit(
                 boolean enabled,
                 @Positive int loginAttemptsPerMinute,
-                @Positive int apiRequestsPerMinute
+                @Positive int apiRequestsPerMinute,
+                /**
+                 * Cubo propio de {@code /api/v1/public/**}: es la superficie
+                 * anonima, asi que no puede compartir el limite alto de la API
+                 * autenticada (un scraper anonimo lo agotaria y dejaria sin
+                 * servicio a los usuarios con sesion) ni el muy bajo de las
+                 * rutas de credenciales.
+                 */
+                @Positive int publicRequestsPerMinute
         ) {}
 
         public record Account(

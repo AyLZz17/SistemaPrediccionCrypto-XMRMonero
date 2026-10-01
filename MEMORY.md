@@ -42,7 +42,7 @@
 - Commit + push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).
 - Cliente: habilitar Gmail API con scope `gmail.send`, redirect URI del OAuth
   Playground, refresh token, y fijar en Render `MAIL_TRANSPORT=gmail` +
-  `GOOGLE_MAIL_REFRESH_TOKEN`. Entonces reintentar registro y Google.
+  `GOOGLE_MAIL_REFRESH_TOKEN`.
 - Sin resolver: rotacion de credenciales expuestas, `ML_SERVICE_URL` con
   `sync: false`, callback de Google Cloud, supuesto **D-14** (dashboard publico),
   revision juridica de los cinco documentos legales.

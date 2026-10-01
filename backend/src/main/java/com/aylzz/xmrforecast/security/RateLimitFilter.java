@@ -20,10 +20,12 @@ import java.time.Duration;
 /**
  * Rate limiting distribuido sobre Redis (ventana fija).
  *
- * <p>Dos politicas distintas segun el riesgo: el login lleva un limite muy bajo
- * porque es el objetivo de un ataque de credenciales; el resto de la API lleva un
- * limite alto deThroughput normal. Al superar el limite se responde 429 con la
- * cabecera {@code Retry-After}.
+ * <p>Tres politicas distintas segun el riesgo: el login lleva un limite muy bajo
+ * porque es el objetivo de un ataque de credenciales; la superficie publica del
+ * dashboard ({@code /api/v1/public/**}) lleva un limite intermedio con cubo
+ * propio, para que un scraper anonimo no agote la cuota de la API autenticada;
+ * el resto de la API lleva un limite alto de throughput normal. Al superar el
+ * limite se responde 429 con la cabecera {@code Retry-After}.
  *
  * <p>Si Redis no esta disponible se deja pasar la peticion: un fallo de cache no
  * debe convertir la aplicacion en un denial of service total.
@@ -54,12 +56,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         boolean sensitive = isSensitivePath(request);
+        boolean publicApi = !sensitive && isPublicPath(request);
         int limit = sensitive
                 ? properties.security().rateLimit().loginAttemptsPerMinute()
-                : properties.security().rateLimit().apiRequestsPerMinute();
+                : publicApi
+                        ? properties.security().rateLimit().publicRequestsPerMinute()
+                        : properties.security().rateLimit().apiRequestsPerMinute();
 
         String identity = resolveIdentity(request);
-        String bucket = KEY_PREFIX + (sensitive ? "auth:" : "api:") + identity;
+        String bucket = KEY_PREFIX + (sensitive ? "auth:" : publicApi ? "public:" : "api:")
+                + identity;
 
         try {
             Long count = redis.opsForValue().increment(bucket);
@@ -92,6 +98,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 // token cada vez: sin limite, un script regenera tokens a voluntad
                 // y dispara envios masivos contra una lista de correos.
                 || path.startsWith("/api/v1/auth/verify-email");
+    }
+
+    /** Superficie publica del dashboard: cubo propio con limite intermedio. */
+    private boolean isPublicPath(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/api/v1/public/");
     }
 
     /**

@@ -27,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -196,7 +197,7 @@ class ConsentRegistrationTest {
         service.resendVerification(new AuthRequests.ResendVerificationRequest("nadie@example.com"),
                 "203.0.113.9", "junit");
 
-        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString());
+        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class));
         verify(notificationService, never()).notify(any(), any(), anyString(), anyString(), any());
         verify(passwordResetTokenRepository, never()).save(any(PasswordResetToken.class));
     }
@@ -224,7 +225,7 @@ class ConsentRegistrationTest {
                 .isNotNull();
         verify(passwordResetTokenRepository, org.mockito.Mockito.times(2))
                 .save(any(PasswordResetToken.class));
-        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString());
+        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString(), any(Instant.class));
         verify(auditService).record(eq(9L), any(), eq("AUTH_EMAIL_RESENT"), anyString(),
                 anyString(), any(), any());
     }
@@ -243,7 +244,7 @@ class ConsentRegistrationTest {
         service.resendVerification(new AuthRequests.ResendVerificationRequest(EMAIL),
                 "203.0.113.9", "junit");
 
-        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString());
+        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class));
     }
 
     @Test
@@ -254,7 +255,7 @@ class ConsentRegistrationTest {
         user.setEmail(EMAIL);
         user.setFullName("Consent Prueba");
         when(userRepository.findByEmailIgnoreCase(EMAIL)).thenReturn(java.util.Optional.of(user));
-        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString()))
+        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class)))
                 .thenThrow(new IllegalStateException("canal caido"));
 
         org.assertj.core.api.Assertions.assertThatNoException().isThrownBy(

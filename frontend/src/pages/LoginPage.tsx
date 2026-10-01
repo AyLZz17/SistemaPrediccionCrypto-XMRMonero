@@ -47,9 +47,9 @@ export default function LoginPage() {
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">Iniciar sesion</h1>
+        <h1 className="text-2xl font-semibold text-ink">Iniciar sesión</h1>
         <p className="mt-1 text-sm text-ink-secondary">
-          Accede al panel de XMR-Forecast. La sesion caduca sola y se renueva de forma silenciosa.
+          Accede al panel de XMR-Forecast. La sesión caduca sola y se renueva de forma silenciosa.
         </p>
       </div>
 

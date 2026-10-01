@@ -13,9 +13,9 @@ import type { ComparisonRow } from '../../api'
 
 const SERIES = [
   { key: 'mae', label: 'MAE (USD)', color: 'var(--xmr-accent-cyan)' },
-  { key: 'rmse', label: 'RMSE (USD)', color: 'var(--xmr-accent-violet)' },
-  { key: 'mape', label: 'MAPE (%)', color: 'var(--xmr-accent-amber)' },
-  { key: 'directionAccuracy', label: 'Direccion (%)', color: 'var(--xmr-accent-green)' },
+  { key: 'rmse', label: 'RMSE (USD)', color: 'var(--xmr-accent-amber)' },
+  { key: 'mape', label: 'MAPE (%)', color: 'var(--xmr-accent-green)' },
+  { key: 'directionAccuracy', label: 'Dirección (%)', color: 'var(--xmr-accent-red)' },
 ] as const
 
 /**
@@ -39,10 +39,10 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
   if (data.length === 0) return null
 
   return (
-    <div className="h-80 w-full" role="img" aria-label="Comparativa de metricas por modelo">
+    <div className="h-80 w-full min-w-0" role="img" aria-label="Comparativa de métricas por modelo">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
-          <CartesianGrid stroke="var(--xmr-border-subtle)" vertical={false} />
+          <CartesianGrid stroke="var(--xmr-border-hairline)" vertical={false} />
           <XAxis
             dataKey="name"
             tick={{ fill: 'var(--xmr-text-muted)', fontSize: 10, fontFamily: 'var(--xmr-font-mono)' }}

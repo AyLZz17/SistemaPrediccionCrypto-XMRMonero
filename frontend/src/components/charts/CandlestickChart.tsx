@@ -37,10 +37,10 @@ export function CandlestickChart({ candles }: { candles: Candle[] }) {
   if (data.length === 0) return null
 
   return (
-    <div className="h-72 w-full" role="img" aria-label="Grafico de velas japonesas de XMR-USD">
+    <div className="h-72 w-full min-w-0" role="img" aria-label="Gráfico de velas japonesas de XMR-USD">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
-          <CartesianGrid stroke="var(--xmr-border-subtle)" vertical={false} />
+          <CartesianGrid stroke="var(--xmr-border-hairline)" vertical={false} />
           <XAxis
             dataKey="date"
             tick={{ fill: 'var(--xmr-text-muted)', fontSize: 10, fontFamily: 'var(--xmr-font-mono)' }}
@@ -75,10 +75,12 @@ export function CandlestickChart({ candles }: { candles: Candle[] }) {
       </ResponsiveContainer>
       <div className="mt-2 flex items-center justify-end gap-4">
         <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
-          <span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: UP }} /> cierre &gt;= apertura
+          <span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: UP }} />
+          {'cierre \u2265 apertura'}
         </span>
         <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
-          <span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: DOWN }} /> cierre &lt; apertura
+          <span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: DOWN }} />
+          {'cierre < apertura'}
         </span>
       </div>
     </div>

@@ -12,6 +12,23 @@ import { resetEnvCache } from '../config/env'
  * every test that performs a request; anything unexpected rejects immediately.
  */
 
+/**
+ * jsdom does not implement `ResizeObserver`, which Recharts' `ResponsiveContainer`
+ * instantiates on mount: without a constructor the chart throws, React unmounts
+ * the whole route and the page appears to be blank (T-043). The stub does not
+ * fire, so the charts keep their zero measured size in jsdom; assertions target
+ * the textual/table counterpart of every graphic, which is the accessible data
+ * anyway (WCAG), never the pixels.
+ */
+class ResizeObserverStub {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+if (!('ResizeObserver' in globalThis)) {
+  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = ResizeObserverStub
+}
+
 beforeEach(() => {
   sessionStorage.clear()
   localStorage.clear()

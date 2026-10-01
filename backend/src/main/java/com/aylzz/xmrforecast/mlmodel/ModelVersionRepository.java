@@ -32,6 +32,9 @@ public interface ModelVersionRepository extends JpaRepository<ModelVersion, Long
 
     Optional<ModelVersion> findFirstByArtifactSha256(String artifactSha256);
 
+    /** Versiones marcadas como campeon: estado general del catalogo en el dashboard publico. */
+    long countByChampionTrue();
+
     /**
      * Deja un unico campeon por modelo. El indice unico parcial de la tabla es la
      * garantia final; este UPDATE deja el estado coherente antes de insertar.

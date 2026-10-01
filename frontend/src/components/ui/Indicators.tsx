@@ -105,7 +105,7 @@ export function MetricCard({ label, value, unit, hint, tone = 'idle', trend, cla
   return (
     <div
       className={clsx(
-        'rounded-lg border border-hairline-subtle bg-surface-1 p-4 transition-all duration-base ease-out hover:border-hairline-strong hover:shadow-glow-cyan',
+        'rounded-lg border border-hairline-subtle bg-surface-1 p-4 transition-all duration-base ease-out hover:border-hairline-strong hover:shadow-card',
         className,
       )}
     >
@@ -115,7 +115,7 @@ export function MetricCard({ label, value, unit, hint, tone = 'idle', trend, cla
         {unit ? <span className="font-mono text-xs text-ink-muted">{unit}</span> : null}
         {trend ? (
           <span aria-hidden="true" className="ml-1 text-xs text-ink-muted">
-            {trend === 'up' ? '^' : trend === 'down' ? 'v' : '='}
+            {trend === 'up' ? '▲' : trend === 'down' ? '▼' : '─'}
           </span>
         ) : null}
       </p>

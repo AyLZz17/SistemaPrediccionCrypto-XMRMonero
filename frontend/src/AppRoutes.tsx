@@ -5,6 +5,7 @@ import { PublicLayout } from './components/layout/PublicLayout'
 import { GuestOnlyRoute, ProtectedRoute, RoleRoute } from './components/routes/ProtectedRoute'
 import { SkeletonPanel, StatusDot } from './components/ui'
 import LandingPage from './pages/LandingPage'
+import PublicDashboardPage from './pages/PublicDashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -58,14 +59,24 @@ const guarded = (element: ReactElement, minimum?: 'ANALYST' | 'ADMIN') =>
 export function AppRoutes() {
   return (
     <Routes>
-      {/* ---------------------------------------------------------- public */}
+      {/* ---------------------------------------------------------- public
+          La PRIMERA pantalla es el panel publico: lo que el encargo pide ver
+          sin sesion. La landing explica el producto y vive en /about. */}
+      <Route
+        element={
+          <PublicLayout>
+            <PublicDashboardPage />
+          </PublicLayout>
+        }
+        path="/"
+      />
       <Route
         element={
           <PublicLayout>
             <LandingPage />
           </PublicLayout>
         }
-        path="/"
+        path="/about"
       />
       <Route
         element={
@@ -118,6 +129,17 @@ export function AppRoutes() {
           </PublicLayout>
         }
         path="/verify-email"
+      />
+      {/* El correo de verificacion apunta a /verificar-email (contrato de
+          contenido del mensaje). Se mantiene /verify-email como alias para los
+          enlaces ya emitidos. */}
+      <Route
+        element={
+          <PublicLayout variant="auth">
+            <VerifyEmailPage />
+          </PublicLayout>
+        }
+        path="/verificar-email"
       />
 
       {/* ------------------------------------------------------ documentos legales

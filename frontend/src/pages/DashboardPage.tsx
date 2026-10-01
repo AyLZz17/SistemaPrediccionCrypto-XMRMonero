@@ -49,16 +49,19 @@ export default function DashboardPage() {
   const runningJobs = jobs.data?.items.filter((job) => job.status === 'RUNNING' || job.status === 'QUEUED') ?? []
   const activeCount = runningJobs.length
 
+  const changePercent = quote.data?.changePercent
+  const isUp = typeof changePercent === 'number' && changePercent >= 0
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label-caps">Centro de operaciones</p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl tracking-tight">
             Hola, {user?.fullName?.split(' ')[0] ?? 'usuario'}
           </h1>
           <p className="mt-1 text-sm text-ink-secondary">
-            Estado del sistema, tareas en ejecucion y ultimo parte de predicciones.
+            Estado del sistema, tareas en ejecución y último parte de predicciones.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +70,7 @@ export default function DashboardPage() {
             label={quote.isError ? 'API sin respuesta' : quote.isPending ? 'Consultando' : 'API operativa'}
             pulse={quote.isFetching}
           />
-          <StatusDot tone={activeCount > 0 ? 'active' : 'idle'} label={`${activeCount} jobs activos`} pulse={activeCount > 0} />
+          <StatusDot tone={activeCount > 0 ? 'active' : 'idle'} label={`${activeCount} tareas activas`} pulse={activeCount > 0} />
         </div>
       </div>
 
@@ -96,29 +99,29 @@ export default function DashboardPage() {
               label="Precio XMR-USD"
               value={formatUsd(quote.data?.price)}
               tone="active"
-              trend={typeof quote.data?.changePercent === 'number' && quote.data.changePercent >= 0 ? 'up' : 'down'}
-              hint={quote.data?.source ? `Fuente: ${quote.data.source}` : 'Ultimo cierre disponible'}
+              trend={isUp ? 'up' : 'down'}
+              hint={quote.data?.source ? `Fuente: ${quote.data.source}` : 'Último cierre disponible'}
             />
             <MetricCard
-              label="Variacion diaria"
+              label="Variación diaria"
               value={
                 typeof quote.data?.changePercent === 'number' ? quote.data.changePercent.toFixed(2) : '—'
               }
               unit="%"
-              tone={typeof quote.data?.changePercent === 'number' && quote.data.changePercent >= 0 ? 'success' : 'danger'}
+              tone={isUp ? 'success' : 'danger'}
               hint={quote.data?.updatedAt ? `Actualizado ${formatDateTime(quote.data.updatedAt)}` : undefined}
             />
             <MetricCard
               label="Predicciones listadas"
               value={predictions.data?.total ?? 0}
               tone="idle"
-              hint="Historico guardado en el backend"
+              hint="Histórico guardado en el backend"
             />
             <MetricCard
-              label="Jobs en curso"
+              label="Tareas en curso"
               value={activeCount}
               tone={activeCount > 0 ? 'active' : 'idle'}
-              hint="Entrenamiento, ingesta y pronostico"
+              hint="Entrenamiento, ingesta y pronóstico"
             />
           </>
         )}
@@ -128,7 +131,7 @@ export default function DashboardPage() {
         <Panel className="lg:col-span-2" tone="raised">
           <PanelHeader
             title="Actividad reciente"
-            subtitle="Ultimas tareas encoladas y en ejecucion"
+            subtitle="Últimas tareas encoladas y en ejecución"
             actions={
               <Link to="/jobs">
                 <Button variant="ghost" size="sm">
@@ -161,7 +164,7 @@ export default function DashboardPage() {
           ) : (
             <EmptyState
               title="Sin tareas registradas"
-              description="Cuando se lance una ingesta, un entrenamiento o un pronostico, aparecera aqui."
+              description="Cuando se lance una ingesta, un entrenamiento o un pronóstico, aparecerá aquí."
               action={
                 isAnalyst ? (
                   <Link to="/experiments">
@@ -176,7 +179,7 @@ export default function DashboardPage() {
         </Panel>
 
         <Panel tone="raised">
-          <PanelHeader title="Estado del sistema" subtitle="Senales de ejecucion" />
+          <PanelHeader title="Estado del sistema" subtitle="Señales de ejecución" />
           <ul className="space-y-3 text-sm">
             <li className="flex items-center justify-between gap-3">
               <span className="text-ink-secondary">Conectividad API</span>
@@ -191,10 +194,10 @@ export default function DashboardPage() {
             </li>
             <li className="flex items-center justify-between gap-3">
               <span className="text-ink-secondary">Servicio ML</span>
-              <Badge tone="neutral">Solo via backend</Badge>
+              <Badge tone="neutral">Solo vía backend</Badge>
             </li>
             <li className="flex items-center justify-between gap-3">
-              <span className="text-ink-secondary">Sesion</span>
+              <span className="text-ink-secondary">Sesión</span>
               <Badge tone={statusTone(user?.role === 'ADMIN' ? 'ADMIN' : 'VIEWER')}>{user?.role ?? '—'}</Badge>
             </li>
           </ul>
@@ -207,8 +210,8 @@ export default function DashboardPage() {
 
       <Panel tone="raised">
         <PanelHeader
-          title="Ultimas predicciones"
-          subtitle="Pronosticos de cierre y direccion publicados por los modelos"
+          title="Últimas predicciones"
+          subtitle="Pronósticos de cierre y dirección publicados por los modelos"
           actions={
             <Link to="/predictions">
               <Button variant="ghost" size="sm">
@@ -245,8 +248,8 @@ export default function DashboardPage() {
           </ul>
         ) : (
           <EmptyState
-            title="Todavia no hay predicciones"
-            description="Genera un pronostico desde la seccion de predicciones para verlo aqui."
+            title="Todavía no hay predicciones"
+            description="Genera un pronóstico desde la sección de predicciones para verlo aquí."
           />
         )}
       </Panel>
@@ -257,7 +260,7 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-base font-semibold text-ink">Comparativa de modelos</h2>
               <p className="mt-1 text-sm text-ink-secondary">
-                MAE, RMSE, MAPE y proporcion de aciertos de direccion por modelo, sobre la misma particion.
+                MAE, RMSE, MAPE y proporción de aciertos de dirección por modelo, sobre la misma partición.
               </p>
             </div>
             <Link to="/models">

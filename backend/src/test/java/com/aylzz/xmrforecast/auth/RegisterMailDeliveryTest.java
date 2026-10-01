@@ -26,6 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,7 +98,7 @@ class RegisterMailDeliveryTest {
                     }
                     return user;
                 });
-        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString()))
+        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class)))
                 .thenReturn(true);
     }
 
@@ -116,7 +117,7 @@ class RegisterMailDeliveryTest {
     @Test
     @DisplayName("un canal de correo caido no impide crear la cuenta")
     void registroSobreviveCuandoElCanalDeCorreoFalla() {
-        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString()))
+        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class)))
                 .thenThrow(new IllegalStateException("canal de correo caido"));
 
         UserResponse created = service.register(request(), "127.0.0.1", "junit");
@@ -134,12 +135,12 @@ class RegisterMailDeliveryTest {
 
         // Dentro de la transaccion el canal no se toca: si lo hiciera, un fallo
         // posterior seguira revirtiendo el alta.
-        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString());
+        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class));
 
         TransactionSynchronizationManager.getSynchronizations()
                 .forEach(TransactionSynchronization::afterCommit);
 
-        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString());
+        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString(), any(Instant.class));
     }
 
     @Test
@@ -160,11 +161,11 @@ class RegisterMailDeliveryTest {
         // notificacion no aparecia nunca en la tabla notifications.
         ArgumentCaptor<Runnable> pending = ArgumentCaptor.forClass(Runnable.class);
         verify(executor).execute(pending.capture());
-        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString());
+        verify(mailService, never()).sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class));
 
         // Ya en el hilo propio (sin transaccion atada) el trabajo si se hace.
         pending.getValue().run();
-        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString());
+        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString(), any(Instant.class));
         verify(notificationService).notify(
                 eq(1L),
                 eq(NotificationService.NotificationType.ACCOUNT),
@@ -185,7 +186,7 @@ class RegisterMailDeliveryTest {
         TransactionSynchronizationManager.getSynchronizations()
                 .forEach(TransactionSynchronization::afterCommit);
 
-        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString());
+        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString(), any(Instant.class));
     }
 
     @Test
@@ -193,7 +194,7 @@ class RegisterMailDeliveryTest {
     void sinTransaccionSeEnviaDeInmediato() {
         service.register(request(), "127.0.0.1", "junit");
 
-        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString());
+        verify(mailService).sendVerificationEmail(eq(EMAIL), anyString(), anyString(), any(Instant.class));
     }
 
     @Test
@@ -212,7 +213,7 @@ class RegisterMailDeliveryTest {
     @Test
     @DisplayName("cuando el correo no sale, la bandeja lo dice en lugar de anunciar un enlace inexistente")
     void envioFallidoSeNotificaComoNoEnviado() {
-        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString()))
+        when(mailService.sendVerificationEmail(anyString(), anyString(), anyString(), any(Instant.class)))
                 .thenReturn(false);
 
         UserResponse created = service.register(request(), "127.0.0.1", "junit");
@@ -245,7 +246,7 @@ class RegisterMailDeliveryTest {
         user.setEmail(EMAIL);
         user.setFullName("Daniel Prueba");
         when(userRepository.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(user));
-        when(mailService.sendPasswordResetEmail(anyString(), anyString(), anyString()))
+        when(mailService.sendPasswordResetEmail(anyString(), anyString(), anyString(), any(Instant.class)))
                 .thenThrow(new IllegalStateException("canal de correo caido"));
 
         assertThatNoException()

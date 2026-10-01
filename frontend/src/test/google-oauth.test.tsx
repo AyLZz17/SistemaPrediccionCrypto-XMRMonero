@@ -159,7 +159,7 @@ describe('Google OAuth', () => {
     arriveWithFragment('#access_token=at-2&refresh_token=rt-2&expires_in=900&role=VIEWER')
     renderApp('/auth/callback')
 
-    await waitFor(() => expect(screen.getByText(/centro de operaciones/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText(/centro de operaciones/i).length).toBeGreaterThan(0))
     expect(screen.getByTestId('app-footer')).toBeInTheDocument()
   })
 

@@ -1,13 +1,22 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Footer } from './Footer'
 import { BrandMark } from './BrandMark'
 import { StatusDot } from '../ui'
+import { GoogleButton } from '../auth/GoogleButton'
+import { useAuthStore } from '../../store/authStore'
 
 /**
- * Shell for every public route (landing, login, register, password flows and
- * the Google OAuth callback). Renders the mandatory `<Footer />` too, so the
- * public surface cannot lose it.
+ * Shell for every public route (public dashboard, landing, login, register,
+ * password flows, legal documents and the Google OAuth callback). Renders the
+ * mandatory `<Footer />` too, so the public surface cannot lose it.
+ *
+ * The corner is REACTIVE (T-043): anonymous visitors get "Iniciar sesión" /
+ * "Registrarse" / "Iniciar sesión con Google"; once the session exists the same
+ * spot shows who is signed in, their role, the links to the account settings
+ * and the authenticated dashboard, and the logout action. The switch happens in
+ * this component, so it is visible on every public route, not only on the first
+ * screen.
  */
 export function PublicLayout({
   children,
@@ -18,6 +27,11 @@ export function PublicLayout({
   variant?: 'default' | 'auth'
 }) {
   const isAuth = variant === 'auth'
+  const navigate = useNavigate()
+  const status = useAuthStore((state) => state.status)
+  const user = useAuthStore((state) => state.user)
+  const clearSession = useAuthStore((state) => state.clearSession)
+  const authenticated = status === 'authenticated' && user !== null
 
   return (
     <div className="flex min-h-screen flex-col bg-deep">
@@ -29,39 +43,80 @@ export function PublicLayout({
       </a>
 
       <header
-        aria-label="Cabecera publica"
+        aria-label="Cabecera pública"
         className="border-b border-hairline-subtle bg-surface-1/70 backdrop-blur-glass"
       >
         <div className="mx-auto flex h-header w-full max-w-content items-center gap-3 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5" aria-label="XMR-Forecast, inicio">
-            <BrandMark size={30} />
+            <BrandMark size={26} />
             <span className="text-sm font-semibold text-ink">XMR-Forecast</span>
           </Link>
           <span className="label-caps hidden sm:inline">Capacidad predictiva evaluada</span>
 
-          <nav aria-label="Navegacion publica" className="ml-auto flex items-center gap-2">
-            {!isAuth ? (
-              <>
-                <Link
-                  to="/login"
-                  className="rounded-md border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
-                >
-                  Iniciar sesion
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-md border border-accent-cyan/50 bg-accent-cyan-soft px-3 py-2 text-xs font-medium text-accent-cyan shadow-glow-cyan transition-colors duration-fast hover:bg-accent-cyan/20"
-                >
-                  Crear cuenta
-                </Link>
-              </>
-            ) : (
+          <nav aria-label="Navegación pública" className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {isAuth ? (
               <Link
                 to="/"
                 className="rounded-md border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
               >
                 Volver al inicio
               </Link>
+            ) : authenticated ? (
+              <>
+                <span
+                  data-testid="public-identity"
+                  className="hidden max-w-[200px] flex-col items-end leading-tight sm:flex"
+                >
+                  <span className="truncate text-xs font-medium text-ink">
+                    {user?.fullName || user?.email}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+                    {user?.role}
+                  </span>
+                </span>
+                <Link
+                  to="/account"
+                  className="rounded-md border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                >
+                  Configuración
+                </Link>
+                <Link
+                  to="/dashboard"
+                  className="rounded-md border border-accent-cyan/30 bg-accent-cyan-soft px-3 py-2 text-xs font-medium text-accent-cyan transition-colors duration-fast hover:bg-accent-cyan/20"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearSession(null)
+                    navigate('/', { replace: true })
+                  }}
+                  className="rounded-md border border-hairline px-3 py-2 font-mono text-xs uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-accent-red/40 hover:text-accent-red"
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="rounded-md border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-md border border-accent-cyan/30 bg-accent-cyan-soft px-3 py-2 text-xs font-medium text-accent-cyan transition-colors duration-fast hover:bg-accent-cyan/20"
+                >
+                  Registrarse
+                </Link>
+                <GoogleButton
+                  variant="compact"
+                  testId="google-header-oauth-button"
+                  returnTo="/dashboard"
+                />
+              </>
             )}
           </nav>
         </div>
@@ -74,8 +129,8 @@ export function PublicLayout({
       <div className="border-t border-hairline-subtle bg-surface-inset/40">
         <div className="mx-auto flex w-full max-w-content flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <StatusDot tone="success" label="Canal cifrado" />
-          <span className="label-caps">XMR-USD · datos historicos</span>
-          <span className="label-caps">No es asesoria financiera</span>
+          <span className="label-caps">XMR-USD · datos históricos</span>
+          <span className="label-caps">No es asesoría financiera</span>
         </div>
       </div>
 

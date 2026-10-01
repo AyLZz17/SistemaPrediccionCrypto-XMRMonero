@@ -22,7 +22,7 @@ import {
 import { MetricComparisonChart } from '../components/charts/MetricComparisonChart'
 import { formatDateTime, formatNumber } from '../utils/format'
 
-const BASELINES = ['media movil', 'regresion lineal', 'ARIMA']
+const BASELINES = ['media móvil', 'regresión lineal', 'ARIMA']
 
 interface Promotion {
   model: ModelDescriptor
@@ -125,16 +125,16 @@ export default function ModelComparisonPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="label-caps">Comparacion</p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Modelos frente a lineas base</h1>
+        <p className="label-caps">Comparación</p>
+        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl tracking-tight">Modelos frente a líneas base</h1>
         <p className="mt-1 text-sm text-ink-secondary">
-          LSTM y GRU evaluados contra {BASELINES.join(', ')} sobre exactamente la misma particion y las mismas
+          LSTM y GRU evaluados contra {BASELINES.join(', ')} sobre exactamente la misma partición y las mismas
           fechas (R-05).
         </p>
       </div>
 
       <Panel tone="raised">
-        <PanelHeader title="Experimento de comparacion" />
+        <PanelHeader title="Experimento de comparación" />
         <div className="max-w-md">
           <SelectField
             label="Experimento"
@@ -155,7 +155,7 @@ export default function ModelComparisonPage() {
       {!experimentId ? (
         <EmptyState
           title="Selecciona un experimento"
-          description="Veras MAE, RMSE, MAPE y aciertos de direccion por modelo, incluido el campeon vigente."
+          description="Verás MAE, RMSE, MAPE y aciertos de dirección por modelo, incluido el campeón vigente."
         />
       ) : comparison.isPending ? (
         <Panel tone="raised">
@@ -175,7 +175,7 @@ export default function ModelComparisonPage() {
               label="Modelos evaluados"
               value={comparison.data.length}
               tone="active"
-              hint="Sobre la misma particion"
+              hint="Sobre la misma partición"
             />
             <MetricCard
               label="Menor MAE"
@@ -185,24 +185,24 @@ export default function ModelComparisonPage() {
               hint={best?.label}
             />
             <MetricCard
-              label="Campeon"
+              label="Campeón"
               value={comparison.data.find((row) => row.isChampion)?.modelName ?? '—'}
               tone="idle"
-              hint="Elegido por validacion"
+              hint="Elegido por validación"
             />
           </section>
 
           <Panel tone="raised">
-            <PanelHeader title="Metricas por modelo" subtitle="Menor es mejor en MAE, RMSE y MAPE" />
+            <PanelHeader title="Métricas por modelo" subtitle="Menor es mejor en MAE, RMSE y MAPE" />
             <MetricComparisonChart rows={comparison.data} />
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <StatusDot tone="active" label="Validacion decide el campeon" />
-              <StatusDot tone="warning" label="Prueba: uso unico" />
+              <StatusDot tone="active" label="Validación decide el campeón" />
+              <StatusDot tone="warning" label="Prueba: uso único" />
             </div>
           </Panel>
 
           <Panel tone="raised">
-            <PanelHeader title="Detalle" subtitle="Direccion de acierto y desviacion entre semillas" />
+            <PanelHeader title="Detalle" subtitle="Dirección de acierto y desviación entre semillas" />
             <ul className="divide-y divide-hairline-subtle">
               {comparison.data.map((row) => (
                 <li key={row.label} className="flex flex-wrap items-center gap-3 py-2.5">
@@ -210,7 +210,7 @@ export default function ModelComparisonPage() {
                   {row.family ? <Badge tone="neutral">{row.family}</Badge> : null}
                   {row.isChampion ? (
                     <Badge tone="success" dot>
-                      campeon
+                      campeón
                     </Badge>
                   ) : null}
                   <span className="ml-auto font-mono text-xs tabular-nums text-ink-secondary">
@@ -225,12 +225,12 @@ export default function ModelComparisonPage() {
       ) : (
         <EmptyState
           title="Sin comparativa para este experimento"
-          description="El backend no devolvio filas. Comprueba que el experimento tenga corridas finalizadas."
+          description="El backend no devolvió filas. Comprueba que el experimento tenga corridas finalizadas."
         />
       )}
 
       <Panel tone="raised">
-        <PanelHeader title="Versiones por modelo" subtitle="Campeon vigente y promocion" />
+        <PanelHeader title="Versiones por modelo" subtitle="Campeón vigente y promoción" />
         {models.isPending ? (
           <SkeletonTable rows={3} columns={2} />
         ) : models.isError ? (
@@ -256,8 +256,8 @@ export default function ModelComparisonPage() {
         <div className="mt-4">
           <Notice>
             {isAdmin
-              ? 'Como ADMIN puedes promover una version a campeon. El backend revalida integridad, procedencia y no-fuga de datos antes de aceptar la promocion.'
-              : 'La promocion de campeon esta reservada al rol ADMIN. Tu rol puede consultar la comparativa.'}
+              ? 'Como ADMIN puedes promover una versión a campeón. El backend revalida integridad, procedencia y no-fuga de datos antes de aceptar la promoción.'
+              : 'La promoción de campeón está reservada al rol ADMIN. Tu rol puede consultar la comparativa.'}
           </Notice>
         </div>
       </Panel>
@@ -265,8 +265,8 @@ export default function ModelComparisonPage() {
       <Modal
         open={promotion !== null}
         onClose={() => setPromotion(null)}
-        title="Promover version a campeon"
-        description="Esta accion cambia el modelo que la plataforma usa como referencia."
+        title="Promover versión a campeón"
+        description="Esta acción cambia el modelo que la plataforma usa como referencia."
         footer={
           <>
             <Button variant="ghost" onClick={() => setPromotion(null)}>
@@ -291,7 +291,7 @@ export default function ModelComparisonPage() {
           />
         ) : (
           <p className="text-sm text-ink-secondary">
-            Se promovera la version{' '}
+            Se promoverá la versión{' '}
             <span className="font-mono text-ink">{promotion?.version.version}</span> del modelo{' '}
             <span className="font-mono text-ink">{promotion?.model.name}</span>, creada el{' '}
             {formatDateTime(promotion?.version.createdAt)}.

@@ -88,7 +88,7 @@ export default function VerifyEmailPage() {
             </p>
             <div className="mt-5">
               <Link to="/login">
-                <Button>Iniciar sesion</Button>
+                <Button>Iniciar sesión</Button>
               </Link>
             </div>
           </>

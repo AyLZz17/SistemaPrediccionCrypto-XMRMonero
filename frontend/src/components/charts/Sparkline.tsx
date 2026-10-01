@@ -44,7 +44,7 @@ export function Sparkline({
       aria-labelledby={titleId}
     >
       <title id={titleId}>
-        {label}: minimo {min}, maximo {max}
+        {label}: mínimo {min}, máximo {max}
       </title>
       <polyline
         points={points}

@@ -29,17 +29,53 @@ function stubApi() {
     '/api/v1/users': () => jsonResponse({ json: { items: [], page: 0, size: 15, total: 0, totalPages: 0 } }),
     '/api/v1/auth/me': () =>
       jsonResponse({ json: { id: 'user-1', email: 'admin@ejemplo.com', fullName: 'Ana', role: 'ADMIN' } }),
+    // Panel publico (primera pantalla): se responde con agregados minimos.
+    '/api/v1/public/summary': () =>
+      jsonResponse({
+        json: {
+          symbol: 'XMR-USD',
+          price: 160.5,
+          previousClose: 158,
+          change: 2.5,
+          changePercent: 1.58,
+          high: 162,
+          low: 157.1,
+          updatedAt: '2026-10-01T06:15:00Z',
+          source: 'yahoo-finance',
+        },
+      }),
+    '/api/v1/public/series': () => jsonResponse({ json: [] }),
+    '/api/v1/public/models': () => jsonResponse({ json: [] }),
+    '/api/v1/public/metrics': () =>
+      jsonResponse({ json: { experimentCode: null, available: false, best: null, validation: null, test: null } }),
+    '/api/v1/public/comparison': () => jsonResponse({ json: [] }),
+    '/api/v1/public/status': () =>
+      jsonResponse({
+        json: {
+          generatedAt: '2026-10-01T06:15:00Z',
+          dataUpdatedAt: '2026-10-01T06:15:00Z',
+          dataPoints: 1500,
+          models: 5,
+          champions: 3,
+          experimentCode: null,
+          experimentStatus: null,
+          experimentUpdatedAt: null,
+          legalVersion: '2026-10-01',
+        },
+      }),
   })
 }
 
 const PUBLIC_ROUTES = [
   '/',
+  '/about',
   '/login',
   '/register',
   '/forgot-password',
   '/reset-password',
   '/auth/callback',
   '/verify-email',
+  '/verificar-email',
   '/terms',
   '/privacy',
   '/data-policy',
@@ -86,7 +122,7 @@ describe('footer mandatory text on every route', () => {
     stubApi()
     renderApp('/dashboard')
     // ProtectedRoute redirected to /login, which itself carries the footer.
-    expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
     expect(screen.getAllByText(EXPECTED_FOOTER).length).toBeGreaterThan(0)
   })
 

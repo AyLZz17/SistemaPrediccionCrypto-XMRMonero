@@ -108,7 +108,7 @@ class GoogleOAuthServiceTest {
                 new AppProperties.Ml("https://ml-service:8443", 3000, 60000, 2, ""),
                 new AppProperties.Security(true, 31536000L,
                         List.of("https://localhost:3000"),
-                        new AppProperties.Security.RateLimit(true, 5, 300),
+                        new AppProperties.Security.RateLimit(true, 5, 300, 120),
                         new AppProperties.Security.Account(5, 15)),
                 new AppProperties.Jobs(3, 900));
 

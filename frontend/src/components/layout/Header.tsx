@@ -58,15 +58,18 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
     }
   }, [menuOpen])
 
+  const changePercent = quote.data?.changePercent
+  const isUp = typeof changePercent === 'number' && changePercent >= 0
+
   return (
     <header
-      aria-label="Cabecera de la aplicacion"
+      aria-label="Cabecera de la aplicación"
       className="sticky top-0 z-20 flex h-header shrink-0 items-center gap-3 border-b border-hairline-subtle bg-surface-1/85 px-3 backdrop-blur-glass sm:px-5"
     >
       <button
         type="button"
         onClick={onMenuClick}
-        aria-label="Abrir menu de navegacion"
+        aria-label="Abrir menú de navegación"
         className="rounded-md border border-hairline p-2 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:hidden"
       >
         <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
@@ -75,7 +78,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
       </button>
 
       <Link to="/dashboard" className="flex items-center gap-2.5 lg:hidden">
-        <BrandMark size={28} />
+        <BrandMark size={26} />
         <span className="text-sm font-semibold text-ink">XMR-Forecast</span>
       </Link>
 
@@ -88,22 +91,22 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <span className="font-mono text-sm font-semibold tabular-nums text-ink">
             {formatUsd(quote.data?.price)}
           </span>
-          {typeof quote.data?.changePercent === 'number' ? (
+          {typeof changePercent === 'number' ? (
             <span
               className={clsx(
                 'font-mono text-xs tabular-nums',
-                quote.data.changePercent >= 0 ? 'text-accent-green' : 'text-accent-red',
+                isUp ? 'text-accent-green' : 'text-accent-red',
               )}
             >
-              {quote.data.changePercent >= 0 ? '+' : ''}
-              {quote.data.changePercent.toFixed(2)}%
+              {isUp ? '+' : ''}
+              {changePercent.toFixed(2)}%
             </span>
           ) : null}
         </div>
 
         <StatusDot
           tone={quote.isError ? 'danger' : quote.isPending ? 'warning' : 'success'}
-          label={quote.isError ? 'Sin conexion' : quote.isPending ? 'Conectando' : 'En linea'}
+          label={quote.isError ? 'Sin conexión' : quote.isPending ? 'Conectando' : 'En línea'}
           pulse={quote.isFetching && !quote.isError}
           className="hidden md:inline-flex"
           data-testid="api-connection-status"
@@ -170,9 +173,33 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           ) : null}
         </div>
 
-        <div className="hidden items-center gap-2 border-l border-hairline-subtle pl-3 md:flex">
-          <span className="max-w-[160px] truncate text-xs text-ink-secondary">{user?.fullName}</span>
+        <div className="hidden flex-col items-end leading-tight border-l border-hairline-subtle pl-3 md:flex">
+          {/* Identidad visible en la esquina superior derecha: nombre y correo
+              del titular mas su rol (T-043). */}
+          <span data-testid="header-identity" className="max-w-[200px] truncate text-xs font-medium text-ink">
+            {user?.fullName || user?.email}
+          </span>
+          <span className="max-w-[200px] truncate font-mono text-[10px] text-ink-muted">
+            {user?.email}
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+            {user?.role}
+          </span>
         </div>
+
+        <Link
+          to="/account"
+          className="hidden rounded-md border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink sm:inline-block"
+        >
+          Configuración
+        </Link>
+
+        <Link
+          to="/dashboard"
+          className="hidden rounded-md border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink sm:inline-block"
+        >
+          Dashboard
+        </Link>
 
         <button
           type="button"
@@ -180,7 +207,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
             logout(null)
             navigate('/login', { replace: true })
           }}
-          className="rounded-md border border-hairline px-3 py-2 font-mono text-xs uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-accent-red/50 hover:text-accent-red"
+          className="rounded-md border border-hairline px-3 py-2 font-mono text-xs uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-accent-red/40 hover:text-accent-red"
         >
           Salir
         </button>

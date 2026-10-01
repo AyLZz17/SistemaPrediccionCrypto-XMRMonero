@@ -165,10 +165,28 @@ TLS en produccion (R-33).
 ### 4.2 API REST (Spring Boot)
 
 - Mantener OpenAPI y rutas bajo `/api/v1`; retirar endpoints no usados. El
-  inventario vivo son **13 controladores y 48 rutas**, y
-  **`docs/01_documentacion.md` seccion 3.1 debe listar esas 46 rutas reales**
+  inventario vivo son **14 controladores y 54 rutas**, y
+  **`docs/01_documentacion.md` seccion 3.1 debe listar esas 54 rutas reales**
   (R-35). Un inventario desalineado es un inventario inservible: es lo que
   permite que rutas ausentes convivan con la suite en verde.
+- **La superficie anonima es un conjunto cerrado y separado** (seccion 3.1.12
+  de `docs/01`): las seis rutas de `/api/v1/public/**`, `meta/disclaimer`,
+  `meta/legal` y los flujos de cuenta (`register`, `login`, `refresh`,
+  `verify-email`, `password/forgot`, `password/reset`, `google/*`). `permitAll`
+  esta declarado ANTES del matcher autenticado, no dentro de una excepcion:
+  cualquiera que se añada a ese bloque es anonimo por decision, no por olvido.
+  Comprobaciones negativas correspondientes: sin sesion, `/experiments`,
+  `/jobs`, `/predictions`, `/notifications`, `/audit`, `/users` y
+  `/metrics/compare` devuelven 401 o 403 (`tools/verify-stack.ps1`), y
+  `PublicRoutesContractTest` revisa el fuente para que el panel no llegue a
+  leer tablas de usuario. Las rutas publicas son **solo GET** (un POST devuelve
+  405), validan sus parametros (`symbol` hasta 32, `limit` 1..365) y **no
+  contienen** correos, contrasenas ni identificadores de usuario: esa
+  comprobacion se hace sobre la respuesta real, no sobre la intencion.
+- **El panel publico tiene cubo de limitacion propio** (`RATE_LIMIT_PUBLIC`,
+  por defecto 120/min por IP), separado de `RATE_LIMIT_API` y de
+  `RATE_LIMIT_LOGIN`, de modo que una consulta masiva al panel no puede
+  agotar el limite del login ni al reves.
 - Definir esquemas de entrada y salida con allowlist y tipos estrictos: el
   servicio ML usa `extra='forbid'`, de modo que un campo de mas devuelve `422`
   sin fallo de compilacion (R-38).
@@ -254,6 +272,16 @@ proteccion de Spring. Ese hueco se cierra por construccion de la cookie
   `ddl-auto: validate` es deliberado: valida, nunca crea ni actualiza (R-34).
 - Redis exige autenticacion (`requirepass`) y no almacena secretos en claro.
 - Redis **no** es la cola de trabajos: la cola es la tabla `jobs` de PostgreSQL.
+- **Todo payload que pasa por `@Cacheable` es `Serializable`.** Con
+  `spring.cache.type: redis`, Spring escribe los resultados con
+  `JdkSerializationRedisSerializer`, y el fallo no ocurre al leer sino al
+  **escribir**: dentro del propio metodo cacheado. Un tipo que no lo sea
+  devuelve `500 DefaultSerializer requires a Serializable payload` en la ruta
+  entera, y solo cuando la cache llega a persistir, es decir, solo con datos.
+  Es el defecto que en T-043 dejo tres de las seis rutas del panel publico en
+  500 con la suite de unidades en verde. Lo cubren `CachedPayloadSerializationTest`
+  (la misma operacion que Redis, sin Redis) y `tools/verify-stack.ps1`, que
+  siembra datos sinteticos para que la cache llegue a escribirse.
 
 ### 4.7 ML, modelos predictivos y MLOps
 
@@ -457,6 +485,7 @@ brecha conocida con su mitigacion parcial y su criterio de cierre.
 | LIM-04 | **Sin MFA para administradores** | Un `ADMIN` queda protegido solo por contrasena | Bloqueo de cuenta, limitador, roles minimos y auditoria de cambios de rol | TOTP como minimo aceptable, WebAuthn preferible |
 | LIM-05 | **El servicio ML no se autentica de forma interna** | Cualquiera que alcance su red puede pedir inferencia | Solo es alcanzable desde la red interna; se exige `https://` y validacion de TLS | API key o mTLS entre backend y servicio ML |
 | LIM-06 | **El override de desarrollo publica DB y Redis en loopback** | Un `docker compose -f docker-compose.dev.yml up` en un host compartido expone datos | Solo loopback, puertos altos, y el fichero esta marcado como no productivo | Ninguna: es una herramienta de desarrollo, no un despliegue |
+| LIM-07 | **El evento `AUTH_REGISTER` se guarda sin actor.** `AuditService` corre en su propia transaccion y aun no ve la fila del usuario que se acaba de crear: el insert falla por FK (`audit_events_actor_user_id_fkey`) y el propio servicio degrada, registra el evento **sin** `actor_user_id` y lo avisa en el log (`El evento AUTH_REGISTER se registra sin actor`) | La auditoria del alta no dice quien se dio de alta, aunque la cuenta, el correo y la hora si quedan en la fila | La degradacion esta implementada y es visible en el log: el evento **siempre** se registra, nunca se pierde; `AuthService` no puede retrasar el alta hasta despues del commit sin romper la respuesta | Ejecutar el registro de auditoria pos-commit en un hilo propio (mismo patron que las notificaciones de R-52) y comprobarlo con una prueba de integracion |
 
 Ninguna de estas limitaciones se compensa con una afirmacion de seguridad que no
 se pueda demostrar. El criterio de cierre de cada una es explicito.

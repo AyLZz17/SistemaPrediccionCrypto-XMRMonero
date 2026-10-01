@@ -2,7 +2,7 @@
 
 > **Aviso legal.** Esta aplicacion proporciona analisis predictivo de series de tiempo. **No constituye asesoria financiera, no promete rentabilidad y no simula operaciones de inversion.**
 
-**Version:** 4.0 - **Fecha:** 2026-09-30 - **Documentos fuente:** `Propuesta_Monero_IEEE.docx`, `Fase1_Proyecto7.docx`
+**Version:** 5.0 - **Fecha:** 2026-10-01 - **Documentos fuente:** `Propuesta_Monero_IEEE.docx`, `Fase1_Proyecto7.docx`
 
 ---
 
@@ -11,6 +11,8 @@
 XMR-Forecast es una aplicacion web comercial que permite predecir el **precio de cierre del dia siguiente** de Monero (XMR) o la **direccion** del precio (sube/baja). Compara una red **LSTM** (GRU como alternativa) con **media movil, regresion lineal y ARIMA**.
 
 **Arquitectura v3:** Monolito modular **Spring Boot 3.2** (Java 21) + servicio especializado **FastAPI-ML** (Python 3.11) + **React 18** + **PostgreSQL 15** + **Redis 7** + **MLflow 2.8**. **HTTPS forzado** en todos los entornos.
+
+**La primera pantalla es un panel publico** (`/`): resumen de mercado, serie historica, metricas de evaluacion, comparacion de modelos, estado de los modelos y estado de actualizacion, todo en acceso anonimo y sin ningun dato de usuario. La landing explica el producto y vive en `/about`. Detras de la sesion estan las funciones avanzadas: experimentos, trabajos de ML, predicciones, exportaciones, configuracion y administracion (seccion 3.1.12 y 5).
 
 ---
 
@@ -23,7 +25,7 @@ XMR-Forecast es una aplicacion web comercial que permite predecir el **precio de
 | **Frontend** | React 18 + TypeScript + Vite | Interfaz de usuario, visualizacion |
 | **Backend principal** | Spring Boot 3.2 (Java 21) | API REST, autenticacion, autorizacion, persistencia, orquestacion, consumidor de la cola de trabajos |
 | **Servicio ML** | FastAPI (Python 3.11) | **Solo inferencia y consulta de metricas** por HTTP; el entrenamiento es un camino de CLI |
-| **Base de datos** | PostgreSQL 15 | Datos, experimentos, predicciones, usuarios (22 tablas, migraciones Flyway `V1`..`V5`) |
+| **Base de datos** | PostgreSQL 15 | Datos, experimentos, predicciones, usuarios (23 tablas, migraciones Flyway `V1`..`V6`) |
 | **Cache/Colas** | Redis 7 | Cache con TTL; la cola de trabajos vive en la tabla `jobs` de PostgreSQL |
 | **Tracking ML** | MLflow 2.8 | Tracking de experimentos y artefactos |
 
@@ -61,7 +63,7 @@ Se adopta un **monolito modular Spring Boot** en lugar de microservicios complet
 
 ### 3.1 Spring Boot (`/api/v1`)
 
-**Inventario real: 13 controladores y 48 rutas de metodo.** Todas exigen `Authorization: Bearer <JWT>` salvo las marcadas **PUBLICA**. Los identificadores que aparecen en las respuestas y en las variables de ruta son **cadenas opacas** (`common/Ids.java`), no numeros: el cliente no debe asumir que son enteros.
+**Inventario real: 14 controladores y 54 rutas de metodo.** Todas exigen `Authorization: Bearer <JWT>` salvo las marcadas **PUBLICA** (meta, autenticacion y las seis rutas del panel publico de la seccion 3.1.12). Los identificadores que aparecen en las respuestas y en las variables de ruta son **cadenas opacas** (`common/Ids.java`), no numeros: el cliente no debe asumir que son enteros.
 
 Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administrador), `ADMIN` (solo administrador).
 
@@ -81,8 +83,8 @@ Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administr
 | POST | `/api/v1/auth/login` | **PUBLICA** | Credenciales -> `200` con JWT; emite la cookie `HttpOnly` `xmr_refresh` |
 | POST | `/api/v1/auth/refresh` | **PUBLICA** | Rota el refresh token -> `200`; reutilizar uno ya rotado revoca la familia completa |
 | POST | `/api/v1/auth/logout` | VIEWER+ (principal opcional) | `204`; revoca el refresh token y borra la cookie. Idempotente |
-| POST | `/api/v1/auth/password/forgot` | **PUBLICA** | `204`; respuesta identica exista o no el correo |
-| POST | `/api/v1/auth/password/reset` | **PUBLICA** | `204`; restablece la contrasena con un token opaco |
+| POST | `/api/v1/auth/password/forgot` | **PUBLICA** | `204` **siempre**, con correo existente o inexistente, cuerpo identico y en el mismo tiempo (anti-enumeracion). Si la cuenta existe emite un token opaco con TTL de **2 h** guardado como hash HMAC-SHA256 y invalida los anteriores. Segunda solicitud dentro de los **2 min** (`RESET_MAIL_COOLDOWN`): mismo `204`, pero no se emite otro token, porque el enlace anterior sigue valido. `429` por rate limit |
+| POST | `/api/v1/auth/password/reset` | **PUBLICA** | `204`; restablece la contrasena con un token opaco de un solo uso. `400 INVALID_RESET_TOKEN` si no existe y `400 EXPIRED_RESET_TOKEN` si caduco o ya se uso. **Cierra todas las sesiones** (`logoutAll` con motivo `PASSWORD_RESET`, incluida la cookie `xmr_refresh`), guarda el nuevo hash BCrypt, marca el token como consumido y lo registra en auditoria (`AUTH_PASSWORD_RESET`). El token jamas viaja ni se guarda en claro (R-14) |
 | POST | `/api/v1/auth/password/change` | VIEWER+ | `204`; cambia la contrasena del autenticado y revoca sus sesiones |
 | POST | `/api/v1/auth/verify-email` | **PUBLICA** | `204`; confirma el correo con el parametro de consulta `token` |
 | POST | `/api/v1/auth/verify-email/resend` | **PUBLICA** | `204` exista o no la cuenta (anti-enumeracion); caduca el token anterior y envia uno nuevo. `429` por rate limit |
@@ -172,7 +174,22 @@ Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administr
 | GET | `/api/v1/users/{id}` | **ADMIN** | Detalle -> `200` / `404` |
 | PATCH | `/api/v1/users/{id}/role` | **ADMIN** | **Reemplaza** el conjunto de roles y revoca las sesiones del usuario. `409 CANNOT_SELF_DEMOTE` y `409 LAST_ADMIN` |
 
-#### 3.1.12 Rutas fuera de `/api/v1`
+#### 3.1.12 Panel publico (`/api/v1/public`)
+
+Estas seis rutas son la fuente de la **primera pantalla** (`/`) y las unicas de datos que se pueden consultar sin sesion. Estan en el paquete `publicapi`, separadas de las rutas privadas: `permitAll` explicito antes del matcher autenticado, **solo `GET`** (cualquier `POST` devuelve `405`), parametros validados (`symbol` hasta 32 caracteres, `limit` entre 1 y 365), cache en Redis (`public:*`) y un **cubo de rate limit propio** (`RATE_LIMIT_PUBLIC`, 120/min por defecto).
+
+| Metodo | Ruta | Rol | Descripcion |
+|--------|------|-----|-------------|
+| GET | `/api/v1/public/summary?symbol=` | **PUBLICA** | `PublicSummary`: `symbol`, `price`, `previousClose`, `change`, `changePercent`, `high`, `low`, `volume`, `marketTime`, `updatedAt`, `source`. `404` mientras no haya datos de mercado |
+| GET | `/api/v1/public/series?symbol=&limit=` | **PUBLICA** | Velas en orden ascendente, `limit` por defecto 90 y tope duro de **365** |
+| GET | `/api/v1/public/models` | **PUBLICA** | Lista de `PublicModelStatus`: `name`, `family`, `task`, `hasChampion` |
+| GET | `/api/v1/public/metrics` | **PUBLICA** | `PublicMetrics`: `experimentCode`, `available`, `best`, `validation`, `test`. Sin corridas terminadas devuelve `available: false` y los conjuntos en `null`: **no se inventan cifras** (R-21, R-09) |
+| GET | `/api/v1/public/comparison` | **PUBLICA** | `PublicComparisonRow`: `label`, `family`, `isChampion`, `metrics` sobre la particion **VALIDATION** (R-24). Sin `runId` ni identificadores de experimento |
+| GET | `/api/v1/public/status` | **PUBLICA** | `PublicStatus`: `generatedAt`, `dataUpdatedAt`, `dataPoints`, `models`, `champions`, `experimentCode`, `experimentStatus` (**vocabulario publico**: `SUCCEEDED`, R-43), `experimentUpdatedAt`, `legalVersion` |
+
+**Lo que NO publica ninguna de estas rutas:** correos, nombres de usuario, roles, identificadores de usuario o de corrida, predicciones individuales, configuracion, auditoria o cualquier campo de las tablas privadas. Lo comprueba `PublicRoutesContractTest` sobre el fuente y `tools/verify-stack.ps1` sobre la respuesta real (busca `password`, correos e identificadores de usuario).
+
+#### 3.1.13 Rutas fuera de `/api/v1`
 
 | Metodo | Ruta | Rol | Descripcion |
 |--------|------|-----|-------------|
@@ -181,7 +198,7 @@ Roles: `VIEWER` (cualquier usuario autenticado), `ANALYST` (analista o administr
 | GET | `/actuator/**` (resto) | **ADMIN** | Metricas y Prometheus |
 | GET | `/v3/api-docs/**`, `/swagger-ui/**` | **ADMIN** | Documentacion OpenAPI y Swagger UI |
 
-#### 3.1.13 Rutas que no existen
+#### 3.1.14 Rutas que no existen
 
 Esta documentacion no las publica porque el codigo no las implementa: `/api/v1/health`, `/api/v1/market/ohlcv`, `/api/v1/market/summary`, `/api/v1/market/ingest`, `/api/v1/experiments/{id}/comparison`, `/api/v1/predictions/next`, `/api/v1/runs/{id}/champion`, `/api/v1/admin/users` y cualquier ruta bajo `/api/v1/ml/*`. El estado del backend se consulta en `/actuator/health`.
 
@@ -299,6 +316,7 @@ activa. Antes existia `ML_VERIFY_TLS`, que el codigo leia y no usaba.
 |----------|-------------|
 | `RATE_LIMIT_LOGIN` | Intentos de login por minuto (5) |
 | `RATE_LIMIT_API` | Peticiones de API por minuto (300) |
+| `RATE_LIMIT_PUBLIC` | Peticiones al panel publico `/api/v1/public/**` por minuto, en un cubo propio (120) |
 | `MAX_FAILED_LOGINS` | Fallos consecutivos antes de bloquear (5) |
 | `LOCK_DURATION_MINUTES` | Duracion del bloqueo en minutos (15) |
 
@@ -314,7 +332,10 @@ activa. Antes existia `ML_VERIFY_TLS`, que el codigo leia y no usaba.
 - **CORS:** allowlist de origenes HTTPS.
 - **TLS local:** los certificados de desarrollo son autofirmados y solo sirven para el entorno local; produccion debe usar certificados emitidos por una autoridad confiable.
 - **Conexiones internas:** Spring Boot usa `ML_SERVICE_URL=https://ml-service:8443` y ML usa `MLFLOW_TRACKING_URI=https://mlflow:5000`.
-- **Rate limiting:** en login, en los endpoints de trabajo y en `password/forgot`, `password/reset` y `verify-email` (incluido el reenvio), que son publicos y generan tokens.
+- **Rate limiting:** en login, en los endpoints de trabajo y en `password/forgot`, `password/reset` y `verify-email` (incluido el reenvio), que son publicos y generan tokens. Todos comparten el cubo `RATE_LIMIT_LOGIN` por IP; el panel publico tiene el suyo (`RATE_LIMIT_PUBLIC`). El `429` siempre trae `Retry-After`.
+- **Panel publico (primera pantalla):** las seis rutas de `/api/v1/public/**` son las unicas de datos sin sesion. `permitAll` explicito antes del matcher autenticado, solo `GET`, parametros validados, cache en Redis y cubo de limitacion propio. **No exponen** experimentos, trabajos ML, predicciones, exportaciones, configuraciones, administracion, auditoria, internos, tokens ni datos personales: lo comprueba `PublicRoutesContractTest` sobre el fuente y el E2E sobre la respuesta real. Sin corridas publicadas el panel declara `available: false` en vez de rellenar huecos (R-21).
+- **Correos de cuenta:** cuerpo minimo y verificable (`MailContentTest`): identificacion de la aplicacion, motivo del mensaje, enlace **HTTPS** con el token (`/verificar-email?token=...`), fecha de expiracion en UTC, aviso de seguridad («si no lo pediste, cambia tu contrasena») y enlaces a los documentos legales. **Nunca** llevan contrasenas, JWT ni secretos, y `MailService` rechaza cualquier base que no sea `https://` (R-33).
+- **Recuperacion de contrasena:** respuesta `204` identica exista o no la cuenta (anti-enumeracion, cuerpo y tiempo iguales); token opaco con TTL de 2 h guardado como hash HMAC-SHA256 y jamas en claro; uso unico (`EXPIRED_RESET_TOKEN` en la segunda entrega); invalidacion de todas las sesiones y de la cookie de refresh (`logoutAll`, motivo `PASSWORD_RESET`); cooldown de 2 min entre avisos; contrasena con complejidad y confirmacion en el formulario; registro en auditoria (`AUTH_PASSWORD_RESET`); sin la contrasena en el correo ni en ningun log. Enlace y verificacion por HTTPS, proveedor de correo configurable (`MAIL_TRANSPORT=smtp|gmail`).
 - **Auditoria:** registro de acciones sensibles en `audit_events` con resultado `SUCCESS`/`DENIED`/`FAILURE`.
 - **Consentimiento:** cada aceptacion de terminos o de politica de datos queda en `consent_records` (migracion `V6`) con documento, version, fecha y hora, cuenta, canal y IP. El servidor lo comprueba dos veces: con `@AssertTrue` sobre una instancia real y de nuevo en `AuthService`, de modo que un registro sin aceptacion es imposible aunque se salte el formulario (R-46).
 - **Documentos legales:** cinco paginas publicas (`/terms`, `/privacy`, `/data-policy`, `/cookies`, `/legal-notice`) enlazadas desde el pie en todas las rutas; la version que muestran es la misma que sirve `GET /api/v1/meta/legal` y la que se guarda al aceptar (`LegalVersionsContractTest` compara los dos archivos de origen).

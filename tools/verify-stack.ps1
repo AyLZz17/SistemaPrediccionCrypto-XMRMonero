@@ -22,6 +22,20 @@
 #   9. escritura permitida para VIEWER+ segun rol, y 403 donde no cabe;
 #  10. la cola de trabajos AVANZA: el trabajo TRAIN encolado llega a un estado
 #      terminal, y la corrida y el experimento reflejan ese desenlace.
+#  11. el PANEL PUBLICO (primera pantalla, anonimo): sus seis rutas responden
+#      sin sesion, validan sus parametros, son de solo lectura y no contienen
+#      datos personales; las rutas privadas siguen cerradas para anonimos.
+#  12. la RECUPERACION DE CONTRASENA de extremo a extremo: 204 identico con
+#      correo existente o inexistente, token guardado con hash y TTL de 2 h,
+#      cooldown de 2 min, enlace calculado igual que el servidor, reset 204,
+#      enlace de un solo uso, sesiones revocadas (incluida la cookie por HTTP),
+#      contrasena vieja fuera, contrasena nueva dentro y auditoria registrada.
+#
+#   En el punto 12 el paso que se sustituye es unico: la RECEPCION del correo.
+#   No hay bandeja en este entorno, asi que se calcula el mismo HMAC-SHA256 que
+#   calcula `TokenHasher` y se inserta la fila que `forgotPassword` crea. Todo
+#   lo demas (validacion, consumo, logout, hash de contrasena, auditoria) es
+#   codigo real del servidor ejercitado por HTTP, no una simulacion.
 #
 # POR QUE EL PUNTO 10 EXISTE
 #   Entre T-027 y esta revision, `JobRepository.claimIfPending` era un @Modifying
@@ -61,10 +75,15 @@ function Check([string]$name, [bool]$ok, [string]$detail = '') {
   else { Write-Host ("FALLO " + $name + "   " + $detail) -ForegroundColor Red; $script:failures++ }
 }
 
-# Invoke-Check <METHOD> <path> [body] [token] -> @{ Status; Body; Headers }
-function Invoke-Check([string]$method, [string]$path, [string]$body = '', [string]$token = '') {
+# Invoke-Check <METHOD> <path> [body] [token] [cookie] -> @{ Status; Body; Headers }
+#
+# `cookie` permite presentar la cookie de refresh en claro: hace falta para
+# comprobar que un reset de contrasena invalida las sesiones existentes, que es
+# una garantia que no se puede demostrar solo mirando la base de datos.
+function Invoke-Check([string]$method, [string]$path, [string]$body = '', [string]$token = '', [string]$cookie = '') {
   $headers = @{ 'X-Request-Id' = ('verify-' + [guid]::NewGuid().ToString('N').Substring(0,12)) }
   if ($token) { $headers['Authorization'] = "Bearer $token" }
+  if ($cookie) { $headers['Cookie'] = $cookie }
   $params = @{
     Uri             = ($base + $path)
     Method          = $method
@@ -101,6 +120,27 @@ function As-Text($content) {
 # intentos de login a proposito, asi que sin esta espera el propio guion
 # activaria el limitador que despues quiere comprobar. No se desactiva el limite:
 # la espera es lo que haria un cliente bien comportado.
+# Igual que Invoke-Check, pero tolerando el 429 de los caminos sensibles:
+# password/*, login y verify-email comparten UN cubo por IP, y en el flujo de
+# recuperacion las llamadas se acumulan. En vez de rendirse o de saltarse el
+# limite, se espera el tiempo que el PROPIO servidor indica en `Retry-After` y
+# se reintenta, que es lo que haria un cliente bien educado. Si tras tres
+# intentos sigue en 429, devuelve el 429 y la comprobacion falla: el limite no
+# se esconde, se respeta.
+function Invoke-Sensitive([string]$method, [string]$path, [string]$body = '', [string]$cookie = '') {
+  $r = $null
+  for ($try = 1; $try -le 3; $try++) {
+    $r = Invoke-Check $method $path $body '' $cookie
+    if ($r.Status -ne 429) { return $r }
+    $wait = 61
+    $header = [string]$r.Headers['Retry-After']
+    if ($header -match '^\d+$') { $wait = [int]$header + 1 }
+    Write-Host "      (429 en $($path): se esperan $wait s como pide Retry-After, intento $try/3)"
+    Start-Sleep -Seconds $wait
+  }
+  return $r
+}
+
 function Invoke-Login([string]$email, [string]$password) {
   $body = @{ email = $email; password = $password } | ConvertTo-Json -Compress
   for ($attempt = 1; $attempt -le 3; $attempt++) {
@@ -154,6 +194,91 @@ Check 'GET /api/v1/meta/legal responde SIN sesion: 5 documentos con la MISMA ver
 # ------------------------------------------------------------ 3. ruta protegida
 $unauth = Invoke-Check GET '/api/v1/market/latest'
 Check 'una ruta protegida sin token devuelve 401' ($unauth.Status -eq 401) "status=$($unauth.Status)"
+
+# ------------------------------------------------------------ 3b. panel publico
+#
+# La PRIMERA pantalla del producto es un dashboard anonimo. Se comprueba aqui
+# que sus seis rutas responden SIN sesion, que validan sus parametros y que no
+# sueltan nada personal: un panel abierto sin validacion es un panel al que se
+# le puede preguntar lo que sea, y una respuesta anonima con campos de usuario
+# seria una fuga (R-26).
+#
+# Antes se siembran dos velas sinteticas. No hay ingesta en este entorno (no se
+# ejecuta `make ingest`), y sin datos el panel devolvia 404 y la cache de Redis
+# NUNCA llegaba a escribirse: fue exactamente ese hueco el que oculto el fallo
+# de serializacion de T-043, con las pruebas de unidad en verde y tres de las
+# seis rutas publicas devolviendo 500. Mismo criterio que las versiones de
+# dataset sinteticas de mas abajo: el dato es de prueba y no sobrevive a este
+# script.
+docker exec xmr-postgres psql -U xmr -d xmr_forecast -q -c @"
+INSERT INTO market_data (symbol, source, opened_at, open, high, low, close, volume)
+VALUES ('XMR-USD', 'sintetico', NOW() - interval '1 day', 155, 158, 154, 157.2, 900),
+       ('XMR-USD', 'sintetico', NOW(),                157.2, 162, 157.1, 160.5, 950)
+ON CONFLICT (symbol, source, opened_at) DO NOTHING;
+"@ | Out-Null
+Write-Host "      (dos velas sinteticas sembradas para ejercitar la cache del panel publico)"
+
+$publicPaths = @(
+  '/api/v1/public/summary?symbol=XMR-USD',
+  '/api/v1/public/series?symbol=XMR-USD&limit=30',
+  '/api/v1/public/models',
+  '/api/v1/public/metrics',
+  '/api/v1/public/comparison',
+  '/api/v1/public/status'
+)
+$pubBodies = @{}
+foreach ($path in $publicPaths) {
+  $r = Invoke-Check GET $path
+  Check "GET $path responde SIN sesion" ($r.Status -eq 200) "status=$($r.Status) $($r.Body)"
+  if ($r.Status -eq 200) { $pubBodies[$path] = $r.Body }
+}
+
+# Ningun dato personal en la superficie anonima: ni correos, ni contrasenas, ni
+# identificadores de usuario.
+$leak = $false
+foreach ($body in $pubBodies.Values) {
+  if ($body -match 'password' -or $body -match '@example\.com' -or $body -match '"userId"' -or $body -match '"user_id"') { $leak = $true }
+}
+Check 'las respuestas publicas no contienen correos, contrasenas ni identificadores de usuario' `
+  (-not $leak) "rutas=$($pubBodies.Count)"
+
+# El estado publica la version legal vigente y la existencia de corridas (o su
+# ausencia declarada, R-21).
+$statusBody = $pubBodies['/api/v1/public/status']
+Check 'GET /public/status trae la version de los documentos legales' `
+  ([bool]$statusBody -and $statusBody -match '"legalVersion"\s*:\s*"\d{4}-\d{2}-\d{2}"') "body=$statusBody"
+$metricsBody = $pubBodies['/api/v1/public/metrics']
+Check 'GET /public/metrics declara available en lugar de devolver cifras vacias' `
+  ([bool]$metricsBody -and $metricsBody -match '"available"\s*:\s*(true|false)') "body=$metricsBody"
+
+# Validacion de parametros: fuera de rango, 400 con codigo estable.
+$longSymbol = Invoke-Check GET ('/api/v1/public/summary?symbol=' + ('X' * 64))
+Check 'un simbolo de 64 caracteres se rechaza (limite 32)' `
+  ($longSymbol.Status -eq 400) "status=$($longSymbol.Status) $($longSymbol.Body)"
+$limitZero = Invoke-Check GET '/api/v1/public/series?symbol=XMR-USD&limit=0'
+Check 'limit=0 se rechaza (minimo 1)' ($limitZero.Status -eq 400) "status=$($limitZero.Status)"
+$limitHuge = Invoke-Check GET '/api/v1/public/series?symbol=XMR-USD&limit=9999'
+Check 'limit=9999 se rechaza (maximo 365)' ($limitHuge.Status -eq 400) "status=$($limitHuge.Status)"
+
+# Solo lectura: el panel publico no admite escritura (R-26).
+$publicWrite = Invoke-Check POST '/api/v1/public/summary' '{}'
+Check 'POST sobre una ruta publica devuelve 405 (solo GET)' `
+  ($publicWrite.Status -eq 405) "status=$($publicWrite.Status)"
+
+# El panel publico NO abre la puerta a lo privado: sin sesion, experimentos,
+# trabajos, predicciones, notificaciones, auditoria y usuarios siguen cerrados.
+foreach ($path in @(
+  '/api/v1/experiments?page=0&size=5',
+  '/api/v1/jobs?page=0&size=5',
+  '/api/v1/predictions?page=0&size=5',
+  '/api/v1/notifications?page=0&size=5',
+  '/api/v1/audit?page=0&size=5',
+  '/api/v1/users?page=0&size=5',
+  '/api/v1/metrics/compare?experimentId=1'
+)) {
+  $r = Invoke-Check GET $path
+  Check "sin sesion, $path devuelve 401 o 403" ($r.Status -in @(401, 403)) "status=$($r.Status)"
+}
 
 # ------------------------------------------------------------ 4. sin HTTP plano
 $plain = 0
@@ -239,6 +364,11 @@ Check 'el login emite la cookie HttpOnly del refresh token' `
   ($setCookie -match 'xmr_refresh' -and $setCookie -match 'HttpOnly' -and $setCookie -match 'SameSite=Strict') `
   "Set-Cookie=$setCookie"
 
+# Se conserva la cookie de refresh: mas adelante se comprueba que el reset de
+# contrasena la invalida de verdad (no basta con mirar la base de datos).
+$refreshCookie = ''
+if ($setCookie) { $refreshCookie = (([string]$setCookie) -split ';')[0].Trim() }
+
 if (-not $token) {
   Write-Host ''
   Write-Host "No se pudo obtener sesion: se omiten las comprobaciones autenticadas." -ForegroundColor Yellow
@@ -260,6 +390,10 @@ if (-not $token) {
     '/api/v1/notifications?page=0&size=5',
     '/api/v1/notifications/unread-count',
     '/api/v1/predictions?page=0&size=5',
+    # market/latest es la llamada del dashboard autenticado y pasa por la cache
+    # de Redis (QuoteResponse): sin los datos sinteticos del paso 3b daria 404,
+    # y con ellos ejercita la serializacion JDK de la cache.
+    '/api/v1/market/latest',
     '/api/v1/market/candles?symbol=XMR-USD&page=0&size=5',
     '/api/v1/market/series?symbol=XMR-USD&limit=5'
   )
@@ -418,6 +552,152 @@ if (-not $token) {
   Check 'el experimento ya no se queda en RUNNING con su corrida terminada' `
     ($expAfterJson -and $expAfterJson.status -ne 'RUNNING') `
     "estado=$($expAfterJson.status)"
+}
+
+# ------------------------------------------------- 12. recuperacion de contrasena
+#
+# Flujo completo por HTTP: respuesta generica (anti-enumeracion), token
+# guardado con hash, expiracion corta, uso unico, invalidacion de sesiones,
+# cambio efectivo de la contrasena y auditoria.
+#
+# Aqui NO hay bandeja de correo, de modo que el unico paso que se sustituye es
+# la RECEPCION del enlace: se calcula el mismo HMAC-SHA256 que calcula el
+# servidor (TokenHasher) con el mismo `JWT_SECRET` y se inserta la fila que
+# `forgotPassword` habria creado. Lo que NO se sustituye es una sola linea del
+# servidor: la validacion, el consumo del token, el cierre de sesiones, el
+# cambio de hash de contrasena y la auditoria se ejecutan de verdad por HTTP.
+if ($token) {
+  # ---------------------------------------- 12a. el limitador de tasa existe
+  #
+  # Los caminos sensibles (login, register, refresh, password/*, verify-email)
+  # comparten UN cubo por IP de `RATE_LIMIT_LOGIN` peticiones por minuto. Se
+  # comprueba de verdad agotandolo con `password/forgot` sobre un correo
+  # inexistente: esa llamada no crea cuentas, no emite tokens ni audita, asi
+  # que es la forma mas limpia de probar el limite sin efectos secundarios.
+  $limitDetail = 'sin 429 en 8 intentos'
+  $limited = $null
+  $retryAfter = ''
+  $hammerBody = @{ email = ('limite' + (Get-Random) + '@example.com') } | ConvertTo-Json -Compress
+  for ($attempt = 1; $attempt -le 8 -and $null -eq $limited; $attempt++) {
+    $probe = Invoke-Check POST '/api/v1/auth/password/forgot' $hammerBody
+    if ($probe.Status -eq 429) { $limited = $probe }
+  }
+  if ($null -ne $limited) {
+    $retryAfter = [string]$limited.Headers['Retry-After']
+    $limitDetail = "status=429 Retry-After=$retryAfter"
+  }
+  Check 'password/forgot devuelve 429 al agotar el cubo sensible, con Retry-After' `
+    ($null -ne $limited -and $retryAfter -match '^\d+$') $limitDetail
+
+  # Se devuelve el limitador a su estado inicial, con el mismo criterio con el
+  # que el guion lo resetea al arrancar: este script nadie lo ejecuta en
+  # produccion, y sin este reset los pasos siguientes esperarian 61 s cada uno
+  # sin probar nada que no se haya probado ya. El 429 de arriba es la
+  # comprobacion; lo que viene despues es el flujo, no el limite.
+  docker exec xmr-redis sh -c `
+    'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning KEYS "ratelimit:*" | xargs -r redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DEL' | Out-Null
+
+  # --------------------------------------------------- 12b. el flujo de verdad
+  $forgot = Invoke-Sensitive POST '/api/v1/auth/password/forgot' (@{ email = $email } | ConvertTo-Json -Compress)
+  Check 'POST /password/forgot responde 204 con la cuenta existente' `
+    ($forgot.Status -eq 204) "status=$($forgot.Status) $($forgot.Body)"
+
+  $forgottenUnknown = Invoke-Sensitive POST '/api/v1/auth/password/forgot' `
+    (@{ email = ('nadie' + (Get-Random) + '@example.com') } | ConvertTo-Json -Compress)
+  Check 'el olvido responde igual con un correo inexistente (anti-enumeracion)' `
+    ($forgottenUnknown.Status -eq 204 -and $forgot.Status -eq 204 -and $forgottenUnknown.Body -eq $forgot.Body) `
+    "status=$($forgottenUnknown.Status) body=$($forgottenUnknown.Body)"
+
+  # El token se guarda con hash, con un TTL corto y sin consumir.
+  $tokenRow = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+    "SELECT prt.token_hash || '|' || CASE WHEN prt.expires_at > NOW() AND prt.expires_at <= NOW() + interval '3 hours' THEN 'ttl-ok' ELSE 'ttl-bad' END || '|' || (prt.consumed_at IS NULL)::text FROM password_reset_tokens prt JOIN users u ON u.id = prt.user_id WHERE u.email = '$email' AND prt.purpose = 'RESET' ORDER BY prt.id DESC LIMIT 1;"
+  $tokenParts = ("$tokenRow".Trim() -split '\|')
+  Check 'el token de reset se guarda con hash HMAC-SHA256 (64 hex), nunca en claro' `
+    ($tokenParts[0] -match '^[0-9a-f]{64}$') "fila=$($tokenRow)"
+  Check 'el token de reset expira en menos de 3 horas (TTL corto: 2 h)' `
+    ($tokenParts[1] -eq 'ttl-ok') "ttl=$($tokenParts[1])"
+  # (el CAST a text de un booleano en PostgreSQL es 'true'/'false', no 't'/'f':
+  #  el primer intento de esta comprobacion fallo por comparar con 't' y acuso
+  #  de "consumido" a un token que estaba intacto)
+  Check 'el token de reset nace sin consumir (uso unico pendiente)' `
+    ($tokenParts[2] -eq 'true') "consumed=$($tokenParts[2])"
+
+  # Segunda solicitud dentro de la ventana de gracia (2 min): mismo 204 y NO se
+  # emite otro token, porque el enlace anterior sigue siendo el valido.
+  $activeBefore = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+    "SELECT count(*) FROM password_reset_tokens prt JOIN users u ON u.id = prt.user_id WHERE u.email = '$email' AND prt.purpose = 'RESET' AND prt.consumed_at IS NULL;"
+  $forgotAgain = Invoke-Sensitive POST '/api/v1/auth/password/forgot' (@{ email = $email } | ConvertTo-Json -Compress)
+  $activeAfter = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+    "SELECT count(*) FROM password_reset_tokens prt JOIN users u ON u.id = prt.user_id WHERE u.email = '$email' AND prt.purpose = 'RESET' AND prt.consumed_at IS NULL;"
+  Check 'una segunda solicitud dentro del cooldown responde 204 sin emitir otro token' `
+    ($forgotAgain.Status -eq 204 -and "$activeAfter".Trim() -eq "$activeBefore".Trim()) `
+    "antes=$("$activeBefore".Trim()) despues=$("$activeAfter".Trim()) status=$($forgotAgain.Status)"
+
+  # Enlace con el mismo calculo que hace el servidor.
+  $jwtSecret = Get-EnvValue 'JWT_SECRET'
+  $plainToken = 'verify-e2e-' + [guid]::NewGuid().ToString('N')
+  $hmac = New-Object System.Security.Cryptography.HMACSHA256
+  $hmac.Key = [System.Text.Encoding]::UTF8.GetBytes($jwtSecret)
+  $resetHash = ([System.BitConverter]::ToString(
+    $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($plainToken))) -replace '-', '').ToLower()
+  docker exec xmr-postgres psql -U xmr -d xmr_forecast -q -c `
+    "INSERT INTO password_reset_tokens (user_id, token_hash, purpose, expires_at) SELECT id, '$resetHash', 'RESET', NOW() + interval '1 hour' FROM users WHERE email = '$email';" | Out-Null
+
+  $newPassword = 'Recuperacion#2026segura'
+  $reset = Invoke-Sensitive POST '/api/v1/auth/password/reset' `
+    (@{ token = $plainToken; newPassword = $newPassword } | ConvertTo-Json -Compress)
+  Check 'POST /password/reset con un token valido responde 204' `
+    ($reset.Status -eq 204) "status=$($reset.Status) $($reset.Body)"
+
+  # Uso unico: el mismo enlace no sirve dos veces.
+  $reuse = Invoke-Sensitive POST '/api/v1/auth/password/reset' `
+    (@{ token = $plainToken; newPassword = 'Otra#Contrasena2026' } | ConvertTo-Json -Compress)
+  Check 'reutilizar el mismo enlace se rechaza (uso unico)' `
+    ($reuse.Status -eq 400 -and $reuse.Body -match 'RESET_TOKEN') "status=$($reuse.Status) $($reuse.Body)"
+
+  # Un token inventado no provoca 500: codigo estable.
+  $forged = Invoke-Sensitive POST '/api/v1/auth/password/reset' `
+    (@{ token = ('inventado-' + [guid]::NewGuid().ToString('N')); newPassword = 'Otra#Contrasena2026' } | ConvertTo-Json -Compress)
+  Check 'un token inexistente se rechaza con INVALID_RESET_TOKEN' `
+    ($forged.Status -eq 400 -and $forged.Body -match 'INVALID_RESET_TOKEN') "status=$($forged.Status) $($forged.Body)"
+
+  # Todas las sesiones previas mueren (logoutAll con motivo PASSWORD_RESET).
+  $activeRefresh = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+    "SELECT count(*) FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id WHERE u.email = '$email' AND rt.revoked_at IS NULL;"
+  $revokedReset = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+    "SELECT count(*) FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id WHERE u.email = '$email' AND rt.revoked_reason = 'PASSWORD_RESET';"
+  Check 'tras el reset no queda ninguna sesion de refresh activa' `
+    ("$activeRefresh".Trim() -eq '0') "activas=$("$activeRefresh".Trim())"
+  Check 'las sesiones revocadas llevan el motivo PASSWORD_RESET' `
+    ("$revokedReset".Trim() -ge '1') "revocadas=$("$revokedReset".Trim())"
+
+  # Y por HTTP, no solo en la base de datos: la cookie de refresh del login
+  # anterior deja de ser aceptada.
+  #
+  # Se manda cuerpo `{}`: el endpoint exige `@RequestBody` (el CAMPO refreshToken
+  # es el que es opcional, porque si falta se lee la cookie), y sin cuerpo
+  # Invoke-WebRequest envia `application/x-www-form-urlencoded`, que Spring
+  # rechaza con 415 antes de mirar la cookie. El propio frontend hace lo mismo
+  # (`body: body ?? {}` en refreshCoordinator).
+  if ($refreshCookie) {
+    $staleRefresh = Invoke-Sensitive POST '/api/v1/auth/refresh' '{}' '' $refreshCookie
+    Check 'la cookie de refresh anterior deja de ser aceptada tras el reset (401)' `
+      ($staleRefresh.Status -eq 401) "status=$($staleRefresh.Status) $($staleRefresh.Body)"
+  }
+
+  # La contrasena vieja deja de entrar y la nueva entra: cambio efectivo.
+  $oldLogin = Invoke-Login $email $password
+  Check 'tras el reset la contrasena anterior deja de funcionar' `
+    ($oldLogin.Status -in @(401, 403)) "status=$($oldLogin.Status) $($oldLogin.Body)"
+  $newLogin = Invoke-Login $email $newPassword
+  Check 'tras el reset la contrasena nueva inicia sesion' `
+    ($newLogin.Status -eq 200) "status=$($newLogin.Status) $($newLogin.Body)"
+
+  # Auditoria del reset (el encargo la exige explicitamente).
+  $auditReset = docker exec xmr-postgres psql -U xmr -d xmr_forecast -t -A -c `
+    "SELECT count(*) FROM audit_events ae JOIN users u ON u.id = ae.actor_user_id WHERE u.email = '$email' AND ae.action = 'AUTH_PASSWORD_RESET';"
+  Check 'el reset queda registrado en la auditoria (AUTH_PASSWORD_RESET)' `
+    ("$auditReset".Trim() -ge '1') "filas=$("$auditReset".Trim())"
 }
 
 Write-Host ''

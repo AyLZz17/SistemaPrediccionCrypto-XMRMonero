@@ -1,8 +1,8 @@
-export function BrandMark({ size = 32 }: { size?: number }) {
+export function BrandMark({ size = 28 }: { size?: number }) {
   return (
     <span
       aria-hidden="true"
-      className="inline-flex shrink-0 items-center justify-center rounded-md border border-accent-cyan/40 bg-accent-cyan-soft shadow-glow-cyan"
+      className="inline-flex shrink-0 items-center justify-center rounded-md border border-accent-cyan/30 bg-accent-cyan-soft"
       style={{ width: size, height: size }}
     >
       <svg viewBox="0 0 24 24" width={size * 0.62} height={size * 0.62} fill="none" stroke="currentColor" strokeWidth="1.8" className="text-accent-cyan">

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -118,7 +119,15 @@ public class MarketService {
             Instant marketTime,
             Instant updatedAt,
             String source
-    ) {
+    )
+            // Redis guarda esta cache con serializacion JDK (spring.cache.type=redis):
+            // sin Serializable, la primera consulta que ACIERTA en cache devuelve 500.
+            // Verificado en T-043 con la pila real; el E2E lo cubre y
+            // CachedPayloadSerializationTest lo fija para siempre.
+            implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
         static QuoteResponse of(MarketData current, MarketData previous) {
             BigDecimal previousClose = previous == null ? null : previous.getClose();
             BigDecimal change = previousClose == null ? null : current.getClose().subtract(previousClose);
@@ -153,7 +162,12 @@ public class MarketService {
             BigDecimal volume,
             BigDecimal change,
             BigDecimal changePercent
-    ) {
+    )
+            // Idem QuoteResponse: la serie publica pasa por @Cacheable en Redis.
+            implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
         static CandleResponse of(MarketData data) {
             return new CandleResponse(
                     Ids.of(data.getId()),

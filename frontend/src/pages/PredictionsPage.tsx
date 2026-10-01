@@ -72,7 +72,7 @@ export default function PredictionsPage() {
     },
     {
       key: 'predictedDirection',
-      header: 'Direccion',
+      header: 'Dirección',
       render: (row) =>
         row.predictedDirection ? <StatusPill status={row.predictedDirection} /> : <span className="text-ink-muted">—</span>,
     },
@@ -104,14 +104,14 @@ export default function PredictionsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-caps">Pronosticos</p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Predicciones</h1>
+          <p className="label-caps">Pronósticos</p>
+          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl tracking-tight">Predicciones</h1>
           <p className="mt-1 text-sm text-ink-secondary">
-            Cierre del dia siguiente y direccion (sube / baja) generados por los modelos registrados.
+            Cierre del día siguiente y dirección (sube / baja) generados por los modelos registrados.
           </p>
         </div>
         {canRequest ? (
-          <Button onClick={() => setModalOpen(true)}>Nueva prediccion</Button>
+          <Button onClick={() => setModalOpen(true)}>Nueva predicción</Button>
         ) : (
           <span className="label-caps">Rol ANALYST requerido para generar</span>
         )}
@@ -120,9 +120,9 @@ export default function PredictionsPage() {
       <Disclaimer variant="full" />
 
       <Panel tone="raised">
-        <PanelHeader title="Historial de predicciones" subtitle="Pagina actual del endpoint paginado" />
+        <PanelHeader title="Historial de predicciones" subtitle="Página actual del endpoint paginado" />
         {predictions.isPending ? (
-          <div className="skeleton-bar h-64 w-full" role="status" aria-label="Cargando predicciones" />
+          <div className="skeleton-bar h-64 w-full min-w-0" role="status" aria-label="Cargando predicciones" />
         ) : predictions.isError ? (
           <ErrorState
             message={toApiError(predictions.error).friendlyMessage}
@@ -153,13 +153,13 @@ export default function PredictionsPage() {
             title="Sin predicciones registradas"
             description={
               canRequest
-                ? 'Genera la primera prediccion para un modelo y una fecha objetivo.'
+                ? 'Genera la primera predicción para un modelo y una fecha objetivo.'
                 : 'Tu rol solo permite consultar. Un ANALYST puede generar predicciones.'
             }
             action={
               canRequest ? (
                 <Button size="sm" onClick={() => setModalOpen(true)}>
-                  Generar prediccion
+                  Generar predicción
                 </Button>
               ) : undefined
             }
@@ -170,8 +170,8 @@ export default function PredictionsPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Generar prediccion"
-        description="El backend encola el calculo; el servicio ML se invoca solo a traves del backend."
+        title="Generar predicción"
+        description="El backend encola el cálculo; el servicio ML se invoca solo a través del backend."
         footer={
           <>
             <Button variant="ghost" onClick={() => setModalOpen(false)}>
@@ -216,10 +216,10 @@ export default function PredictionsPage() {
             required
             value={targetDate}
             onChange={(event) => setTargetDate(event.target.value)}
-            hint="Se predecira el cierre de ese dia usando solo informacion anterior."
+            hint="Se predecirá el cierre de ese día usando solo información anterior."
           />
           <Notice>
-            Esta accion no ejecuta operaciones ni simula rentabilidad. Solo registra un pronostico de
+            Esta acción no ejecuta operaciones ni simula rentabilidad. Solo registra un pronóstico de
             capacidad predictiva evaluada.
           </Notice>
           <p className="font-mono text-xs text-ink-muted">
@@ -229,13 +229,13 @@ export default function PredictionsPage() {
       </Modal>
 
       <Panel tone="raised">
-        <PanelHeader title="Como leer estas cifras" subtitle="Notas metodologicas" />
+        <PanelHeader title="Cómo leer estas cifras" subtitle="Notas metodológicas" />
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li className="flex gap-2">
             <span className="font-mono text-accent-cyan">01</span>
             <span>
               Cada muestra pertenece al subconjunto de la <strong className="text-ink">fecha de su
-              objetivo</strong>; la ventana de entrada solo mira hacia atras.
+              objetivo</strong>; la ventana de entrada solo mira hacia atrás.
             </span>
           </li>
           <li className="flex gap-2">
@@ -247,7 +247,7 @@ export default function PredictionsPage() {
           <li className="flex gap-2">
             <span className="font-mono text-accent-cyan">03</span>
             <span>
-              Un pronostico negativo tambien se publica: no se ajustan parametros usando la prueba para
+              Un pronóstico negativo también se publica: no se ajustan parámetros usando la prueba para
               mejorar el resultado.
             </span>
           </li>

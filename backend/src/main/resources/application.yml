@@ -210,6 +210,9 @@ app:
       enabled: true
       login-attempts-per-minute: ${RATE_LIMIT_LOGIN:5}
       api-requests-per-minute: ${RATE_LIMIT_API:300}
+      # Superficie anonima del dashboard publico: suficiente para pintar
+      # paginas y graficos, insuficiente para vaciar la serie con un script.
+      public-requests-per-minute: ${RATE_LIMIT_PUBLIC:120}
     account:
       max-failed-logins: ${MAX_FAILED_LOGINS:5}
       lock-duration-minutes: ${LOCK_DURATION_MINUTES:15}

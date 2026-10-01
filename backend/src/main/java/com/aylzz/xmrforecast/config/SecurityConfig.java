@@ -107,6 +107,13 @@ public class SecurityConfig {
                                 "/api/v1/meta/legal"
                         ).permitAll()
 
+                        // Dashboard publico: superficie anonima del primer
+                        // pantalla (R-26). Solo lectura y sin datos de usuario;
+                        // cada ruta se documenta en docs/01 y su proteccion es
+                        // el rate limit, la validacion de parametros y el hecho
+                        // de que no existe ningun metodo de escritura aqui.
+                        .requestMatchers("/api/v1/public/**").permitAll()
+
                         // Autenticado: el resto de la API.
                         .requestMatchers("/api/v1/**").authenticated()
 

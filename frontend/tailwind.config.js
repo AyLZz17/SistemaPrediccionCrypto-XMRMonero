@@ -5,10 +5,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Surfaces -> bg-root / bg-deep / bg-raised
+        // Base backgrounds
         root: 'var(--xmr-bg-root)',
         deep: 'var(--xmr-bg-deep)',
         raised: 'var(--xmr-bg-raised)',
+        elevated: 'var(--xmr-bg-elevated)',
+        // Surfaces -> panels
         surface: {
           1: 'var(--xmr-surface-1)',
           2: 'var(--xmr-surface-2)',
@@ -18,10 +20,11 @@ export default {
         },
         // Borders
         hairline: {
+          DEFAULT: 'var(--xmr-border-hairline)',
           subtle: 'var(--xmr-border-subtle)',
-          DEFAULT: 'var(--xmr-border-default)',
+          default: 'var(--xmr-border-default)',
           strong: 'var(--xmr-border-strong)',
-          accent: 'var(--xmr-border-accent)',
+          focus: 'var(--xmr-border-focus)',
         },
         // Text
         ink: {
@@ -36,7 +39,6 @@ export default {
           cyan: 'rgb(var(--xmr-accent-cyan-ch) / <alpha-value>)',
           red: 'rgb(var(--xmr-accent-red-ch) / <alpha-value>)',
           amber: 'rgb(var(--xmr-accent-amber-ch) / <alpha-value>)',
-          violet: 'rgb(var(--xmr-accent-violet-ch) / <alpha-value>)',
         },
         // State aliases
         idle: 'rgb(var(--xmr-text-muted-ch) / <alpha-value>)',
@@ -44,7 +46,6 @@ export default {
         success: 'rgb(var(--xmr-accent-green-ch) / <alpha-value>)',
         warning: 'rgb(var(--xmr-accent-amber-ch) / <alpha-value>)',
         danger: 'rgb(var(--xmr-accent-red-ch) / <alpha-value>)',
-        info: 'rgb(var(--xmr-accent-violet-ch) / <alpha-value>)',
         disabled: 'var(--xmr-state-disabled)',
       },
       backgroundColor: {
@@ -53,7 +54,6 @@ export default {
           cyan: 'var(--xmr-accent-cyan-soft)',
           red: 'var(--xmr-accent-red-soft)',
           amber: 'var(--xmr-accent-amber-soft)',
-          violet: 'var(--xmr-accent-violet-soft)',
         },
       },
       borderColor: {
@@ -61,6 +61,7 @@ export default {
           green: 'var(--xmr-accent-green-glow)',
           cyan: 'var(--xmr-accent-cyan-glow)',
           red: 'var(--xmr-accent-red-glow)',
+          amber: 'var(--xmr-accent-amber-glow)',
         },
       },
       fontFamily: {
@@ -78,6 +79,7 @@ export default {
       },
       letterSpacing: {
         wide: 'var(--xmr-tracking-wide)',
+        tight: 'var(--xmr-tracking-tight)',
       },
       lineHeight: {
         tight: 'var(--xmr-leading-tight)',
@@ -93,8 +95,7 @@ export default {
         'card': 'var(--xmr-shadow-md)',
         'card-lg': 'var(--xmr-shadow-lg)',
         'card-sm': 'var(--xmr-shadow-sm)',
-        'glow-cyan': 'var(--xmr-shadow-glow-cyan)',
-        'glow-green': 'var(--xmr-shadow-glow-green)',
+        'focus': 'var(--xmr-shadow-focus)',
         inset: 'var(--xmr-shadow-inset)',
       },
       backdropBlur: {
@@ -119,11 +120,11 @@ export default {
       keyframes: {
         'pulse-ring': {
           '0%': { boxShadow: '0 0 0 0 var(--xmr-accent-cyan-glow)' },
-          '70%': { boxShadow: '0 0 0 8px rgba(34, 211, 238, 0)' },
-          '100%': { boxShadow: '0 0 0 0 rgba(34, 211, 238, 0)' },
+          '70%': { boxShadow: '0 0 0 8px rgba(6, 182, 212, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(6, 182, 212, 0)' },
         },
         'fade-in': {
-          from: { opacity: '0', transform: 'translateY(6px)' },
+          from: { opacity: '0', transform: 'translateY(4px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         'fade-in-slow': {
@@ -136,10 +137,6 @@ export default {
         'spin-slow': {
           to: { transform: 'rotate(360deg)' },
         },
-        'scan-line': {
-          '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(400%)' },
-        },
       },
       animation: {
         'pulse-ring': 'pulse-ring 2.4s var(--xmr-ease-out) infinite',
@@ -147,7 +144,6 @@ export default {
         'fade-in-slow': 'fade-in-slow var(--xmr-duration-slow) linear both',
         shimmer: 'shimmer 1.6s infinite',
         'spin-slow': 'spin-slow 1.1s linear infinite',
-        'scan-line': 'scan-line 2.8s linear infinite',
       },
     },
   },

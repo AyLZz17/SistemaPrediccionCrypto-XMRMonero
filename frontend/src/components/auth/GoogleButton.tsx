@@ -13,10 +13,13 @@ import { googleAuthorizeUrl, type GoogleConsentParams } from '../../api/auth'
  */
 export function GoogleButton({
   returnTo = '/dashboard',
-  label = 'Continuar con Google',
+  label,
   consent,
+  variant = 'block',
+  testId = 'google-oauth-button',
 }: {
   returnTo?: string
+  /** Defaults to "Continuar con Google"; the compact header uses its own. */
   label?: string
   /**
    * Consent ticks gathered on OUR page before leaving for Google. The backend
@@ -25,7 +28,16 @@ export function GoogleButton({
    * answers `CONSENT_REQUIRED` instead.
    */
   consent?: GoogleConsentParams
+  /** `block` for forms, `compact` for the public header (dense, short). */
+  variant?: 'block' | 'compact'
+  /**
+   * The header renders a second trigger on the same pages as the form one, so
+   * each keeps its own id: tests must be able to address one without the other.
+   */
+  testId?: string
 }) {
+  const compact = variant === 'compact'
+  const text = label ?? (compact ? 'Iniciar sesión con Google' : 'Continuar con Google')
   const href = useMemo(() => {
     try {
       return googleAuthorizeUrl(returnTo, consent)
@@ -38,8 +50,13 @@ export function GoogleButton({
   return (
     <a
       href={href}
-      data-testid="google-oauth-button"
-      className="flex h-10 w-full items-center justify-center gap-2.5 rounded-md border border-hairline bg-surface-2 px-4 text-sm font-medium text-ink transition-all duration-fast ease-out hover:border-hairline-strong hover:bg-surface-3"
+      data-testid={testId}
+      aria-label={compact ? text : undefined}
+      className={
+        compact
+          ? 'flex items-center gap-2 rounded-md border border-hairline bg-surface-2 px-3 py-2 text-xs font-medium text-ink transition-colors duration-fast hover:border-hairline-strong hover:bg-surface-3'
+          : 'flex h-10 w-full items-center justify-center gap-2.5 rounded-md border border-hairline bg-surface-2 px-4 text-sm font-medium text-ink transition-all duration-fast ease-out hover:border-hairline-strong hover:bg-surface-3'
+      }
     >
       <svg viewBox="0 0 18 18" className="h-4 w-4 shrink-0" aria-hidden="true">
         <path
@@ -56,7 +73,7 @@ export function GoogleButton({
           d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"
         />
       </svg>
-      <span className="truncate">{label}</span>
+      <span className="truncate">{text}</span>
     </a>
   )
 }

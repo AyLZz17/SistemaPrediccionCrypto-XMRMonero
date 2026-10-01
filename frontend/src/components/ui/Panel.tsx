@@ -1,12 +1,13 @@
 import clsx from 'clsx'
 import type { HTMLAttributes, ReactNode } from 'react'
 
-export type PanelTone = 'default' | 'raised' | 'accent'
+export type PanelTone = 'default' | 'raised' | 'elevated' | 'accent'
 
 const TONES: Record<PanelTone, string> = {
   default: 'glass-panel',
   raised: 'glass-panel-strong shadow-card-lg',
-  accent: 'glass-panel border-accent-cyan/40 shadow-glow-cyan',
+  elevated: 'elevated-panel',
+  accent: 'glass-panel border-accent-cyan/30 shadow-[0_0_0_1px_rgba(6,182,212,0.2)]',
 }
 
 export interface PanelProps extends HTMLAttributes<HTMLDivElement> {
@@ -57,7 +58,7 @@ export function PanelHeader({
     <div className={clsx('mb-4 flex items-start justify-between gap-4', className)}>
       <div className="flex min-w-0 items-start gap-3">
         {icon ? (
-          <span aria-hidden="true" className="mt-0.5 shrink-0 text-accent-cyan">
+          <span aria-hidden="true" className="mt-0.5 shrink-0 text-ink-secondary">
             {icon}
           </span>
         ) : null}

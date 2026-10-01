@@ -16,14 +16,14 @@ beforeEach(() => {
 describe('route protection', () => {
   it('redirects an anonymous visitor from /dashboard to /login', async () => {
     renderApp('/dashboard')
-    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
   })
 
   it('carries state.from so the user lands back on the requested route', async () => {
     renderApp('/metrics')
     const user = userEvent.setup()
     // The login form must be visible with the intended destination preserved.
-    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
     installFetchStub({
       'POST /api/v1/auth/login': () => jsonResponse({ json: makeTokenResponse({ user: makeUser({ role: 'ANALYST' }) }) }),
       'GET /api/v1/auth/me': () => jsonResponse({ json: makeUser({ role: 'ANALYST' }) }),
@@ -74,22 +74,22 @@ describe('route protection', () => {
     })
   })
 
-  it('hides admin navigation from non-admins and shows it to admins', () => {
+  it('hides admin navigation from non-admins and shows it to admins', async () => {
     authenticate('VIEWER')
     const { unmount } = renderApp('/dashboard')
-    expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /auditoría/i })).not.toBeInTheDocument()
     unmount()
 
     authenticate('ADMIN')
     renderApp('/dashboard')
-    expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /auditoría/i })).toBeInTheDocument()
   })
 
   it('sends an authenticated user away from /login', async () => {
     authenticate('ANALYST')
     renderApp('/login')
     // Redirected to /dashboard: only the authenticated layout renders the sidebar.
-    expect(await screen.findByRole('complementary', { name: /navegacion principal/i })).toBeInTheDocument()
+    expect(await screen.findByRole('complementary', { name: /navegación principal/i })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /iniciar sesion/i })).not.toBeInTheDocument()
   })
 
@@ -137,7 +137,7 @@ describe('route protection', () => {
     })
     renderApp('/dashboard')
     await waitFor(() => expect(useAuthStore.getState().status).toBe('anonymous'))
-    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
   })
 
   it('renders a RoleRoute 403 without leaking protected content', () => {

@@ -13,6 +13,7 @@ import com.aylzz.xmrforecast.mlmodel.ModelVersionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -244,7 +245,14 @@ public class MetricsService {
             BigDecimal meanStdDev,
             Map<String, Object> confusionMatrix,
             Integer samples
-    ) {
+    )
+            // MetricSet viaja DENTRO de los payloads cacheados del panel publico
+            // (PublicMetrics, PublicComparisonRow): si no es Serializable, Redis lo
+            // rechaza al guardar y la ruta entera devuelve 500.
+            implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
         static MetricSet of(Metric metric) {
             BigDecimal stddev = null;
             if (metric.getStddev() != null) {

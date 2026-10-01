@@ -32,8 +32,8 @@ export default function MarketPage() {
   const columns: Array<Column<Candle>> = [
     { key: 'date', header: 'Fecha', render: (row) => <span className="font-mono">{row.date}</span> },
     { key: 'open', header: 'Apertura', numeric: true, render: (row) => formatUsd(row.open) },
-    { key: 'high', header: 'Maximo', numeric: true, render: (row) => formatUsd(row.high) },
-    { key: 'low', header: 'Minimo', numeric: true, render: (row) => formatUsd(row.low) },
+    { key: 'high', header: 'Máximo', numeric: true, render: (row) => formatUsd(row.high) },
+    { key: 'low', header: 'Mínimo', numeric: true, render: (row) => formatUsd(row.low) },
     { key: 'close', header: 'Cierre', numeric: true, render: (row) => <strong className="text-ink">{formatUsd(row.close)}</strong> },
     { key: 'volume', header: 'Volumen', numeric: true, render: (row) => formatNumber(row.volume, 0) },
   ]
@@ -42,7 +42,7 @@ export default function MarketPage() {
     <div className="space-y-6">
       <div>
         <p className="label-caps">Datos de mercado</p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Mercado XMR-USD</h1>
+        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl tracking-tight">Mercado XMR-USD</h1>
         <p className="mt-1 text-sm text-ink-secondary">
           Velas diarias servidas por el backend desde snapshots con checksum. El frontend nunca accede a la
           base de datos ni a fuentes externas.
@@ -59,7 +59,7 @@ export default function MarketPage() {
           className="grid gap-4 md:grid-cols-4 md:items-end"
         >
           <SelectField
-            label="Simbolo"
+            label="Símbolo"
             name="symbol"
             value={symbol}
             onChange={(event) => setSymbol(event.target.value)}
@@ -90,11 +90,11 @@ export default function MarketPage() {
 
       <Panel tone="raised">
         <PanelHeader
-          title="Evolucion del precio"
+          title="Evolución del precio"
           subtitle={`${applied.symbol} · ${applied.from} a ${applied.to}`}
         />
         {candles.isPending ? (
-          <div className="skeleton-bar h-72 w-full" aria-label="Cargando grafico" role="status" />
+          <div className="skeleton-bar h-72 w-full min-w-0" aria-label="Cargando gráfico" role="status" />
         ) : candles.isError ? (
           <ErrorState
             message={toApiError(candles.error).friendlyMessage}
@@ -104,7 +104,7 @@ export default function MarketPage() {
         ) : rows.length === 0 ? (
           <EmptyState
             title="Sin velas en el rango seleccionado"
-            description="Amplia el intervalo de fechas o verifica que el simbolo tenga datos ingeridos."
+            description="Amplía el intervalo de fechas o verifica que el símbolo tenga datos ingeridos."
           />
         ) : (
           <CandlestickChart candles={rows} />
@@ -112,9 +112,9 @@ export default function MarketPage() {
       </Panel>
 
       <Panel tone="raised">
-        <PanelHeader title="Tabla de velas" subtitle="Pagina actual del endpoint paginado" />
+        <PanelHeader title="Tabla de velas" subtitle="Página actual del endpoint paginado" />
         {candles.isPending ? (
-          <div className="skeleton-bar h-64 w-full" role="status" aria-label="Cargando tabla" />
+          <div className="skeleton-bar h-64 w-full min-w-0" role="status" aria-label="Cargando tabla" />
         ) : candles.isError ? (
           <ErrorState
             message={toApiError(candles.error).friendlyMessage}

@@ -63,7 +63,7 @@ export default function LandingPage() {
             </Link>
             <Link to={authenticated ? '/models' : '/login'}>
               <Button size="lg" variant="secondary">
-                {authenticated ? 'Ver comparativa' : 'Iniciar sesion'}
+                {authenticated ? 'Ver comparativa' : 'Iniciar sesión'}
               </Button>
             </Link>
           </div>

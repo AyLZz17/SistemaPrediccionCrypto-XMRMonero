@@ -27,7 +27,7 @@ function renderWithProviders(initialPath: string, element: JSX.Element) {
 describe('Footer', () => {
   it('renders the exact literal as the contentinfo landmark', () => {
     render(<Footer />)
-    const footer = screen.getByRole('contentinfo', { name: /pie de pagina y aviso legal/i })
+    const footer = screen.getByRole('contentinfo', { name: /pie de página y aviso legal/i })
     expect(
       footer.textContent,
     ).toContain('Sistema esta realizado por \u00A9 AyLZz17 - AyLZz Software Solutions. Todos los derechos reservados.')
@@ -64,8 +64,10 @@ describe('PublicLayout', () => {
         <p>x</p>
       </PublicLayout>,
     )
-    expect(screen.getByRole('link', { name: /iniciar sesion/i })).toHaveAttribute('href', '/login')
-    expect(screen.getByRole('link', { name: /crear cuenta/i })).toHaveAttribute('href', '/register')
+    // Anclado: "Iniciar sesión con Google" tambien contiene la frase.
+    expect(screen.getByRole('link', { name: /^iniciar sesión$/i })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('link', { name: /^registrarse$/i })).toHaveAttribute('href', '/register')
+    expect(screen.getByTestId('google-header-oauth-button')).toBeInTheDocument()
   })
 
   it('hides them on the compact auth variant and offers a way back home', () => {
@@ -75,7 +77,7 @@ describe('PublicLayout', () => {
         <p>x</p>
       </PublicLayout>,
     )
-    expect(screen.queryByRole('link', { name: /^iniciar sesion$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /^iniciar sesión$/i })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /volver al inicio/i })).toHaveAttribute('href', '/')
   })
 
@@ -103,8 +105,8 @@ describe('AuthenticatedLayout', () => {
       <AuthenticatedLayout />,
     )
 
-    expect(screen.getByRole('banner', { name: /cabecera de la aplicacion/i })).toBeInTheDocument()
-    expect(screen.getByRole('complementary', { name: /navegacion principal/i })).toBeInTheDocument()
+    expect(screen.getByRole('banner', { name: /cabecera de la aplicación/i })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: /navegación principal/i })).toBeInTheDocument()
     expect(screen.getByRole('main')).toBeInTheDocument()
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getAllByText(/capacidad predictiva evaluada/i).length).toBeGreaterThan(0)
@@ -121,14 +123,14 @@ describe('Sidebar', () => {
     const nav = screen.getByRole('navigation', { name: /secciones/i })
     expect(within(nav).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')
     expect(within(nav).getByRole('link', { name: /mercado/i })).toBeInTheDocument()
-    expect(within(nav).queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: /auditoría/i })).not.toBeInTheDocument()
   })
 
   it('marks the active route with an accessible current state via aria-current', async () => {
     authenticate('ANALYST')
     installFetchStub({})
     renderWithProviders('/metrics', <AuthenticatedLayout />)
-    const link = await screen.findByRole('link', { name: /metricas/i })
+    const link = await screen.findByRole('link', { name: /métricas/i })
     expect(link.className).toMatch(/bg-accent-cyan-soft/)
   })
 
@@ -150,9 +152,9 @@ describe('Sidebar (isolated)', () => {
     installFetchStub({})
     renderWithProviders('/dashboard', <AuthenticatedLayout />)
 
-    const toggle = await screen.findByRole('button', { name: /contraer menu lateral/i })
+    const toggle = await screen.findByRole('button', { name: /contraer menú lateral/i })
     await userEvent.click(toggle)
-    expect(await screen.findByRole('button', { name: /expandir menu lateral/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(await screen.findByRole('button', { name: /expandir menú lateral/i })).toHaveAttribute('aria-pressed', 'true')
   })
 })
 
@@ -166,12 +168,12 @@ describe('Header', () => {
     })
     renderWithProviders('/dashboard', <AuthenticatedLayout />)
 
-    const header = screen.getByRole('banner', { name: /cabecera de la aplicacion/i })
-    await waitFor(() => expect(within(header).getByTestId('api-connection-status')).toHaveTextContent('En linea'))
+    const header = screen.getByRole('banner', { name: /cabecera de la aplicación/i })
+    await waitFor(() => expect(within(header).getByTestId('api-connection-status')).toHaveTextContent('En línea'))
     expect(within(header).getByText('XMR-USD')).toBeInTheDocument()
   })
 
-  it('shows a "sin conexion" state when the quote request fails', async () => {
+  it('shows a "sin conexión" state when the quote request fails', async () => {
     authenticate('VIEWER')
     installFetchStub({
       '/api/v1/market/latest': () => new Response('{"status":503}', { status: 503, headers: { 'content-type': 'application/json' } }),
@@ -179,7 +181,7 @@ describe('Header', () => {
     })
     renderWithProviders('/dashboard', <AuthenticatedLayout />)
     await waitFor(() =>
-      expect(screen.getByTestId('api-connection-status')).toHaveTextContent(/sin conexion/i),
+      expect(screen.getByTestId('api-connection-status')).toHaveTextContent(/sin conexión/i),
     )
   })
 
@@ -259,6 +261,6 @@ describe('Accessibility basics across the real app', () => {
     authenticate('ADMIN')
     installFetchStub({})
     renderApp('/dashboard')
-    expect(screen.getByRole('complementary', { name: /navegacion principal/i })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: /navegación principal/i })).toBeInTheDocument()
   })
 })

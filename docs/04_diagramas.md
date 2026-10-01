@@ -3,7 +3,7 @@
 > Todos los diagramas estan en **Mermaid** y se renderizan en GitHub, GitLab, VS Code (extension Mermaid), Obsidian y el editor de [mermaid.live](https://mermaid.live).
 > **Aviso legal:** analisis predictivo de series de tiempo; no es asesoria financiera, no promete rentabilidad y no simula operaciones de trading (R-11, R-12).
 > Cada diagrama de este documento esta validado con **parse + render** mediante `tools/validate_mermaid.py` (R-25, R-40).
-> Las entidades, rutas y puertos coinciden con el codigo real: 13 controladores y 46 rutas bajo `/api/v1`, cuatro rutas en el servicio ML con prefijo `/v1`, 22 tablas creadas por las migraciones Flyway `V1`..`V5`.
+> Las entidades, rutas y puertos coinciden con el codigo real: 14 controladores y 54 rutas bajo `/api/v1` (6 de ellas anonimas, en `/api/v1/public/**`), cuatro rutas en el servicio ML con prefijo `/v1`, 23 tablas creadas por las migraciones Flyway `V1`..`V6`.
 
 ---
 
@@ -437,3 +437,89 @@ stateDiagram-v2
 - Publicacion en la API: `PENDING` (desde `DRAFT`), `RUNNING`, `SUCCEEDED` (desde `COMPLETED`), `FAILED`, `CANCELLED`.
 - `POST /api/v1/experiments/{id}/runs` exige **5 o mas semillas**: con menos devuelve `400 INSUFFICIENT_SEEDS` (R-08) y con un `runKey` repetido `409`.
 - El campeon se elige por metricas de **validacion** (R-24). `POST /api/v1/models/{modelId}/promote` es exclusivo de `ADMIN` y devuelve `422` si falla la integridad o la procedencia del artefacto (R-28).
+
+---
+
+## 8. Recuperacion de contrasena
+
+Flujo completo. La respuesta al pedido es **204 con el mismo cuerpo y el mismo tiempo** exista o no la cuenta, de modo que un enumerador no distingue un correo registrado de uno inventado. El token jamas viaja ni se guarda en claro: solo su hash HMAC-SHA256.
+
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant BR as Navegador
+    participant BE as Backend Spring Boot
+    participant RD as Redis
+    participant PG as PostgreSQL
+    participant MC as Canal de correo
+
+    U->>BR: Formulario de contrasena olvidada + correo
+    BR->>BE: POST /api/v1/auth/password/forgot
+    Note over BE: cubo RATE_LIMIT_LOGIN por IP con Retry-After
+    alt el correo no existe
+        BE-->>BR: 204 con cuerpo y tiempo identicos
+        Note over BE: no se revela si la cuenta existe
+    else el correo existe
+        BE->>PG: invalida los tokens RESET anteriores
+        BE->>PG: INSERT hash HMAC-SHA256, TTL 2 h, sin consumir
+        BE-->>BR: 204 con cuerpo y tiempo identicos
+        BE-->>MC: pos-commit: enlace HTTPS con el token
+        Note over MC: aplicacion, motivo, enlace, expiracion en UTC,<br/>aviso de seguridad y documentos legales.<br/>Nunca contrasena, JWT ni secreto
+    end
+    Note over BE: segunda peticion en 2 min: 204 igual, sin token nuevo
+    U->>BR: Abre el enlace y confirma la contrasena nueva
+    BR->>BE: POST /api/v1/auth/password/reset con token y contrasena
+    BE->>PG: busca el token por su hash
+    alt token desconocido
+        BE-->>BR: 400 INVALID_RESET_TOKEN
+    else caducado o ya usado
+        BE-->>BR: 400 EXPIRED_RESET_TOKEN
+    else token valido
+        BE->>PG: marca consumed_at, uso unico
+        BE->>PG: UPDATE password_hash con BCrypt
+        BE->>PG: logoutAll con motivo PASSWORD_RESET
+        BE->>BE: auditoria AUTH_PASSWORD_RESET
+        BE-->>BR: 204
+        BR->>BE: POST /api/v1/auth/login con la contrasena nueva
+        BE-->>BR: 200, la contrasena anterior devuelve 401
+    end
+```
+
+- **RD (Redis)** se representa porque el limitador y la cache viven alli; el flujo de recuperacion no guarda ningun token en Redis: los tokens estan en `password_reset_tokens`, con hash.
+- `logoutAll` revoca **todas** las sesiones de la cuenta, no solo la del navegador que pidio el cambio: si un atacante tenia una sesion abierta, la pierde.
+- El reenvio de verificacion (`/verify-email/resend`) comparte la misma regla de respuesta generica `204`.
+
+---
+
+## 9. Primera pantalla: panel publico
+
+`/` es el dashboard publico, no el login. La landing paso a `/about`. La superficie anonima es un conjunto cerrado de rutas: todo lo demas sigue tras el matcher autenticado (R-35).
+
+```mermaid
+flowchart TD
+    subgraph anonimo["Acceso anonimo"]
+        DASH["/ - primera pantalla<br/>PublicDashboardPage"]
+        PUB["/api/v1/public/<br/>summary, series, models,<br/>metrics, comparison, status"]
+        CTA["Cabecera: Iniciar sesion,<br/>Registrarse, Google"]
+        LOCK["Panel de funciones avanzadas:<br/>sin enlace a rutas privadas"]
+        LEG["Pie: 5 documentos legales y /about"]
+    end
+    subgraph privado["Detras de la sesion"]
+        GUARD["matcher autenticado:<br/>401 sin JWT"]
+        AUTH["/dashboard, /experiments, /jobs,<br/>/predictions, /metrics, /account, /admin"]
+    end
+    NAV["Navegador"] -->|"GET /, con o sin sesion"| DASH
+    DASH --> PUB
+    DASH --> CTA
+    DASH --> LOCK
+    DASH --> LEG
+    PUB --> PG[("PostgreSQL")]
+    PUB --> RD[("Redis cache public:")]
+    CTA -->|"login o registro con los dos aceptes"| GUARD
+    GUARD --> AUTH
+    LOCK -.->|"piden sesion: llevan a /login"| GUARD
+```
+
+- Las seis rutas de `PUB` son las **unicas** de datos sin sesion; `permitAll` esta declarado antes del matcher autenticado, son solo `GET` y validan sus parametros.
+- El panel **no incluye** experimentos, trabajos ML, predicciones, exportaciones, configuraciones, administracion, auditoria ni datos de usuario: sin sesion no hay ni un enlace que lleve ahi.
+- Sin corridas publicadas, `metrics` devuelve `available: false` en vez de rellenar huecos (R-21).

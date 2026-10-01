@@ -79,6 +79,12 @@ public class AuthService {
     private static final Duration RESET_TOKEN_TTL = Duration.ofHours(2);
     private static final Duration VERIFY_TOKEN_TTL = Duration.ofHours(48);
 
+    /**
+     * Ventana de gracia entre dos correos de recuperacion de la misma cuenta.
+     * Solo frena el envio: no invalida el enlace ya emitido.
+     */
+    private static final Duration RESET_MAIL_COOLDOWN = Duration.ofMinutes(2);
+
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final OAuthAccountRepository oauthAccountRepository;
@@ -102,6 +108,13 @@ public class AuthService {
      */
     private final Map<Long, String> pendingResetTokens = new ConcurrentHashMap<>();
     private final Map<Long, String> pendingVerificationTokens = new ConcurrentHashMap<>();
+
+    /**
+     * Ultimo envio de correo de recuperacion por usuario (ventana de gracia).
+     * En memoria: al igual que los propios tokens pendientes, es estado de un
+     * solo proceso; con varias replicas haria falta Redis (ver D-09).
+     */
+    private final Map<Long, Instant> lastResetMailAt = new ConcurrentHashMap<>();
 
     public AuthService(UserRepository userRepository,
                        RefreshTokenRepository refreshTokenRepository,
@@ -174,13 +187,13 @@ public class AuthService {
             recordConsent(saved, ConsentType.MARKETING, true, ConsentSource.REGISTER, ip, userAgent);
         }
 
-        String verificationToken = issueVerificationToken(saved);
+        IssuedToken verification = issueVerificationToken(saved);
         // El correo se entrega DESPUES de confirmar la transaccion, nunca dentro.
         // Dentro, un fallo del canal (SMTP bloqueado en Render, Gmail API caida)
         // marcaba la transaccion rollback-only: el alta de usuario se perdia con
         // un 503 y la peticion se quedaba colgada hasta el timeout del SO.
         User created = saved;
-        afterCommit(() -> deliverVerificationMail(created, verificationToken));
+        afterCommit(() -> deliverVerificationMail(created, verification.plain(), verification.expiresAt()));
 
         auditService.success(saved.getId(), Role.VIEWER.name(), "AUTH_REGISTER", "User",
                 String.valueOf(saved.getId()), Map.of("provider", "LOCAL"));
@@ -196,11 +209,12 @@ public class AuthService {
      * claramente en lugar de anunciar un enlace que no salio (R-21: no se afirma
      * lo que no ocurrio).
      */
-    private void deliverVerificationMail(User user, String token) {
+    private void deliverVerificationMail(User user, String token, Instant expiresAt) {
         boolean delivered = false;
         try {
             delivered = mailService != null
-                    && mailService.sendVerificationEmail(user.getEmail(), user.getFullName(), token);
+                    && mailService.sendVerificationEmail(user.getEmail(), user.getFullName(),
+                            token, expiresAt);
         } catch (RuntimeException ex) {
             log.error("La entrega del correo de verificacion fallo para el usuario {}", user.getId(), ex);
         }
@@ -460,18 +474,36 @@ public class AuthService {
     /**
      * Inicio de recuperacion. La respuesta es identica exista o no el correo, para no
      * permitir enumerar cuentas registradas.
+     *
+     * <p><strong>Ventana de gracia por cuenta.</strong> El rate limit del filtro
+     * acota por IP, pero un atacante con muchas IPs podria inundar el buzon de
+     * una sola victima con enlaces de recuperacion. Por eso, si ya se envio un
+     * correo de recuperacion a esta cuenta hace menos de
+     * {@link #RESET_MAIL_COOLDOWN}, la solicitud se acepta igual (mismo 204, sin
+     * revelar nada) pero no se emite otro token ni otro mensaje: el enlace que
+     * el usuario ya tiene sigue siendo valido.
      */
     @Transactional
     public void forgotPassword(AuthRequests.ForgotPasswordRequest request) {
         String email = normalizeEmail(request.email());
         userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+            Instant now = Instant.now();
+            Instant lastSent = lastResetMailAt.get(user.getId());
+            if (lastSent != null && now.isBefore(lastSent.plus(RESET_MAIL_COOLDOWN))) {
+                log.debug("Recuperacion solicitada dentro de la ventana de gracia "
+                        + "para el usuario {}; no se emite otro correo", user.getId());
+                return;
+            }
+            lastResetMailAt.put(user.getId(), now);
+
             invalidatePending(user.getId(), PasswordResetToken.Purpose.RESET);
             String plain = TokenHasher.newOpaqueToken();
+            Instant expiresAt = now.plus(RESET_TOKEN_TTL);
             PasswordResetToken token = new PasswordResetToken();
             token.setUser(user);
             token.setTokenHash(tokenHasher.hash(plain));
             token.setPurpose(PasswordResetToken.Purpose.RESET);
-            token.setExpiresAt(Instant.now().plus(RESET_TOKEN_TTL));
+            token.setExpiresAt(expiresAt);
             passwordResetTokenRepository.save(token);
             pendingResetTokens.put(user.getId(), plain);
 
@@ -481,7 +513,8 @@ public class AuthService {
                 // cuenta existe, que es exactamente la fuga de enumeracion que el
                 // comentario de este metodo dice evitar.
                 afterCommit(() -> {
-                    if (!mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), plain)) {
+                    if (!mailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(),
+                            plain, expiresAt)) {
                         log.warn("No se entrego el correo de recuperacion al usuario {}", user.getId());
                     }
                 });
@@ -609,9 +642,9 @@ public class AuthService {
                 // Nada que verificar: se ignora en silencio.
                 return;
             }
-            String token = issueVerificationToken(user);
+            IssuedToken issued = issueVerificationToken(user);
             User target = user;
-            afterCommit(() -> deliverVerificationMail(target, token));
+            afterCommit(() -> deliverVerificationMail(target, issued.plain(), issued.expiresAt()));
             auditService.record(user.getId(), primaryRole(user), "AUTH_EMAIL_RESENT", "User",
                     String.valueOf(user.getId()), AuditEvent.Outcome.SUCCESS,
                     Map.of("ip", truncateIp(ip), "user_agent", String.valueOf(truncate(userAgent))));
@@ -902,17 +935,30 @@ public class AuthService {
                 String.valueOf(user.getId()), AuditEvent.Outcome.DENIED, Map.of("reason", reason));
     }
 
-    private String issueVerificationToken(User user) {
+    /**
+     * Emite el token de verificacion con su fecha de caducidad exacta.
+     *
+     * <p>Se devuelve la fecha junto con el token en claro porque es la misma que
+     * se promete en el correo: si el mensaje dijera una hora y la base de datos
+     * guardara otra, el enlace dejaria de funcionar antes o despues de lo
+     * anunciado.
+     */
+    private IssuedToken issueVerificationToken(User user) {
         invalidatePending(user.getId(), PasswordResetToken.Purpose.VERIFY_EMAIL);
         String plain = TokenHasher.newOpaqueToken();
+        Instant expiresAt = Instant.now().plus(VERIFY_TOKEN_TTL);
         PasswordResetToken token = new PasswordResetToken();
         token.setUser(user);
         token.setTokenHash(tokenHasher.hash(plain));
         token.setPurpose(PasswordResetToken.Purpose.VERIFY_EMAIL);
-        token.setExpiresAt(Instant.now().plus(VERIFY_TOKEN_TTL));
+        token.setExpiresAt(expiresAt);
         passwordResetTokenRepository.save(token);
         pendingVerificationTokens.put(user.getId(), plain);
-        return plain;
+        return new IssuedToken(plain, expiresAt);
+    }
+
+    /** Token opaco emitido y el instante en que caduca. */
+    private record IssuedToken(String plain, Instant expiresAt) {
     }
 
     public UserResponse toResponse(User user) {

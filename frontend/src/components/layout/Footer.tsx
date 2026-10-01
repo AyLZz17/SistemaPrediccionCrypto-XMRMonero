@@ -36,7 +36,7 @@ export const FOOTER_TEXT =
 export function Footer({ className }: { className?: string }) {
   return (
     <footer
-      aria-label="Pie de pagina y aviso legal"
+      aria-label="Pie de página y aviso legal"
       data-testid="app-footer"
       className={[
         'border-t border-hairline-subtle bg-surface-inset/80',
@@ -85,7 +85,7 @@ export function Footer({ className }: { className?: string }) {
             {FOOTER_TEXT}
           </p>
           <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
-            XMR-Forecast · capacidad predictiva evaluada · no es asesoria financiera
+            XMR-Forecast · capacidad predictiva evaluada · no es asesoría financiera
           </p>
         </div>
       </div>

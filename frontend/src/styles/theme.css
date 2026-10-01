@@ -22,104 +22,104 @@
   color-scheme: dark;
 
   /* ---------------------------------------------------------------- base */
-  --xmr-bg-root: #05070a; /* deep black, app background */
-  --xmr-bg-deep: #080b10; /* page background, contrast reference */
-  --xmr-bg-raised: #0b0f15; /* subtle raised band */
+  --xmr-bg-root: #040609;         /* deepest black, app background */
+  --xmr-bg-deep: #080b10;         /* page background, contrast reference */
+  --xmr-bg-raised: #0b0f15;       /* subtle raised band */
+  --xmr-bg-elevated: #0f141c;     /* panels, cards */
 
   /* ------------------------------------------------------------- surfaces */
-  --xmr-surface-1: rgba(18, 24, 33, 0.72);
-  --xmr-surface-2: rgba(24, 32, 43, 0.78);
-  --xmr-surface-3: rgba(33, 43, 57, 0.86);
-  --xmr-surface-inset: rgba(4, 7, 11, 0.66);
-  --xmr-surface-overlay: rgba(3, 5, 8, 0.82);
-  --xmr-glass-blur: 14px;
+  --xmr-surface-1: rgba(14, 20, 28, 0.80);   /* primary panel */
+  --xmr-surface-2: rgba(18, 26, 36, 0.85);   /* raised panel */
+  --xmr-surface-3: rgba(24, 34, 46, 0.90);   /* inset / wells */
+  --xmr-surface-inset: rgba(6, 9, 13, 0.70); /* deep inset */
+  --xmr-surface-overlay: rgba(4, 6, 9, 0.92); /* modals, dropdowns */
+  --xmr-glass-blur: 12px;                       /* restrained glass */
 
   /* -------------------------------------------------------------- borders */
-  --xmr-border-subtle: rgba(148, 163, 184, 0.12);
-  --xmr-border-default: rgba(148, 163, 184, 0.22);
-  --xmr-border-strong: rgba(148, 163, 184, 0.38);
-  --xmr-border-accent: rgba(34, 211, 238, 0.45);
+  --xmr-border-hairline: rgba(148, 163, 184, 0.08);  /* finest */
+  --xmr-border-subtle: rgba(148, 163, 184, 0.14);    /* default panel */
+  --xmr-border-default: rgba(148, 163, 184, 0.22);   /* interactive */
+  --xmr-border-strong: rgba(148, 163, 184, 0.35);    /* focus / active */
+  --xmr-border-focus: var(--xmr-accent-cyan);        /* focus ring only */
 
   /* ----------------------------------------------------------------- text */
-  --xmr-text-primary: #e6edf6;
-  --xmr-text-secondary: #a9b6c9;
-  --xmr-text-muted: #7f8da3;
-  --xmr-text-inverse: #05070a;
+  --xmr-text-primary: #e8eef6;
+  --xmr-text-secondary: #abb8cc;
+  --xmr-text-muted: #7a899e;
+  --xmr-text-inverse: #040609;
 
-  /* -------------------------------------------------------------- accents */
-  --xmr-accent-green: #22e07a;
-  --xmr-accent-cyan: #22d3ee;
-  --xmr-accent-red: #ff4d6a;
-  --xmr-accent-amber: #ffb020;
-  --xmr-accent-violet: #8b7cff;
+  /* -------------------------------------------------------------- accents
+     Used ONLY for state, alerts, metrics — never as large fills. */
+  --xmr-accent-green: #1ed76b;
+  --xmr-accent-cyan: #06b6d4;
+  --xmr-accent-red: #ef4444;
+  --xmr-accent-amber: #f59e0b;
 
-  /* Channel triplets of the accents above, so Tailwind can apply real alpha
-     modifiers (`border-accent-cyan/40`) instead of dropping them. */
-  --xmr-accent-green-ch: 34 224 122;
-  --xmr-accent-cyan-ch: 34 211 238;
-  --xmr-accent-red-ch: 255 77 106;
-  --xmr-accent-amber-ch: 255 176 32;
-  --xmr-accent-violet-ch: 139 124 255;
+  /* Channel triplets for real alpha modifiers in Tailwind. */
+  --xmr-accent-green-ch: 30 215 107;
+  --xmr-accent-cyan-ch: 6 182 212;
+  --xmr-accent-red-ch: 239 68 68;
+  --xmr-accent-amber-ch: 245 158 11;
 
-  /* Text channel triplets (used with opacity in a few places). */
-  --xmr-text-primary-ch: 230 237 246;
-  --xmr-text-secondary-ch: 169 182 201;
-  --xmr-text-muted-ch: 127 141 163;
+  --xmr-text-primary-ch: 232 238 246;
+  --xmr-text-secondary-ch: 171 184 204;
+  --xmr-text-muted-ch: 122 137 158;
 
-  /* accent alpha ramps (glass tints, never large fills) */
-  --xmr-accent-green-soft: rgba(34, 224, 122, 0.14);
-  --xmr-accent-cyan-soft: rgba(34, 211, 238, 0.14);
-  --xmr-accent-red-soft: rgba(255, 77, 106, 0.14);
-  --xmr-accent-amber-soft: rgba(255, 176, 32, 0.14);
-  --xmr-accent-violet-soft: rgba(139, 124, 255, 0.14);
-  --xmr-accent-cyan-glow: rgba(34, 211, 238, 0.35);
-  --xmr-accent-green-glow: rgba(34, 224, 122, 0.3);
-  --xmr-accent-red-glow: rgba(255, 77, 106, 0.3);
+  /* Soft tints (10-12% alpha) for badges, pills, subtle backgrounds. */
+  --xmr-accent-green-soft: rgba(30, 215, 107, 0.10);
+  --xmr-accent-cyan-soft: rgba(6, 182, 212, 0.10);
+  --xmr-accent-red-soft: rgba(239, 68, 68, 0.10);
+  --xmr-accent-amber-soft: rgba(245, 158, 11, 0.10);
+
+  /* Glow variants — only for focus rings and active connection dots. */
+  --xmr-accent-cyan-glow: rgba(6, 182, 212, 0.35);
+  --xmr-accent-green-glow: rgba(30, 215, 107, 0.30);
+  --xmr-accent-red-glow: rgba(239, 68, 68, 0.30);
+  --xmr-accent-amber-glow: rgba(245, 158, 11, 0.30);
 
   /* --------------------------------------------------------------- states */
   --xmr-state-idle: var(--xmr-text-muted);
-  --xmr-state-active: var(--xmr-accent-cyan);
-  --xmr-state-success: var(--xmr-accent-green);
-  --xmr-state-warning: var(--xmr-accent-amber);
-  --xmr-state-danger: var(--xmr-accent-red);
-  --xmr-state-info: var(--xmr-accent-violet);
-  --xmr-state-disabled: rgba(148, 163, 184, 0.35);
+  --xmr-state-active: var(--xmr-accent-cyan);     /* live, connecting, focus */
+  --xmr-state-success: var(--xmr-accent-green);   /* up, ok, completed */
+  --xmr-state-warning: var(--xmr-accent-amber);   /* pending, caution */
+  --xmr-state-danger: var(--xmr-accent-red);      /* down, error, failed */
+  --xmr-state-disabled: rgba(148, 163, 184, 0.30);
 
   /* -------------------------------------------------------------- shadows */
   --xmr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --xmr-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
-  --xmr-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.65);
-  --xmr-shadow-glow-cyan: 0 0 0 1px var(--xmr-accent-cyan-glow), 0 0 22px rgba(34, 211, 238, 0.18);
-  --xmr-shadow-glow-green: 0 0 0 1px var(--xmr-accent-green-glow), 0 0 22px rgba(34, 224, 122, 0.16);
-  --xmr-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --xmr-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.50);
+  --xmr-shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.60);
+  --xmr-shadow-focus: 0 0 0 2px var(--xmr-bg-root), 0 0 0 4px var(--xmr-border-focus);
+  --xmr-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 
   /* ----------------------------------------------------------- typography */
   --xmr-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, "Noto Sans", sans-serif;
   --xmr-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
-  --xmr-text-xs: 0.75rem;
-  --xmr-text-sm: 0.8125rem;
-  --xmr-text-base: 0.9375rem;
-  --xmr-text-lg: 1.0625rem;
-  --xmr-text-xl: 1.25rem;
-  --xmr-text-2xl: 1.5rem;
-  --xmr-text-3xl: 1.875rem;
+  --xmr-text-xs: 0.70rem;      /* 11.2px */
+  --xmr-text-sm: 0.8125rem;    /* 13px */
+  --xmr-text-base: 0.9375rem;  /* 15px */
+  --xmr-text-lg: 1.0625rem;    /* 17px */
+  --xmr-text-xl: 1.25rem;      /* 20px */
+  --xmr-text-2xl: 1.5rem;      /* 24px */
+  --xmr-text-3xl: 1.875rem;    /* 30px */
   --xmr-tracking-wide: 0.08em;
+  --xmr-tracking-tight: -0.02em;
   --xmr-leading-tight: 1.2;
   --xmr-leading-normal: 1.55;
 
   /* --------------------------------------------------------------- radii */
   --xmr-radius-sm: 6px;
-  --xmr-radius-md: 10px;
-  --xmr-radius-lg: 14px;
+  --xmr-radius-md: 8px;
+  --xmr-radius-lg: 10px;
   --xmr-radius-full: 999px;
 
   /* ----------------------------------------------------------- animation */
   --xmr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --xmr-duration-fast: 120ms;
-  --xmr-duration-base: 200ms;
-  --xmr-duration-slow: 380ms;
+  --xmr-duration-fast: 100ms;
+  --xmr-duration-base: 160ms;
+  --xmr-duration-slow: 300ms;
 
   /* --------------------------------------------------------------- focus */
   --xmr-focus-ring-color: var(--xmr-accent-cyan);
@@ -130,7 +130,7 @@
 
   /* -------------------------------------------------------------- layout */
   --xmr-sidebar-width: 264px;
-  --xmr-header-height: 64px;
+  --xmr-header-height: 56px;
   --xmr-footer-height: 56px;
   --xmr-content-max: 1440px;
 }

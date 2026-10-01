@@ -99,7 +99,7 @@ describe('register flow', () => {
     )
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
-    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
     const registerCall = calls.find((call) => call.url === '/api/v1/auth/register')
     expect(registerCall?.method).toBe('POST')
     expect(registerCall?.body).toEqual({
@@ -189,7 +189,7 @@ describe('register flow', () => {
       screen.getByLabelText(/acepto la politica de tratamiento de datos personales/i),
     )
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
-    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
     expect(calls.filter((call) => call.url === '/api/v1/auth/register')).toHaveLength(1)
   })
 })
@@ -259,7 +259,7 @@ describe('password recovery', () => {
     await user.type(screen.getByLabelText(/repetir nueva contrasena/i), 'contrasena-larga-2')
     await user.click(screen.getByRole('button', { name: /guardar nueva contrasena/i }))
 
-    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument()
     expect(calls.find((call) => call.url === '/api/v1/auth/password/reset')?.body).toEqual({
       token: 'abc123',
       newPassword: 'contrasena-larga-2',

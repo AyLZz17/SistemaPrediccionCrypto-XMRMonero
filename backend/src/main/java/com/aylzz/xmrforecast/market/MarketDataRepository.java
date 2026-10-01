@@ -64,4 +64,7 @@ public interface MarketDataRepository extends JpaRepository<MarketData, Long> {
     List<MarketData> findLatest(@Param("symbol") String symbol, Pageable pageable);
 
     long countBySymbol(String symbol);
+
+    /** Momento en que el ultimo dato fue ingerido: "ultima actualizacion" del dashboard. */
+    Optional<MarketData> findTopByOrderByIngestedAtDesc();
 }
