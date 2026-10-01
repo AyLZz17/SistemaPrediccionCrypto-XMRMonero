@@ -41,18 +41,25 @@ RUN mkdir -p /certs && chown xmr:xmr /certs
 COPY --from=build --chown=xmr:xmr /build/backend/target/xmr-forecast-backend.jar /app/app.jar
 
 USER xmr
-EXPOSE 8443
+EXPOSE 8443 10000
 
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom" \
-    SERVER_PORT=8443 \
     SERVER_SSL_KEYSTORE=/certs/backend/keystore.p12
 
-# Health check: wget de GNU coreutils (Ubuntu) contra HTTPS, validando la cadena
-# de CA propia. No se usa --no-check-certificate: si el certificado no valida, el
-# contenedor debe considerarse unhealthy.
+# Health check: respeta SERVER_SSL_ENABLED y SERVER_PORT.
+# En Render: SERVER_SSL_ENABLED=false, SERVER_PORT=10000 (HTTP interno tras el borde TLS).
+# En docker-compose: SERVER_SSL_ENABLED=true, SERVER_PORT=8443 (HTTPS con CA propia).
+# Sin esta distincion, el healthcheck falla en Render (HTTPS contra HTTP) y el
+# servicio nunca se marca healthy: Render lo muestra en "APPLICATION LOADING"
+# indefinidamente.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget --quiet --tries=1 -O /dev/null \
-      --ca-certificate=/certs/ca/ca.crt \
-      "https://127.0.0.1:${SERVER_PORT}/actuator/health" || exit 1
+  CMD if [ "${SERVER_SSL_ENABLED:-true}" = "true" ]; then \
+        wget --quiet --tries=1 -O /dev/null \
+            --ca-certificate=/certs/ca/ca.crt \
+            "https://127.0.0.1:${SERVER_PORT:-8443}/actuator/health"; \
+      else \
+        wget --quiet --tries=1 -O /dev/null \
+            "http://127.0.0.1:${SERVER_PORT:-10000}/actuator/health"; \
+      fi || exit 1
 
 ENTRYPOINT ["sh", "-c", "if [ -n \"$TRUSTSTORE_B64\" ]; then mkdir -p /tmp/certs && printf '%s' \"$TRUSTSTORE_B64\" | base64 -d > /tmp/certs/truststore.p12 && export JAVA_OPTS=\"$JAVA_OPTS -Djavax.net.ssl.trustStore=/tmp/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12\"; fi; exec java $JAVA_OPTS -jar /app/app.jar"]
