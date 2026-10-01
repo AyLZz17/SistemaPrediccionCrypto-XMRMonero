@@ -65,7 +65,7 @@ Archivos de gobierno: `AGENTS.md` (reglas permanentes) · `SKILLS.md` (habilidad
 | R-29 | CI bloquea secretos, vulnerabilidades críticas y artefactos no verificables; genera SBOM y escanea dependencias/imágenes antes de publicar. Las excepciones requieren vencimiento y aprobación registrada. |
 | R-30 | Todo incidente se gestiona con el runbook de `05_seguridad.md`, preservando evidencia, rotando credenciales comprometidas y documentando causa raíz, impacto y acciones correctivas. |
 | R-31 | **Monolito modular Spring Boot** como backend principal. **FastAPI-ML** como servicio especializado de ML. No adoptar microservicios completos sin justificación (dominio acotado, complejidad operativa). |
-| R-32 | FastAPI-ML **no es accesible públicamente**. Solo Spring Boot consume el servicio ML mediante cliente tipado con timeout, reintentos limitados y correlación de solicitudes. |
+| R-32 | FastAPI-ML **no es accesible públicamente**. Solo Spring Boot consume el servicio ML mediante cliente tipado con timeout, reintentos limitados y correlación de solicitudes. Excepción regulada: si el proveedor no ofrece red privada, el ML puede exponerse tras el borde TLS del proveedor sirviendo HTTP interno, siempre con secreto compartido obligatorio (`X-Internal-Token`, 401 sin él, `/health` exento) — verificado en T-037. |
 | R-33 | **HTTPS forzado** en todos los entornos. Certificados autofirmados para desarrollo, certificados válidos para producción. |
 | R-34 | Migraciones de base de datos **solo con Flyway** (Spring Boot). El servicio ML no administra el esquema de PostgreSQL. |
 | R-35 | Toda ruta nueva requiere documentación de seguridad: autenticación, autorización, validación, límites, datos tratados, amenazas, controles y pruebas. |

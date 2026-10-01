@@ -50,7 +50,9 @@ services:
       - key: JWT_AUDIENCE
         value: xmr-forecast-api
       - key: ML_SERVICE_URL
-        value: https://ml-service:8443
+        sync: false # https://<ml-service>.onrender.com (se conoce al crearlo)
+      - key: ML_INTERNAL_TOKEN
+        sync: false # MISMO valor que en ml-service
       - key: CORS_ALLOWED_ORIGINS
         value: https://sistema-prediccion-crypto-xmr-moner.vercel.app
       - key: GOOGLE_CLIENT_ID
@@ -61,17 +63,16 @@ services:
         value: https://xmr-backend.onrender.com/api/v1/auth/google/callback
       - key: FRONTEND_OAUTH_CALLBACK
         value: https://sistema-prediccion-crypto-xmr-moner.vercel.app/auth/callback
-      # El truststore (binario) no cabe en un Secret File de texto: viaja en
-      # base64 en TRUSTSTORE_B64 y el ENTRYPOINT lo decodifica al arrancar.
-      # Generar local: [Convert]::ToBase64String(
-      #   [IO.File]::ReadAllBytes('docker\certs\ca\truststore.p12'))
-      - key: TRUSTSTORE_B64
-        sync: false
+      # El backend valida al ML con la CA publica del borde: no necesita
+      # truststore casero (TRUSTSTORE_B64 solo para topologias con CA propia).
       - key: JAVA_OPTS
         value: "-XX:MaxRAMPercentage=75"
 
-  # -------------------------------------------------- ml-service (privado)
-  - type: pserv
+  # -------------------------------------------------- ml-service (publico con secreto)
+  # El plan trial no admite servicios privados: se expone tras el borde TLS de
+  # Render con HTTP interno + secreto compartido (X-Internal-Token). Sin el
+  # secreto, todo salvo /health responde 401. Ver R-32.
+  - type: web
     name: ml-service
     runtime: docker
     branch: main
@@ -79,20 +80,15 @@ services:
     dockerContext: .
     region: oregon
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: ML_ENVIRONMENT
         value: prod
+      - key: ML_BEHIND_TLS_EDGE
+        value: "true"
+      - key: ML_INTERNAL_TOKEN
+        sync: false # MISMO valor que en xmr-backend (generar: 32 bytes hex)
       - key: ML_MLFLOW_ENABLED
         value: "false"
       - key: ML_ALLOW_PLAINTEXT_DEV
         value: "false"
-      # Secret Files (contenido de docker/certs local, rutas exactas):
-      #   /certs/ml-service/cert.pem  <- cert.pem
-      #   /certs/ml-service/key.pem   <- key.pem
-      #   /certs/ca/ca.crt            <- ca.crt
-      - key: ML_SSL_CERTFILE
-        value: /certs/ml-service/cert.pem
-      - key: ML_SSL_KEYFILE
-        value: /certs/ml-service/key.pem
-      - key: ML_SSL_CAFILE
-        value: /certs/ca/ca.crt

@@ -1,5 +1,6 @@
 package com.aylzz.xmrforecast.ml;
 
+import com.aylzz.xmrforecast.config.AppProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -101,5 +102,23 @@ class MlServiceClientContractTest {
     void baseUrlMustBeHttps() {
         assertThat("https://ml-service:8443").startsWith("https://");
         assertThat("http://ml-service:8443").doesNotStartWith("https://");
+    }
+
+    @Test
+    @DisplayName("El secreto interno se ofrece como cabecera cuando esta configurado")
+    void internalTokenOfferedWhenConfigured() {
+        var ml = new AppProperties.Ml("https://ml.test", 1000, 1000, 0, "tok-secreto");
+        assertThat(MlServiceClient.internalTokenHeader(ml)).contains("tok-secreto");
+    }
+
+    @Test
+    @DisplayName("Vacio o ausente significa no enviar la cabecera (un 401 total si se enviara)")
+    void blankTokenMeansNoHeader() {
+        var empty = new AppProperties.Ml("https://ml.test", 1000, 1000, 0, "");
+        var blank = new AppProperties.Ml("https://ml.test", 1000, 1000, 0, "   ");
+        var missing = new AppProperties.Ml("https://ml.test", 1000, 1000, 0, null);
+        assertThat(MlServiceClient.internalTokenHeader(empty)).isEmpty();
+        assertThat(MlServiceClient.internalTokenHeader(blank)).isEmpty();
+        assertThat(MlServiceClient.internalTokenHeader(missing)).isEmpty();
     }
 }

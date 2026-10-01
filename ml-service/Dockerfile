@@ -60,11 +60,7 @@ HEALTHCHECK --interval=30s --timeout=8s --start-period=60s --retries=3 \
 EXPOSE 8443
 
 # uvicorn con TLS. El puerto HTTP plano no se abre en ningun momento (R-33).
-ENTRYPOINT ["uvicorn", "app.main:app", \
-  "--host", "0.0.0.0", \
-  "--port", "8443", \
-  "--ssl-keyfile", "/certs/ml-service/key.pem", \
-  "--ssl-certfile", "/certs/ml-service/cert.pem", \
-  "--proxy-headers", \
-  "--forwarded-allow-ips", "*", \
-  "--workers", "1"]
+# Puerto inyectado por el orquestador ($PORT en Render, 8443 en local).
+# Tras un borde TLS (ML_BEHIND_TLS_EDGE=true) se sirve HTTP interno: el borde
+# ya termino TLS y el secreto X-Internal-Token autentica al llamante.
+ENTRYPOINT ["sh", "-c", "PORT=\"${PORT:-8443}\"; if [ \"${ML_BEHIND_TLS_EDGE:-false}\" = \"true\" ]; then exec uvicorn app.main:app --host 0.0.0.0 --port \"$PORT\" --proxy-headers --forwarded-allow-ips '*' --workers 1; else exec uvicorn app.main:app --host 0.0.0.0 --port \"$PORT\" --ssl-keyfile /certs/ml-service/key.pem --ssl-certfile /certs/ml-service/cert.pem --proxy-headers --forwarded-allow-ips '*' --workers 1; fi"]

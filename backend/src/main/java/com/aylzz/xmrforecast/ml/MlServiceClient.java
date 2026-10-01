@@ -27,6 +27,7 @@ public class MlServiceClient {
     private static final Logger log = LoggerFactory.getLogger(MlServiceClient.class);
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
+    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
 
     private final AppProperties properties;
     private final RestClient restClient;
@@ -151,6 +152,23 @@ public class MlServiceClient {
         if (RequestContext.traceId() != null) {
             headers.set(TRACE_ID_HEADER, RequestContext.traceId());
         }
+        // Secreto compartido con el servicio ML. Solo se envia si esta
+        // configurado (en local va vacio y el ML no lo exige).
+        internalTokenHeader(properties.ml()).ifPresent(token ->
+                headers.set(INTERNAL_TOKEN_HEADER, token));
+    }
+
+    /**
+     * Cabecera {@code X-Internal-Token} a enviar.
+     *
+     * <p>Vacio/ausente significa NO enviarla: mandar una cadena vacia haria que
+     * el servicio ML rechazara el 100 % de las llamadas con 401.
+     */
+    static java.util.Optional<String> internalTokenHeader(AppProperties.Ml ml) {
+        String token = ml.internalToken();
+        return (token != null && !token.isBlank())
+                ? java.util.Optional.of(token)
+                : java.util.Optional.empty();
     }
 
     private JsonNode parse(String body) {

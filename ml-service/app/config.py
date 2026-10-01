@@ -3,10 +3,13 @@
 Reglas de seguridad aplicadas:
 
 * HTTPS forzado en todos los entornos (R-33). El servicio rechaza HTTP plano
-  salvo en desarrollo **y** con ``ML_ALLOW_PLAINTEXT_DEV=true``.
+  salvo en desarrollo **y** con ``ML_ALLOW_PLAINTEXT_DEV=true``, o tras un
+  borde TLS externo con ``ML_BEHIND_TLS_EDGE=true`` (el borde termina TLS).
 * Los secretos nunca tienen valor por defecto ni se registran en logs.
 * ``ML_MLFLOW_VERIFY_TLS`` no puede desactivarse: la verificacion de
   certificados nunca se desactiva.
+* Llamadas internas: con ``ML_INTERNAL_TOKEN`` configurado, toda ruta salvo
+  ``/health`` exige la cabecera ``X-Internal-Token`` (R-32 tras un borde).
 """
 
 from __future__ import annotations
@@ -37,6 +40,10 @@ class Settings(BaseSettings):
         ssl_keyfile: Ruta al certificado TLS en produccion.
         ssl_certfile: Ruta al certificado TLS en produccion.
         allow_plaintext_dev: Permite HTTP plano **solo** si ``environment="dev"``.
+        behind_tls_edge: El borde externo (Render, ingress) ya termina TLS y
+            el contenedor sirve HTTP interno. Exige ``internal_token``.
+        internal_token: Secreto compartido con el backend; con valor
+            configurado, toda ruta salvo ``/health`` exige ``X-Internal-Token``.
         request_id_header: Cabecera de correlacion aceptada de Spring Boot.
         registry_path: Fichero JSON con el registro de modelos.
         artifacts_dir: Directorio de artefactos serializados.
@@ -64,6 +71,8 @@ class Settings(BaseSettings):
     ssl_keyfile: str | None = None
     ssl_certfile: str | None = None
     allow_plaintext_dev: bool = False
+    behind_tls_edge: bool = False
+    internal_token: str | None = None
 
     request_id_header: str = "X-Request-Id"
     max_request_id_length: int = Field(default=128, ge=8, le=512)
@@ -94,10 +103,10 @@ class Settings(BaseSettings):
     def plaintext_allowed(self) -> bool:
         """Si se acepta HTTP plano.
 
-        R-33: solo en desarrollo y solo con el interruptor explicito. En
-        staging y produccion es siempre ``False``.
+        R-33: solo en desarrollo y solo con el interruptor explicito, o tras
+        un borde TLS externo. En staging y produccion directos es ``False``.
         """
-        return self.environment == "dev" and self.allow_plaintext_dev
+        return (self.environment == "dev" and self.allow_plaintext_dev) or self.behind_tls_edge
 
     @property
     def require_tls(self) -> bool:
@@ -117,10 +126,18 @@ class Settings(BaseSettings):
         """Comprueba invariantes de despliegue (llamar en el arranque).
 
         Raises:
-            ValueError: si produccion arranca sin certificados TLS.
+            ValueError: si produccion arranca sin certificados TLS, o tras un
+                borde sin secreto interno configurado.
         """
-        if self.environment in ("staging", "prod") and (
-            not self.ssl_certfile or not self.ssl_keyfile
+        if self.behind_tls_edge and not self.internal_token:
+            raise ValueError(
+                "ML_BEHIND_TLS_EDGE exige ML_INTERNAL_TOKEN: un servicio tras "
+                "un borde publico no puede quedar sin autenticacion (R-32)"
+            )
+        if (
+            self.environment in ("staging", "prod")
+            and not self.behind_tls_edge
+            and (not self.ssl_certfile or not self.ssl_keyfile)
         ):
             raise ValueError(
                 f"{self.environment}: ML_SSL_CERTFILE y ML_SSL_KEYFILE son obligatorios (R-33)"

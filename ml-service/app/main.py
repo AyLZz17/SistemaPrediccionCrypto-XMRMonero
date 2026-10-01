@@ -13,6 +13,7 @@ Controles de seguridad aplicados (R-26, R-30, R-33, R-35):
 
 from __future__ import annotations
 
+import hmac
 import json
 import logging
 import sys
@@ -43,10 +44,18 @@ from app.services import (
     ModelService,
 )
 
-__all__ = ["RequestIdMiddleware", "TlsEnforcementMiddleware", "app", "create_app"]
+__all__ = [
+    "InternalTokenMiddleware",
+    "RequestIdMiddleware",
+    "TlsEnforcementMiddleware",
+    "app",
+    "create_app",
+]
 
 #: Cabeceras que nunca deben quedar en los logs (defensa en profundidad).
-_SENSITIVE_HEADERS = frozenset({"authorization", "cookie", "x-api-key", "proxy-authorization"})
+_SENSITIVE_HEADERS = frozenset(
+    {"authorization", "cookie", "x-api-key", "proxy-authorization", "x-internal-token"}
+)
 
 
 class StructuredFormatter(logging.Formatter):
@@ -144,6 +153,53 @@ class TlsEnforcementMiddleware(BaseHTTPMiddleware):
                     ),
                     "code": "TLS_REQUIRED",
                     "request_id": request_id,
+                },
+            )
+        return await call_next(request)
+
+
+class InternalTokenMiddleware(BaseHTTPMiddleware):
+    """Exige el secreto compartido con el backend (R-32 tras un borde TLS).
+
+    Solo actua cuando ``internal_token`` esta configurado; en local sigue todo
+    igual. ``/health`` queda exento para las sondas del orquestador. El valor
+    recibido nunca se registra ni se devuelve: solo se compara en tiempo
+    constante y se informa del resultado.
+    """
+
+    #: Cabecera con el secreto compartido backend <-> ML.
+    TOKEN_HEADER = "X-Internal-Token"
+
+    #: Rutas exentas (sondas sin datos sensibles).
+    OPEN_PATHS = frozenset({"/health"})
+
+    def __init__(self, app: ASGIApp, settings: Settings) -> None:
+        super().__init__(app)
+        self._settings = settings
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Any]]
+    ) -> Any:
+        """Rechaza con 401 lo que no traiga el secreto vigente."""
+        expected = self._settings.internal_token
+        if not expected or request.url.path in self.OPEN_PATHS:
+            return await call_next(request)
+        presented = request.headers.get(self.TOKEN_HEADER, "")
+        if not presented or not hmac.compare_digest(presented, expected):
+            logging.getLogger("ml-service.security").warning(
+                "Llamada sin secreto interno rechazada",
+                extra={
+                    "request_id": _request_id(request, self._settings),
+                    "method": request.method,
+                    "path": request.url.path,
+                },
+            )
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": "Llamante no autorizado para el servicio ML.",
+                    "code": "UNAUTHORIZED_CALLER",
+                    "request_id": _request_id(request, self._settings),
                 },
             )
         return await call_next(request)
@@ -265,6 +321,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # El orden importa: RequestId primero para que TLS y la app vean el id.
     app.add_middleware(TlsEnforcementMiddleware, settings=resolved)
+    app.add_middleware(InternalTokenMiddleware, settings=resolved)
     app.add_middleware(RequestIdMiddleware, settings=resolved)
 
     app.include_router(health_router)

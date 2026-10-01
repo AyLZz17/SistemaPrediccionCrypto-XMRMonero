@@ -67,7 +67,8 @@ public record AppProperties(
             @NotBlank String baseUrl,
             @Positive int connectTimeoutMs,
             @Positive int readTimeoutMs,
-            @Positive int maxRetries
+            @Positive int maxRetries,
+            String internalToken
     ) {}
 
     public record Security(

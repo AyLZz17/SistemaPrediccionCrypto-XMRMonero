@@ -188,6 +188,9 @@ app:
     connect-timeout-ms: ${ML_CONNECT_TIMEOUT_MS:3000}
     read-timeout-ms: ${ML_READ_TIMEOUT_MS:60000}
     max-retries: ${ML_MAX_RETRIES:2}
+    # Secreto compartido con el servicio ML (cabecera X-Internal-Token). Vacio
+    # en local: el ML solo lo exige tras un borde TLS (ML_BEHIND_TLS_EDGE).
+    internal-token: ${ML_INTERNAL_TOKEN:}
 
   security:
     # Falla el arranque si se sirve por HTTP plano
