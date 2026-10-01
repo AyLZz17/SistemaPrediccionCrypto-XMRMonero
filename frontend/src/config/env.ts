@@ -61,6 +61,10 @@ export function validateEnv(raw: Record<string, string | boolean | undefined>): 
 
   for (const [key, value] of Object.entries(raw)) {
     if (!key.startsWith('VITE_')) continue
+    // Vercel inyecta metadatos de plataforma (VITE_VERCEL_URL, commit, ...) en
+    // el build: no son configuracion de la app ni secretos, se ignoran para
+    // que el despliegue no muera por variables que no controlamos.
+    if (key.startsWith('VITE_VERCEL_')) continue
     if (!(KNOWN_VITE_VARS as readonly string[]).includes(key)) {
       problems.push(`Variable desconocida "${key}". Solo se admiten: ${KNOWN_VITE_VARS.join(', ')}.`)
     }

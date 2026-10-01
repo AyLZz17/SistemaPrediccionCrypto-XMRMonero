@@ -56,6 +56,17 @@ describe('env validator', () => {
     expect(() => validateEnv({ ...VALID, VITE_SOMETHING_ELSE: 'x' })).toThrow(/Variable desconocida/)
   })
 
+  it('ignores Vercel platform metadata (VITE_VERCEL_*) instead of failing', () => {
+    expect(
+      validateEnv({
+        ...VALID,
+        VITE_VERCEL_URL: 'sistema-prediccion-crypto-xmr-moner.vercel.app',
+        VITE_VERCEL_ENV: 'production',
+        VITE_VERCEL_GIT_COMMIT_SHA: 'b7033dd',
+      }).apiBaseUrl,
+    ).toBe('https://api.xmr-forecast.example')
+  })
+
   it('rejects anything that looks like a secret in the bundle (R-14)', () => {
     expect(() => validateEnv({ ...VALID, VITE_GOOGLE_CLIENT_SECRET: 'shh' })).toThrow(/parece un secreto/)
     expect(() => validateEnv({ ...VALID, VITE_DB_PASSWORD: 'x' })).toThrow(/parece un secreto/)
