@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
       --ca-certificate=/certs/ca/ca.crt \
       "https://127.0.0.1:${SERVER_PORT}/actuator/health" || exit 1
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "if [ -n \"$TRUSTSTORE_B64\" ]; then mkdir -p /tmp/certs && printf '%s' \"$TRUSTSTORE_B64\" | base64 -d > /tmp/certs/truststore.p12 && export JAVA_OPTS=\"$JAVA_OPTS -Djavax.net.ssl.trustStore=/tmp/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12\"; fi; exec java $JAVA_OPTS -jar /app/app.jar"]
