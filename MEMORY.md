@@ -8,8 +8,8 @@
   (R-11/R-12). Aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
 
 ## Tarea en curso
-- T-037: ml-service tras borde TLS con `X-Internal-Token` (trial sin red
-  privada; R-32 ampliada). Verificado en vivo. Pusheado; falta dashboard.
+- T-038: validador acepta `VITE_VERCEL_*` (pagina en blanco en Vercel).
+  Auto-deploy en curso; falta probar registro contra Render.
 
 ## Estado verificado en esta sesion
 - **Stack Docker UP**: 6/6 `healthy`. **`tools/verify-stack.ps1`: 48/48.**
