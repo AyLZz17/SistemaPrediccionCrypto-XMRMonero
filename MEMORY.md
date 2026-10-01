@@ -8,8 +8,8 @@
   (R-11/R-12). Aviso en UI, `/api/v1/meta/disclaimer` y respuestas de prediccion.
 
 ## Tarea en curso
-- T-036: truststore a Render en base64 (`TRUSTSTORE_B64`, Secret Files sin
-  binarios). Todo pusheado; faltan dashboard (Secret Files) y deploys.
+- T-037: ml-service tras borde TLS con `X-Internal-Token` (trial sin red
+  privada; R-32 ampliada). Verificado en vivo. Pusheado; falta dashboard.
 
 ## Estado verificado en esta sesion
 - **Stack Docker UP**: 6/6 `healthy`. **`tools/verify-stack.ps1`: 48/48.**
