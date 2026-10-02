@@ -46,7 +46,7 @@ export function PublicLayout({
         aria-label="Cabecera pública"
         className="border-b border-hairline-subtle bg-surface-1/70 backdrop-blur-glass"
       >
-        <div className="mx-auto flex h-header w-full max-w-content items-center gap-3 px-4 sm:px-6">
+        <div className="mx-auto flex min-h-header w-full max-w-content flex-wrap items-center gap-3 px-4 py-2 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5" aria-label="XMR-Forecast, inicio">
             <BrandMark size={26} />
             <span className="text-sm font-semibold text-ink">XMR-Forecast</span>
@@ -82,7 +82,7 @@ export function PublicLayout({
                 </Link>
                 <Link
                   to="/dashboard"
-                  className="rounded-md border border-accent-cyan/30 bg-accent-cyan-soft px-3 py-2 text-xs font-medium text-accent-cyan transition-colors duration-fast hover:bg-accent-cyan/20"
+                  className="rounded-md border border-hairline-default bg-elevated px-3 py-2 text-xs font-medium text-ink transition-colors duration-fast hover:border-hairline-strong hover:bg-surface-2"
                 >
                   Dashboard
                 </Link>
@@ -107,7 +107,7 @@ export function PublicLayout({
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-md border border-accent-cyan/30 bg-accent-cyan-soft px-3 py-2 text-xs font-medium text-accent-cyan transition-colors duration-fast hover:bg-accent-cyan/20"
+                  className="rounded-md border border-hairline-default bg-elevated px-3 py-2 text-xs font-medium text-ink transition-colors duration-fast hover:border-hairline-strong hover:bg-surface-2"
                 >
                   Registrarse
                 </Link>

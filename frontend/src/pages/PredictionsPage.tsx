@@ -232,20 +232,20 @@ export default function PredictionsPage() {
         <PanelHeader title="Cómo leer estas cifras" subtitle="Notas metodológicas" />
         <ul className="space-y-2 text-sm text-ink-secondary">
           <li className="flex gap-2">
-            <span className="font-mono text-accent-cyan">01</span>
+            <span className="font-mono text-ink-muted">01</span>
             <span>
               Cada muestra pertenece al subconjunto de la <strong className="text-ink">fecha de su
               objetivo</strong>; la ventana de entrada solo mira hacia atrás.
             </span>
           </li>
           <li className="flex gap-2">
-            <span className="font-mono text-accent-cyan">02</span>
+            <span className="font-mono text-ink-muted">02</span>
             <span>
               Los valores se des-escalan a USD antes de calcular MAE, RMSE y MAPE.
             </span>
           </li>
           <li className="flex gap-2">
-            <span className="font-mono text-accent-cyan">03</span>
+            <span className="font-mono text-ink-muted">03</span>
             <span>
               Un pronóstico negativo también se publica: no se ajustan parámetros usando la prueba para
               mejorar el resultado.

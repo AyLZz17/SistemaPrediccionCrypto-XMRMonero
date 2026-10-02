@@ -6,7 +6,7 @@ export type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
 const TONES: Record<AlertTone, { wrap: string; icon: ReactNode; role: 'alert' | 'status' }> = {
   info: {
-    wrap: 'border-accent-cyan/40 bg-accent-cyan-soft text-accent-cyan',
+    wrap: 'border-hairline-default bg-surface-2 text-ink-secondary',
     icon: (
       <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5v4.2M8 11.2v.6" strokeLinecap="round" />
     ),

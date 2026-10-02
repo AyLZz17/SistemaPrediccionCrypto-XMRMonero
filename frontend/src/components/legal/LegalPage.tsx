@@ -90,7 +90,7 @@ export function LegalSection({ title, children }: { title: string; children: Rea
 /** Bullet list inside a legal document. */
 export function LegalList({ items }: { items: ReactNode[] }) {
   return (
-    <ul className="list-disc space-y-1.5 pl-5 marker:text-accent-cyan">
+    <ul className="list-disc space-y-1.5 pl-5 marker:text-ink-muted">
       {items.map((item, index) => (
         <li key={index}>{item}</li>
       ))}

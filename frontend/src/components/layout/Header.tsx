@@ -126,7 +126,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <path d="M6.5 12.2a1.6 1.6 0 0 0 3 0" strokeLinecap="round" />
             </svg>
             {unread > 0 ? (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 font-mono text-[10px] font-bold text-bg-root">
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 font-mono text-[10px] font-bold text-ink-inverse">
                 {unread}
               </span>
             ) : null}
@@ -155,7 +155,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                       >
                         <span className="flex items-center gap-2">
                           {!item.read ? (
-                            <span aria-label="Sin leer" className="h-1.5 w-1.5 rounded-full bg-accent-cyan" />
+                            <span aria-label="Sin leer" className="h-1.5 w-1.5 rounded-full bg-accent-red" />
                           ) : null}
                           <span className="truncate text-xs font-medium text-ink">{item.title}</span>
                         </span>

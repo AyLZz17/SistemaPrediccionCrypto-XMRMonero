@@ -174,7 +174,7 @@ export default function ModelComparisonPage() {
             <MetricCard
               label="Modelos evaluados"
               value={comparison.data.length}
-              tone="active"
+              tone="idle"
               hint="Sobre la misma partición"
             />
             <MetricCard
@@ -196,7 +196,7 @@ export default function ModelComparisonPage() {
             <PanelHeader title="Métricas por modelo" subtitle="Menor es mejor en MAE, RMSE y MAPE" />
             <MetricComparisonChart rows={comparison.data} />
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <StatusDot tone="active" label="Validación decide el campeón" />
+              <StatusDot tone="idle" label="Validación decide el campeón" />
               <StatusDot tone="warning" label="Prueba: uso único" />
             </div>
           </Panel>

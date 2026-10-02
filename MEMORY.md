@@ -11,19 +11,24 @@
   `GET /api/v1/meta/legal`; version 2026-10-01. Redaccion propia, **pendiente de
   revisar por abogado colombiano**.
 
-## Tarea en curso (T-044, hecha)
-- Flujo de solicitud de acceso ANALYST (VIEWER -> ANALYST).
-- Backend: entidad `AnalystAccessRequest`, migracion Flyway V7, repositorio,
-  servicio, controlador, DTOs con validacion (8 checkboxes obligatorios).
-- Frontend: `AnalystAccessRequestForm` con 8 confirmaciones obligatorias,
-  integrado en `AccountPage` (solo VIEWER) y `DashboardPage` (CTA).
-- Seguridad: autorizacion en servidor (ADMIN solo), prevencion de auto-aprobacion,
-  prevencion de duplicados PENDING, revocacion de sesiones al cambiar rol.
+## Tarea en curso (T-045, hecha)
+- Refinado visual del HUD: negro profundo, paneles oscuros, cian solo en
+  foco/interaccion/conectividad, rojo solo caida/error, verde subida/exito,
+  ambar advertencia. Sin glassmorphism decorativo ni violeta.
+- Cambios: MetricCard con valor en tinta (no cian), `Panel tone=accent`
+  neutro, Alert info neutro, StatusPill roles neutros, BrandMark neutro,
+  strip de AuthenticatedLayout sin ActivityBar indeterminado, PublicLayout
+  con CTA neutras y header `min-h-header`, landing sin circulo blur,
+  sparkline de Dashboard con velas reales (antes inventado, R-21),
+  MetricComparisonChart sin serie roja (direction ahora verde, MAPE gris),
+  arreglo `text-bg-root` invalido en Header y TS2322 preexistente en
+  `types/analyst.ts` (T-044 decia build OK; `git stash`+tsc lo desmintio).
 
 ## Verificado en esta sesion
-- Backend `mvn clean verify` = **249 tests, BUILD SUCCESS** (Corretto 21.0.12).
-- Frontend `npm run lint` = 0 · `npm test` = **183/183** · `npm run build` OK.
-- Commit `d33af04` en `main` y `BackEnd/First` (14 archivos, +825/-22).
+- `npm run lint` = 0 · `npm test` = **183/183** · `npm run build` OK
+  (tsc + vite). Vista previa local en `:4173`: `/`, `/about`, `/login`
+  renderizan con backend ausente (estados de error en rojo controlado);
+  captura a 360 px sin desbordes de cabecera.
 
 ## Pendiente inmediato
 - Push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).

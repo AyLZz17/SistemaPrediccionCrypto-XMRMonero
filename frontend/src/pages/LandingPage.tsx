@@ -35,16 +35,12 @@ export default function LandingPage() {
 
   return (
     <div className="space-y-14">
-      <section className="relative overflow-hidden rounded-xl border border-hairline-subtle bg-surface-1/70 p-8 sm:p-12">
+      <section className="relative overflow-hidden rounded-lg border border-hairline-subtle bg-surface-1/70 p-8 sm:p-12">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid-lines opacity-40" />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-24 right-10 h-64 w-64 rounded-full bg-accent-cyan/10 blur-3xl"
-        />
         <div className="relative max-w-3xl">
           <div className="flex flex-wrap items-center gap-3">
-            <Badge tone="active" dot pulse>
-              Operacion en vivo
+            <Badge tone="neutral" dot>
+              Capacidad predictiva evaluada
             </Badge>
             <Badge tone="neutral">XMR-USD</Badge>
             <Badge tone="neutral">LSTM / GRU vs. ARIMA</Badge>
@@ -69,7 +65,7 @@ export default function LandingPage() {
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
             <StatusDot tone="success" label="HTTPS obligatorio" />
-            <StatusDot tone="active" label="Trazabilidad por requestId" />
+            <StatusDot tone="idle" label="Trazabilidad por requestId" />
             <StatusDot tone="idle" label="Sin simulacion de operaciones" />
           </div>
         </div>
@@ -93,7 +89,7 @@ export default function LandingPage() {
           {PIPELINE.map((item) => (
             <li key={item.step}>
               <Panel className="h-full">
-                <p className="font-mono text-xs text-accent-cyan">{item.step}</p>
+                <p className="font-mono text-xs text-ink-muted">{item.step}</p>
                 <p className="mt-2 text-sm font-semibold text-ink">{item.label}</p>
                 <p className="mt-1 text-xs text-ink-muted">{item.detail}</p>
               </Panel>
@@ -127,9 +123,9 @@ export default function LandingPage() {
           </h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard label="MAE" value="USD" hint="Error absoluto medio en dolares" tone="active" />
-          <MetricCard label="RMSE" value="USD" hint="Penaliza errores grandes" tone="active" />
-          <MetricCard label="MAPE" value="%" hint="Error porcentual medio" tone="warning" />
+          <MetricCard label="MAE" value="USD" hint="Error absoluto medio en dolares" tone="idle" />
+          <MetricCard label="RMSE" value="USD" hint="Penaliza errores grandes" tone="idle" />
+          <MetricCard label="MAPE" value="%" hint="Error porcentual medio" tone="idle" />
           <MetricCard
             label="Direccion"
             value="%"

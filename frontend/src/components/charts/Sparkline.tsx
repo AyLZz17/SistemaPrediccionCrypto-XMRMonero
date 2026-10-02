@@ -9,7 +9,7 @@ export function Sparkline({
   values,
   width = 220,
   height = 48,
-  stroke = 'var(--xmr-accent-cyan)',
+  stroke = 'var(--xmr-text-secondary)',
   label = 'Tendencia',
 }: {
   values: number[]

@@ -11,12 +11,32 @@ const DOT: Record<IndicatorTone, string> = {
   danger: 'bg-danger',
 }
 
+/** State colours for dots and compact labels (no big fills). */
 const TEXT: Record<IndicatorTone, string> = {
   idle: 'text-ink-muted',
   active: 'text-active',
   success: 'text-success',
   warning: 'text-warning',
   danger: 'text-danger',
+}
+
+/**
+ * Values read as foreground data, so neutral tones render in ink and only real
+ * state (success/warning/danger) takes colour. This keeps cyan out of KPI
+ * values: cyan is reserved for focus, interaction and connectivity.
+ */
+const VALUE_TEXT: Record<IndicatorTone, string> = {
+  idle: 'text-ink',
+  active: 'text-ink',
+  success: 'text-success',
+  warning: 'text-warning',
+  danger: 'text-danger',
+}
+
+const TREND_TEXT: Record<'up' | 'down' | 'flat', string> = {
+  up: 'text-success',
+  down: 'text-danger',
+  flat: 'text-ink-muted',
 }
 
 export interface StatusDotProps {
@@ -111,12 +131,15 @@ export function MetricCard({ label, value, unit, hint, tone = 'idle', trend, cla
     >
       <p className="label-caps">{label}</p>
       <p className="mt-2 flex items-baseline gap-1.5">
-        <span className={clsx('font-mono text-2xl font-semibold tabular-nums', TEXT[tone])}>{value}</span>
+        <span className={clsx('font-mono text-2xl font-semibold tabular-nums', VALUE_TEXT[tone])}>{value}</span>
         {unit ? <span className="font-mono text-xs text-ink-muted">{unit}</span> : null}
         {trend ? (
-          <span aria-hidden="true" className="ml-1 text-xs text-ink-muted">
+          <span aria-hidden="true" className={clsx('ml-1 text-xs', TREND_TEXT[trend])}>
             {trend === 'up' ? '▲' : trend === 'down' ? '▼' : '─'}
           </span>
+        ) : null}
+        {trend ? (
+          <span className="sr-only">{trend === 'up' ? 'Sube' : trend === 'down' ? 'Baja' : 'Estable'}</span>
         ) : null}
       </p>
       {hint ? <p className="mt-1.5 text-xs text-ink-muted">{hint}</p> : null}

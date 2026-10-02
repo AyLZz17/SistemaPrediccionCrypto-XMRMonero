@@ -15,7 +15,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'border-hairline-default bg-elevated text-ink hover:border-accent-cyan/50 hover:bg-surface-2 hover:text-accent-cyan',
+    'border-hairline-default bg-elevated text-ink hover:border-hairline-strong hover:bg-surface-2',
   secondary:
     'border-hairline-default bg-surface-2 text-ink-secondary hover:border-hairline-strong hover:bg-surface-3 hover:text-ink',
   ghost: 'border-transparent bg-transparent text-ink-secondary hover:text-ink hover:bg-surface-1',

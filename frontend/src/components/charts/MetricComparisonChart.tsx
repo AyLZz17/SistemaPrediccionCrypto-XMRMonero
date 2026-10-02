@@ -14,8 +14,8 @@ import type { ComparisonRow } from '../../api'
 const SERIES = [
   { key: 'mae', label: 'MAE (USD)', color: 'var(--xmr-accent-cyan)' },
   { key: 'rmse', label: 'RMSE (USD)', color: 'var(--xmr-accent-amber)' },
-  { key: 'mape', label: 'MAPE (%)', color: 'var(--xmr-accent-green)' },
-  { key: 'directionAccuracy', label: 'Dirección (%)', color: 'var(--xmr-accent-red)' },
+  { key: 'mape', label: 'MAPE (%)', color: 'var(--xmr-text-secondary)' },
+  { key: 'directionAccuracy', label: 'Dirección (%)', color: 'var(--xmr-accent-green)' },
 ] as const
 
 /**

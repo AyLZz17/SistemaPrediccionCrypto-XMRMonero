@@ -140,7 +140,7 @@ export default function PublicDashboardPage() {
             <MetricCard
               label="Precio XMR-USD"
               value={formatUsd(summary.data?.price)}
-              tone="active"
+              tone="idle"
               trend={up ? 'up' : 'down'}
               hint={summary.data?.source ? `Fuente: ${summary.data.source}` : 'Último cierre disponible'}
             />
@@ -230,20 +230,20 @@ export default function PublicDashboardPage() {
             <MetricCard
               label="MAE"
               value={formatUsd(metrics.data.validation?.mae)}
-              tone="active"
+              tone="idle"
               hint="Validación · error absoluto medio"
             />
             <MetricCard
               label="RMSE"
               value={formatUsd(metrics.data.validation?.rmse)}
-              tone="active"
+              tone="idle"
               hint="Validación · penaliza errores grandes"
             />
             <MetricCard
               label="MAPE"
               value={typeof metrics.data.validation?.mape === 'number' ? metrics.data.validation.mape.toFixed(2) : '—'}
               unit="%"
-              tone="warning"
+              tone="idle"
               hint="Validación · error porcentual medio"
             />
             <MetricCard

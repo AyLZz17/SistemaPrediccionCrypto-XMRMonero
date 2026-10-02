@@ -109,12 +109,12 @@ export default function MetricsPage() {
           <section aria-label="Metricas de validacion" className="space-y-3">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-ink">Validacion</h2>
-              <StatusDot tone="active" label="usada para elegir el campeon" />
+              <StatusDot tone="idle" label="usada para elegir el campeon" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="MAE" value={formatNumber(validation?.mae ?? metrics.data?.mae, 4)} unit="USD" tone="active" />
-              <MetricCard label="RMSE" value={formatNumber(validation?.rmse ?? metrics.data?.rmse, 4)} unit="USD" tone="active" />
-              <MetricCard label="MAPE" value={formatNumber(validation?.mape ?? metrics.data?.mape, 4)} unit="%" tone="warning" />
+              <MetricCard label="MAE" value={formatNumber(validation?.mae ?? metrics.data?.mae, 4)} unit="USD" tone="idle" />
+              <MetricCard label="RMSE" value={formatNumber(validation?.rmse ?? metrics.data?.rmse, 4)} unit="USD" tone="idle" />
+              <MetricCard label="MAPE" value={formatNumber(validation?.mape ?? metrics.data?.mape, 4)} unit="%" tone="idle" />
               <MetricCard
                 label="Direccion"
                 value={formatNumber(
@@ -134,9 +134,9 @@ export default function MetricsPage() {
               <StatusDot tone="warning" label="uso unico" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="MAE" value={formatNumber(test?.mae, 4)} unit="USD" tone="active" />
-              <MetricCard label="RMSE" value={formatNumber(test?.rmse, 4)} unit="USD" tone="active" />
-              <MetricCard label="MAPE" value={formatNumber(test?.mape, 4)} unit="%" tone="warning" />
+              <MetricCard label="MAE" value={formatNumber(test?.mae, 4)} unit="USD" tone="idle" />
+              <MetricCard label="RMSE" value={formatNumber(test?.rmse, 4)} unit="USD" tone="idle" />
+              <MetricCard label="MAPE" value={formatNumber(test?.mape, 4)} unit="%" tone="idle" />
               <MetricCard
                 label="Direccion"
                 value={formatNumber((test?.directionAccuracy ?? 0) * 100, 2)}

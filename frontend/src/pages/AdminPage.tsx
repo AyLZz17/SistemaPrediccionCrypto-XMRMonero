@@ -137,7 +137,7 @@ export default function AdminPage() {
         <div className="grid gap-3 sm:grid-cols-3">
           {ROLES.map((role) => (
             <div key={role} className="rounded-md border border-hairline-subtle p-3">
-              <p className="font-mono text-sm text-accent-cyan">{ROLE_LABELS[role]}</p>
+              <p className="font-mono text-sm text-ink">{ROLE_LABELS[role]}</p>
               <p className="mt-1 text-xs text-ink-secondary">
                 {role === 'ADMIN'
                   ? 'Control total, incluida la promocion de modelos y la auditoria.'
@@ -185,15 +185,15 @@ function RoleChangePolicy() {
       <PanelHeader title="Buenas practicas" subtitle="Controles de seguridad aplicados" />
       <ul className="space-y-2 text-sm text-ink-secondary">
         <li className="flex gap-2">
-          <span className="font-mono text-accent-cyan">01</span>
+          <span className="font-mono text-ink-muted">01</span>
           <span>Principio de minimo privilegio: concede solo el rol que la persona necesita.</span>
         </li>
         <li className="flex gap-2">
-          <span className="font-mono text-accent-cyan">02</span>
+          <span className="font-mono text-ink-muted">02</span>
           <span>Los cambios de rol quedan registrados en la auditoria con su requestId.</span>
         </li>
         <li className="flex gap-2">
-          <span className="font-mono text-accent-cyan">03</span>
+          <span className="font-mono text-ink-muted">03</span>
           <span>Las cuentas ADMIN deben usar MFA en el proveedor de identidad.</span>
         </li>
       </ul>

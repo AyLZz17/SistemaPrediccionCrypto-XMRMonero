@@ -145,7 +145,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <p className="truncate font-mono text-[11px] text-ink-muted">{user.email}</p>
               <div className="mt-2 flex items-center justify-between">
                 <span className="label-caps">Rol</span>
-                <span className="font-mono text-[11px] text-accent-cyan">{ROLE_LABELS[user.role]}</span>
+                <span className="font-mono text-[11px] text-ink-secondary">{ROLE_LABELS[user.role]}</span>
               </div>
             </div>
           ) : null}

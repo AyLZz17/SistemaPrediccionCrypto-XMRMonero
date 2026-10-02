@@ -29,7 +29,19 @@ export interface CreateAnalystAccessRequest {
 
 export const CUESTIONARIO_VERSION = '2026-10-01'
 
-export const CUESTIONARIO_ITEMS: { key: keyof CreateAnalystAccessRequest; label: string }[] = [
+type ConsentKey = keyof Pick<
+  CreateAnalystAccessRequest,
+  | 'aceptaRiesgos'
+  | 'aceptaLimitaciones'
+  | 'aceptaMetricas'
+  | 'aceptaNoGarantia'
+  | 'aceptaNoOperaciones'
+  | 'aceptaNoBacktesting'
+  | 'aceptaRolAnalyst'
+  | 'aceptaNoRentabilidad'
+>
+
+export const CUESTIONARIO_ITEMS: { key: ConsentKey; label: string }[] = [
   { key: 'aceptaRiesgos', label: 'XMR-Forecast no es asesoría financiera.' },
   { key: 'aceptaLimitaciones', label: 'Las predicciones son capacidad predictiva evaluada sobre datos históricos.' },
   { key: 'aceptaMetricas', label: 'Los resultados no garantizan rentabilidad ni resultados futuros.' },

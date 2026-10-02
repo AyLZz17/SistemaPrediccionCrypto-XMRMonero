@@ -7,7 +7,7 @@ const TONES: Record<PanelTone, string> = {
   default: 'glass-panel',
   raised: 'glass-panel-strong shadow-card-lg',
   elevated: 'elevated-panel',
-  accent: 'glass-panel border-accent-cyan/30 shadow-[0_0_0_1px_rgba(6,182,212,0.2)]',
+  accent: 'glass-panel-strong shadow-card',
 }
 
 export interface PanelProps extends HTMLAttributes<HTMLDivElement> {

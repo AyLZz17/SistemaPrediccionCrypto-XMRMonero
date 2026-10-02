@@ -14,10 +14,8 @@
     @apply bg-deep font-sans text-base text-ink leading-normal antialiased;
     margin: 0;
     min-height: 100vh;
-    /* Subtle, restrained depth — no radial gradients that compete with data. */
-    background-image:
-      linear-gradient(180deg, rgba(6, 182, 212, 0.015) 0%, transparent 40%),
-      linear-gradient(180deg, transparent 60%, rgba(245, 158, 11, 0.01) 100%);
+    /* Flat, sober backdrop; no accent tints compete with the data. */
+    background-image: linear-gradient(180deg, var(--xmr-bg-deep) 0%, var(--xmr-bg-root) 100%);
     background-attachment: fixed;
   }
 

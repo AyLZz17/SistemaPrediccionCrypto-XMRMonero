@@ -1,6 +1,7 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { fetchLatestQuote } from '../api/market'
+import { fetchCandles, fetchLatestQuote } from '../api/market'
 import { fetchJobs, fetchPredictions } from '../api'
 import { DEFAULT_SYMBOL, hasAtLeast } from '../types'
 import { useAuthStore } from '../store/authStore'
@@ -20,7 +21,7 @@ import {
 import { Disclaimer } from '../components/common/Disclaimer'
 import { StatusPill, statusTone } from '../components/common/StatusPill'
 import { Sparkline } from '../components/charts/Sparkline'
-import { formatUsd, formatDateTime } from '../utils/format'
+import { formatUsd, formatDateTime, toIsoDate } from '../utils/format'
 import { AnalystAccessRequestForm } from '../components/analyst/AnalystAccessRequestForm'
 
 export default function DashboardPage() {
@@ -46,6 +47,23 @@ export default function DashboardPage() {
     queryFn: () => fetchPredictions(0, 5),
     retry: 1,
   })
+
+  const recentCandles = useQuery({
+    queryKey: ['market', 'candles', DEFAULT_SYMBOL, 'sparkline'],
+    queryFn: () => {
+      const to = new Date()
+      const from = new Date()
+      from.setUTCDate(to.getUTCDate() - 14)
+      return fetchCandles({ symbol: DEFAULT_SYMBOL, from: toIsoDate(from), to: toIsoDate(to), page: 0, size: 30 })
+    },
+    retry: 1,
+    staleTime: 300_000,
+  })
+
+  const sparkValues = useMemo(
+    () => (recentCandles.data?.items ?? []).map((candle) => candle.close),
+    [recentCandles.data],
+  )
 
   const runningJobs = jobs.data?.items.filter((job) => job.status === 'RUNNING' || job.status === 'QUEUED') ?? []
   const activeCount = runningJobs.length
@@ -99,7 +117,7 @@ export default function DashboardPage() {
             <MetricCard
               label="Precio XMR-USD"
               value={formatUsd(quote.data?.price)}
-              tone="active"
+              tone="idle"
               trend={isUp ? 'up' : 'down'}
               hint={quote.data?.source ? `Fuente: ${quote.data.source}` : 'Último cierre disponible'}
             />
@@ -204,7 +222,13 @@ export default function DashboardPage() {
           </ul>
           <div className="mt-5 border-t border-hairline-subtle pt-4">
             <p className="label-caps mb-2">Tendencia reciente</p>
-            <Sparkline values={[168.2, 169.9, 168.7, 171.4, 173.1, 172.2, 174.6]} />
+            {sparkValues.length >= 2 ? (
+              <Sparkline values={sparkValues} stroke="var(--xmr-text-secondary)" label="Cierre de las últimas velas" />
+            ) : (
+              <p className="font-mono text-xs text-ink-muted">
+                {recentCandles.isPending ? 'Cargando tendencia...' : 'Sin datos de velas recientes'}
+              </p>
+            )}
           </div>
         </Panel>
       </div>

@@ -6,7 +6,7 @@ import { Badge, type BadgeTone } from '../ui'
  */
 const TONE_BY_STATUS: Record<string, BadgeTone> = {
   // jobs
-  QUEUED: 'info',
+  QUEUED: 'neutral',
   RUNNING: 'active',
   SUCCEEDED: 'success',
   SUCCESS: 'success',
@@ -16,9 +16,9 @@ const TONE_BY_STATUS: Record<string, BadgeTone> = {
   // predictions
   READY: 'success',
   PENDING: 'warning',
-  // roles
-  ADMIN: 'danger',
-  ANALYST: 'active',
+  // roles (roles are metadata, not state: no alert colours)
+  ADMIN: 'neutral',
+  ANALYST: 'neutral',
   VIEWER: 'neutral',
   // outcomes
   UP: 'success',
