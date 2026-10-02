@@ -19,11 +19,10 @@
   integrado en `AccountPage` (solo VIEWER) y `DashboardPage` (CTA).
 - Seguridad: autorizacion en servidor (ADMIN solo), prevencion de auto-aprobacion,
   prevencion de duplicados PENDING, revocacion de sesiones al cambiar rol.
-- Tests: backend `mvn compile` = BUILD SUCCESS. Frontend `npm run lint` = 0.
 
 ## Verificado en esta sesion
-- Backend `mvn compile` = **BUILD SUCCESS** (Java 21, Lombok annotation processor OK).
-- Frontend `npm run lint` = 0.
+- Backend `mvn clean verify` = **249 tests, BUILD SUCCESS** (Corretto 21.0.12).
+- Frontend `npm run lint` = 0 · `npm test` = **183/183** · `npm run build` OK.
 - Commit `d33af04` en `main` y `BackEnd/First` (14 archivos, +825/-22).
 
 ## Pendiente inmediato
