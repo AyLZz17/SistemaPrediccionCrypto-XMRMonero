@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Footer } from '../layout/Footer'
-import { Button, Panel, StatusDot } from '../ui'
+import { Button, Panel, PanelHeader, StatusDot } from '../ui'
 
 interface ErrorBoundaryState {
   error: Error | null
@@ -38,16 +38,16 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
       <div className="flex min-h-screen flex-col bg-deep">
         <main className="flex flex-1 items-center justify-center p-6">
           <div className="w-full max-w-lg">
-            <Panel className="border-accent-red/40">
+            <Panel tone="danger">
               <div className="flex items-center gap-3">
                 <StatusDot tone="danger" label="Error 500" />
-                <h2 className="text-xl font-semibold text-ink">La interfaz encontro un error inesperado</h2>
               </div>
-              <p className="mt-3 text-sm text-ink-secondary">
+              <PanelHeader title="La interfaz encontro un error inesperado" marker="danger" as="h2" className="mt-3" />
+              <p className="text-sm leading-normal text-ink-secondary">
                 Se ha detenido el renderizado de esta vista. Puedes reintentarla; si el problema persiste,
                 comparte el identificador con el equipo de soporte.
               </p>
-              <p className="mt-3 rounded-md border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs text-ink-muted">
+              <p className="mt-3 rounded border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs text-ink-muted">
                 {error.name}: {error.message}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">

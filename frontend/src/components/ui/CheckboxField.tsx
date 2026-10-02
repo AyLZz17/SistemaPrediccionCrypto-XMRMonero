@@ -35,7 +35,7 @@ export function CheckboxField({
       <label
         htmlFor={id}
         className={clsx(
-          'flex cursor-pointer items-start gap-2.5 rounded-md border border-transparent p-0.5 text-sm text-ink-secondary transition-colors duration-fast hover:text-ink',
+          'flex cursor-pointer items-start gap-2.5 rounded border border-transparent p-0.5 text-sm text-ink-secondary transition-colors duration-fast hover:text-ink',
           error && 'text-ink',
         )}
       >
@@ -46,7 +46,7 @@ export function CheckboxField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={clsx(
-            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-hairline bg-surface-inset accent-accent-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60',
+            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded-sm border-hairline bg-surface-inset accent-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60',
             error && 'border-accent-red/70',
             className,
           )}

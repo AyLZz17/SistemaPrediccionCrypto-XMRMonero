@@ -56,15 +56,15 @@ export function AnalystAccessRequestForm() {
     return (
       <Panel tone="raised">
         <PanelHeader title="Solicitud de acceso ANALYST" subtitle="Estado de tu solicitud" />
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3 border-y border-hairline-subtle py-2.5">
             <Badge tone={statusInfo.tone}>{statusInfo.label}</Badge>
             <span className="font-mono text-xs text-ink-muted">
               {request.createdAt ? formatDateTime(request.createdAt) : ''}
             </span>
           </div>
           {request.status === 'PENDING' ? (
-            <p className="text-sm text-ink-secondary">
+            <p className="text-sm leading-normal text-ink-secondary">
               Tu solicitud está en revisión. Un administrador la evaluará y recibirás una notificación cuando se
               tome una decisión.
             </p>
@@ -130,39 +130,42 @@ export function AnalystAccessRequestForm() {
       ) : null}
       <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        <TextField
-          label="Motivo de la solicitud"
-          name="motivo"
-          required
-          value={form.motivo}
-          onChange={(event) => setForm((prev) => ({ ...prev, motivo: event.target.value }))}
-          placeholder="Explica por qué necesitas acceso ANALYST"
-        />
-        <TextField
-          label="Uso previsto de la plataforma"
-          name="usoPrevisto"
-          required
-          value={form.usoPrevisto}
-          onChange={(event) => setForm((prev) => ({ ...prev, usoPrevisto: event.target.value }))}
-          placeholder="Describe cómo planeas usar las funciones de análisis"
-        />
-        <fieldset>
-          <legend className="label-caps mb-3">Confirmación de comprensión</legend>
-          <div className="space-y-2">
-            {CUESTIONARIO_ITEMS.map((item) => (
+        <div className="grid gap-4 md:grid-cols-2">
+          <TextField
+            label="Motivo de la solicitud"
+            name="motivo"
+            required
+            value={form.motivo}
+            onChange={(event) => setForm((prev) => ({ ...prev, motivo: event.target.value }))}
+            placeholder="Explica por qué necesitas acceso ANALYST"
+          />
+          <TextField
+            label="Uso previsto de la plataforma"
+            name="usoPrevisto"
+            required
+            value={form.usoPrevisto}
+            onChange={(event) => setForm((prev) => ({ ...prev, usoPrevisto: event.target.value }))}
+            placeholder="Describe cómo planeas usar las funciones de análisis"
+          />
+        </div>
+        <fieldset className="rounded-sm border border-hairline-subtle">
+          <legend className="label-caps ml-3 px-1">Confirmación de comprensión</legend>
+          <div className="divide-y divide-hairline-subtle">
+            {CUESTIONARIO_ITEMS.map((item, index) => (
               <label
                 key={item.key}
-                className="flex cursor-pointer items-start gap-3 rounded-md border border-hairline p-3 transition-colors hover:border-hairline-strong"
+                className="flex cursor-pointer items-start gap-3 px-3 py-2.5 transition-colors hover:bg-surface-2"
               >
+                <span className="mt-0.5 font-mono text-[11px] text-ink-muted">{String(index + 1).padStart(2, '0')}</span>
                 <input
                   type="checkbox"
                   checked={form[item.key]}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, [item.key]: event.target.checked }))
                   }
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-accent-cyan"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-hairline bg-surface-inset accent-brand"
                 />
-                <span className="text-sm text-ink-secondary">{item.label}</span>
+                <span className="text-[13px] leading-normal text-ink-secondary">{item.label}</span>
               </label>
             ))}
           </div>

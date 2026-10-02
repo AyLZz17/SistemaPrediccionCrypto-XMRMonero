@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../api/auth'
 import { toApiError } from '../api/errors'
 import { ApiErrorAlert, Button, Notice, Panel, TextField } from '../components/ui'
+import { BrandMark } from '../components/layout/BrandMark'
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams()
@@ -43,12 +44,15 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">Establecer nueva contrasena</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
-          El token de recuperacion es de un solo uso y caduca tras un tiempo limitado.
-        </p>
+    <div className="mx-auto w-full max-w-md space-y-5">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <BrandMark size={36} />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Establecer nueva contrasena</h1>
+          <p className="mt-1 text-sm leading-normal text-ink-secondary">
+            El token de recuperacion es de un solo uso y caduca tras un tiempo limitado.
+          </p>
+        </div>
       </div>
 
       {error ? <ApiErrorAlert error={error} /> : null}
@@ -62,7 +66,7 @@ export default function ResetPasswordPage() {
         </Notice>
       ) : null}
 
-      <Panel>
+      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Token de recuperacion"
@@ -70,7 +74,7 @@ export default function ResetPasswordPage() {
             required
             value={token}
             onChange={(event) => setToken(event.target.value)}
-            className="font-mono"
+            className="font-mono text-[13px]"
             hint="Cadena alfanumerica enviada por correo."
           />
           <TextField

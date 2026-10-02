@@ -3,7 +3,7 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTML
 import { useId } from 'react'
 
 const FIELD_BASE =
-  'w-full rounded-md border border-hairline bg-surface-inset px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted transition-all duration-fast ease-out hover:border-hairline-strong focus:border-accent-cyan/60 disabled:cursor-not-allowed disabled:opacity-50'
+  'w-full rounded border border-hairline bg-surface-inset px-3 py-2 text-sm text-ink placeholder:text-ink-muted transition-colors duration-fast ease-out hover:border-hairline-strong focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50'
 
 function FieldShell({
   id,
@@ -24,7 +24,7 @@ function FieldShell({
 }) {
   return (
     <div className={clsx('space-y-1.5', className)}>
-      <label htmlFor={id} className="flex items-center gap-1 text-sm font-medium text-ink-secondary">
+      <label htmlFor={id} className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
         {label}
         {required ? (
           <span aria-hidden="true" className="text-accent-red">
@@ -132,7 +132,7 @@ export function TextAreaField({
         required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
-        className={clsx(FIELD_BASE, 'min-h-24 resize-y font-mono', error && 'border-accent-red/70', className)}
+        className={clsx(FIELD_BASE, 'min-h-24 resize-y font-mono text-[13px]', error && 'border-accent-red/70', className)}
         {...rest}
       />
     </FieldShell>

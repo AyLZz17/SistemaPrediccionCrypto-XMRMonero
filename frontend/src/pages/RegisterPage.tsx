@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore'
 import { ApiErrorAlert, Button, CheckboxField, Notice, Panel, TextField } from '../components/ui'
 import { GoogleButton } from '../components/auth/GoogleButton'
 import { Disclaimer } from '../components/common/Disclaimer'
+import { BrandMark } from '../components/layout/BrandMark'
 
 interface RegisterErrors {
   fullName?: string
@@ -79,12 +80,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">Crear cuenta</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Accede a la capacidad predictiva evaluada de XMR-Forecast. Empezaras con el rol VIEWER.
-        </p>
+    <div className="mx-auto w-full max-w-md space-y-5">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <BrandMark size={36} />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Crear cuenta</h1>
+          <p className="mt-1 text-sm leading-normal text-ink-secondary">
+            Accede a la capacidad predictiva evaluada de XMR-Forecast. Empezarás con el rol VIEWER.
+          </p>
+        </div>
       </div>
 
       {error ? <ApiErrorAlert error={error} /> : null}
@@ -92,7 +96,7 @@ export default function RegisterPage() {
         <Notice>Cuenta creada correctamente. Ya puedes iniciar sesion con tu correo.</Notice>
       ) : null}
 
-      <Panel>
+      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Nombre completo"
@@ -143,7 +147,7 @@ export default function RegisterPage() {
             className="space-y-3 border-t border-hairline-subtle pt-4"
             data-testid="register-consent"
           >
-            <p className="label-caps">Consentimiento</p>
+            <p className="label-caps-ticked">Consentimiento</p>
             <CheckboxField
               data-testid="accept-terms"
               name="acceptTerms"

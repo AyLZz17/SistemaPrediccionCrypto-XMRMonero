@@ -272,24 +272,41 @@ Los reintentos de React Query se desactivan automaticamente para cualquier
 
 Todos los valores viven en `src/styles/theme.css` como variables CSS
 personalizadas y se exponen a Tailwind por `tailwind.config.js`
-(`theme.extend`). **No hay hex sueltos en los componentes.**
+(`theme.extend`). **No hay hex sueltos en los componentes**
+(excepción: los cuatro colores oficiales del logotipo de Google en
+`GoogleButton.tsx`, que son un activo de marca de terceros).
 
-- Fondo negro profundo, paneles de carbon, tarjetas de cristal translucido
-  (`backdrop-blur`), bordes semitransparentes y resplandor sutil en activo/hover.
-- Acentos (verde neon / cian / rojo / ambar) **solo** para estado, alerta y
-  metricas; nunca como relleno grande.
-- Tipografia monoespaciada para terminales, logs, metricas e identificadores
-  (`.mono`, `.label-caps`, `font-mono`).
+- Identidad de terminal cuantitativa: negro profundo (`--xmr-bg-root`),
+  carbón (`--xmr-bg-raised`), superficies negras translúcidas y tinta
+  blanca cálida con grises fríos secundarios.
+- Rojo institucional de marca (`--xmr-brand`) y rojo de peligro
+  (`--xmr-brand-strong`): **solo** énfasis y estado (barra lateral de
+  navegación activa, botones primarios, errores, caídas, acciones
+  destructivas). Nunca como relleno de página.
+- Verde **solo** subidas/éxito, ámbar **solo** advertencias, cian
+  **solo** foco, actividad y conectividad.
+- Paneles planos de carbón con borde hairline y radios sobrios
+  (3/5/8 px); sin glassmorphism decorativo, sin resplandores, sin
+  degradados llamativos.
+- Tipografía monoespaciada para terminales, logs, métricas e identificadores
+  (`.mono`, `.label-caps`, `.label-caps-ticked`, `font-mono`).
 - Modo oscuro permanente (`color-scheme: dark`); no existe tema claro.
-- Los acentos usan tripletas de canal (`--xmr-accent-cyan-ch`) para que los
-  modificadores de opacidad de Tailwind (`border-accent-cyan/40`) apliquen
-  alfa real en lugar de ignorarse.
-- Estados: esqueletos oscuros, estados vacios, estados de error, 404 y modal
-  trampa de foco.
-- Indicadores de actividad/conexion/seguridad/ejecucion (`StatusDot`,
-  `ActivityBar`, `Badge`) con animacion sutil y etiqueta textual (no solo
+- Los acentos usan tripletas de canal (`--xmr-brand-ch`,
+  `--xmr-accent-cyan-ch`, …) para que los modificadores de opacidad de
+  Tailwind (`border-accent-red/40`) apliquen alfa real en lugar de ignorarse.
+- Contraste WCAG AA verificado sobre `--xmr-bg-deep` (#0a0a0c):
+  texto primario 17.4:1, secundario 7.8:1, atenuado 4.6:1;
+  verde 8.0:1, ámbar 9.2:1, cian 8.1:1, rojo de peligro 5.1:1;
+  blanco sobre el rojo sólido del botón primario 7.3:1.
+- Estados: esqueletos oscuros, estados vacíos, estados de error, 404 y modal
+  con trampa de foco. El marcador activo de navegación (`.nav-active`) es una
+  barra roja lateral sobre fondo oscuro, con `aria-current="page"`.
+- Indicadores de actividad/conexión/seguridad/ejecución (`StatusDot`,
+  `ActivityBar`, `Badge`) con animación sutil y etiqueta textual (no solo
   color). `prefers-reduced-motion` desactiva las transiciones.
-- Responsive: sidebar colapsable en escritorio, cajon deslizante en movil.
+- Responsive: sidebar completa en escritorio (232 px, colapsable a 64 px),
+  cajón deslizante en móvil; cintas de KPIs en rejilla que colapsa sin
+  overflow horizontal.
 
 ## 12. Accesibilidad
 
@@ -309,7 +326,7 @@ personalizadas y se exponen a Tailwind por `tailwind.config.js`
 
 ## 13. Pruebas
 
-144 pruebas en 8 ficheros (`npm run test`). **Ninguna hace llamadas de red**: el
+183 pruebas en 10 ficheros (`npm run test`). **Ninguna hace llamadas de red**: el
 `fetch` global se sustituye por un stub (R-18).
 
 | Fichero | Cobertura |
@@ -321,7 +338,9 @@ personalizadas y se exponen a Tailwind por `tailwind.config.js`
 | `api-client.test.ts` | Single-flight del refresco (N 401 -> 1 refresh), re-arme tras fallo, 401/403/429/500/503/timeout/red, `fieldErrors`, `requestId`, cabeceras, `credentials`, unica salida |
 | `env.test.ts` | Validador de entorno: https obligatorio, secretos rechazados, rangos, variables desconocidas |
 | `ui-components.test.tsx` | Button, campos, DataTable, Pagination, Modal (foco/Escape), alerts, estados, indicadores, StatusPill, Disclaimer (R-11/R-12), ErrorBoundary |
-| `layout-accessibility.test.tsx` | Footer, PublicLayout, AuthenticatedLayout, Sidebar, Header, ForbiddenPanel, landmarks y teclado |
+| `layout-accessibility.test.tsx` | Footer, PublicLayout, AuthenticatedLayout, Sidebar (marcador activo `.nav-active` + `aria-current`), Header, ForbiddenPanel, landmarks y teclado |
+| `legal-and-consent.test.tsx` | Enlaces legales del pie, versiones de documentos, consentimiento no premarcado, puerta de consentimiento de Google, reenvío de verificación |
+| `public-dashboard.test.tsx` | Primera pantalla anónima: resumen, métricas, comparación, estado, cabecera reactiva, superficie solo-`/public/**`, responsive |
 
 ## 14. Despliegue (Docker + nginx)
 

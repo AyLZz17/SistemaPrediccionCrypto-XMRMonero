@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { forgotPassword } from '../api/auth'
 import { toApiError } from '../api/errors'
 import { ApiErrorAlert, Button, Notice, Panel, TextField } from '../components/ui'
+import { BrandMark } from '../components/layout/BrandMark'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -25,12 +26,15 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">Recuperar contrasena</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Te enviaremos un enlace de un solo uso. El enlace caduca por seguridad.
-        </p>
+    <div className="mx-auto w-full max-w-md space-y-5">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <BrandMark size={36} />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Recuperar contrasena</h1>
+          <p className="mt-1 text-sm leading-normal text-ink-secondary">
+            Te enviaremos un enlace de un solo uso. El enlace caduca por seguridad.
+          </p>
+        </div>
       </div>
 
       {error ? <ApiErrorAlert error={error} /> : null}
@@ -41,7 +45,7 @@ export default function ForgotPasswordPage() {
         </Notice>
       ) : null}
 
-      <Panel>
+      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Correo electronico"

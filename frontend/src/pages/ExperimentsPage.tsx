@@ -22,8 +22,8 @@ import { StatusPill } from '../components/common/StatusPill'
 import { formatDateTime, formatNumber } from '../utils/format'
 
 const TASK_OPTIONS = [
-  { value: 'REGRESSION', label: 'Regresion (cierre t+1)' },
-  { value: 'DIRECTION', label: 'Direccion (sube / baja)' },
+  { value: 'REGRESSION', label: 'Regresión (cierre t+1)' },
+  { value: 'DIRECTION', label: 'Dirección (sube / baja)' },
   { value: 'BOTH', label: 'Ambas tareas' },
 ]
 
@@ -74,14 +74,14 @@ export default function ExperimentsPage() {
   })
 
   const experimentColumns: Array<Column<Experiment>> = [
-    { key: 'name', header: 'Experimento', render: (row) => <span className="text-ink">{row.name}</span> },
+    { key: 'name', header: 'Experimento', render: (row) => <span className="font-medium text-ink">{row.name}</span> },
     { key: 'task', header: 'Tarea', render: (row) => <span className="font-mono text-xs">{row.task}</span> },
     { key: 'modelFamily', header: 'Familia', render: (row) => row.modelFamily ?? '—' },
     { key: 'status', header: 'Estado', render: (row) => <StatusPill status={row.status} /> },
     {
       key: 'createdAt',
       header: 'Creado',
-      render: (row) => <span className="font-mono text-xs">{formatDateTime(row.createdAt)}</span>,
+      render: (row) => <span className="font-mono text-xs tabular-nums">{formatDateTime(row.createdAt)}</span>,
     },
     {
       key: 'actions',
@@ -131,7 +131,7 @@ export default function ExperimentsPage() {
     {
       key: 'startedAt',
       header: 'Inicio',
-      render: (row) => <span className="font-mono text-xs">{formatDateTime(row.startedAt)}</span>,
+      render: (row) => <span className="font-mono text-xs tabular-nums">{formatDateTime(row.startedAt)}</span>,
     },
   ]
 
@@ -146,21 +146,23 @@ export default function ExperimentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="label-caps">Entrenamiento</p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Experimentos</h1>
-          <p className="mt-1 text-sm text-ink-secondary">
-            Configuracion y corridas de los modelos. El ajuste de hiperparametros usa solo validacion; la
-            prueba se evalua una vez (R-04).
-          </p>
+    <div className="space-y-5">
+      <div className="border-b border-hairline-subtle pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="label-caps-ticked">Entrenamiento · configuración versionada</p>
+            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Experimentos</h1>
+            <p className="mt-1 max-w-3xl text-[13px] text-ink-secondary">
+              Configuración y corridas de los modelos. El ajuste de hiperparámetros usa solo validación; la
+              prueba se evalúa una vez (R-04).
+            </p>
+          </div>
+          {canLaunch ? (
+            <Button onClick={() => setCreateOpen(true)}>Nuevo experimento</Button>
+          ) : (
+            <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Rol ANALYST requerido para crear</span>
+          )}
         </div>
-        {canLaunch ? (
-          <Button onClick={() => setCreateOpen(true)}>Nuevo experimento</Button>
-        ) : (
-          <span className="label-caps">Rol ANALYST requerido para crear</span>
-        )}
       </div>
 
       {runMutation.isError ? (
@@ -172,16 +174,20 @@ export default function ExperimentsPage() {
         />
       ) : null}
 
-      <Panel tone="raised">
-        <PanelHeader title="Experimentos registrados" subtitle="Configuraciones de la plataforma" />
+      <Panel tone="raised" flush>
+        <div className="p-5 pb-3">
+          <PanelHeader title="Experimentos registrados" subtitle="Configuraciones de la plataforma" />
+        </div>
         {experiments.isPending ? (
-          <div className="skeleton-bar h-64 w-full" role="status" aria-label="Cargando experimentos" />
+          <div className="p-5 pt-0"><div className="skeleton-bar h-64 w-full" role="status" aria-label="Cargando experimentos" /></div>
         ) : experiments.isError ? (
-          <ErrorState
-            message={toApiError(experiments.error).friendlyMessage}
-            requestId={toApiError(experiments.error).requestId}
-            onRetry={() => void experiments.refetch()}
-          />
+          <div className="p-5 pt-0">
+            <ErrorState
+              message={toApiError(experiments.error).friendlyMessage}
+              requestId={toApiError(experiments.error).requestId}
+              onRetry={() => void experiments.refetch()}
+            />
+          </div>
         ) : experiments.data && experiments.data.items.length > 0 ? (
           <>
             <DataTable
@@ -191,7 +197,7 @@ export default function ExperimentsPage() {
               rowKey={(row) => row.id}
               isRowActive={(row) => selected?.id === row.id}
             />
-            <div className="mt-4">
+            <div className="px-1 pb-1">
               <Pagination
                 page={experiments.data.page}
                 totalPages={experiments.data.totalPages}
@@ -203,47 +209,57 @@ export default function ExperimentsPage() {
             </div>
           </>
         ) : (
-          <EmptyState
-            title="Sin experimentos"
-            description={
-              canLaunch
-                ? 'Crea el primer experimento para lanzar corridas reproducibles de los modelos.'
-                : 'Tu rol solo permite consultar. Un ANALYST puede crear experimentos.'
-            }
-            action={
-              canLaunch ? (
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  Crear experimento
-                </Button>
-              ) : undefined
-            }
-          />
+          <div className="p-5 pt-0">
+            <EmptyState
+              title="Sin experimentos"
+              description={
+                canLaunch
+                  ? 'Crea el primer experimento para lanzar corridas reproducibles de los modelos.'
+                  : 'Tu rol solo permite consultar. Un ANALYST puede crear experimentos.'
+              }
+              action={
+                canLaunch ? (
+                  <Button size="sm" onClick={() => setCreateOpen(true)}>
+                    Crear experimento
+                  </Button>
+                ) : undefined
+              }
+            />
+          </div>
         )}
       </Panel>
 
       {selected ? (
-        <Panel tone="raised">
-          <PanelHeader
-            title={`Corridas de ${selected.name}`}
-            subtitle="Cada fila es una corrida con su semilla y sus metricas"
-            actions={
-              <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
-                Cerrar
-              </Button>
-            }
-          />
-          {runs.isPending ? (
-            <div className="skeleton-bar h-48 w-full" role="status" aria-label="Cargando corridas" />
-          ) : runs.isError ? (
-            <ErrorState
-              message={toApiError(runs.error).friendlyMessage}
-              requestId={toApiError(runs.error).requestId}
-              onRetry={() => void runs.refetch()}
+        <Panel tone="raised" flush>
+          <div className="p-5 pb-3">
+            <PanelHeader
+              title={`Corridas de ${selected.name}`}
+              subtitle="Cada fila es una corrida con su semilla y sus métricas"
+              actions={
+                <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+                  Cerrar
+                </Button>
+              }
             />
+          </div>
+          {runs.isPending ? (
+            <div className="p-5 pt-0"><div className="skeleton-bar h-48 w-full" role="status" aria-label="Cargando corridas" /></div>
+          ) : runs.isError ? (
+            <div className="p-5 pt-0">
+              <ErrorState
+                message={toApiError(runs.error).friendlyMessage}
+                requestId={toApiError(runs.error).requestId}
+                onRetry={() => void runs.refetch()}
+              />
+            </div>
           ) : runs.data && runs.data.items.length > 0 ? (
-            <DataTable caption="Corridas del experimento" columns={runColumns} rows={runs.data.items} rowKey={(row) => row.id} dense />
+            <div className="px-0">
+              <DataTable caption="Corridas del experimento" columns={runColumns} rows={runs.data.items} rowKey={(row) => row.id} dense />
+            </div>
           ) : (
-            <EmptyState title="Este experimento aun no tiene corridas" />
+            <div className="p-5 pt-0">
+              <EmptyState title="Este experimento aún no tiene corridas" />
+            </div>
           )}
         </Panel>
       ) : null}
@@ -274,6 +290,7 @@ export default function ExperimentsPage() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="lstm_base_w30"
+            className="font-mono"
           />
           <SelectField label="Tarea" name="task" value={task} onChange={(event) => setTask(event.target.value)}>
             {TASK_OPTIONS.map((option) => (
@@ -283,15 +300,15 @@ export default function ExperimentsPage() {
             ))}
           </SelectField>
           <TextAreaField
-            label="Descripcion"
+            label="Descripción"
             name="description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             hint="Opcional. Se incluye en el informe exportado."
           />
           <Notice>
-            El ajuste de hiperparametros se realiza con validacion cronologica (walk-forward). La particion de
-            prueba no se consulta hasta la evaluacion final.
+            El ajuste de hiperparámetros se realiza con validación cronológica (walk-forward). La partición de
+            prueba no se consulta hasta la evaluación final.
           </Notice>
         </form>
       </Modal>

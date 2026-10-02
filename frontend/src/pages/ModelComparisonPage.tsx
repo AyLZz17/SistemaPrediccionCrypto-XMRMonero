@@ -24,6 +24,8 @@ import { formatDateTime, formatNumber } from '../utils/format'
 
 const BASELINES = ['media móvil', 'regresión lineal', 'ARIMA']
 
+const BASELINE_FAMILIES = ['MOVING_AVERAGE', 'LINEAR_REGRESSION', 'ARIMA']
+
 interface Promotion {
   model: ModelDescriptor
   version: ModelVersion
@@ -45,14 +47,20 @@ function ModelVersionsCard({
     retry: 1,
   })
 
+  const isBaseline = BASELINE_FAMILIES.includes(model.family)
+
   return (
-    <li className="rounded-md border border-hairline-subtle p-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-ink">{model.name}</span>
+    <li
+      className="rounded-sm border border-hairline-subtle bg-deep p-3.5 hover:border-hairline-default"
+      style={isBaseline ? undefined : { boxShadow: 'inset 2px 0 0 var(--xmr-border-strong)' }}
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-sm font-semibold text-ink">{model.name}</span>
         <Badge tone="neutral">{model.family}</Badge>
-        <span className="font-mono text-[11px] text-ink-muted">{model.id}</span>
+        {isBaseline ? <Badge tone="neutral" title="Referencia clásica, siempre visible">línea base</Badge> : null}
+        <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-muted">{model.id}</span>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-hairline-subtle pt-2.5">
         {versions.isPending ? (
           <span className="font-mono text-xs text-ink-muted">cargando versiones...</span>
         ) : versions.isError ? (
@@ -64,7 +72,9 @@ function ModelVersionsCard({
         ) : (
           (versions.data ?? []).map((version) => (
             <span key={version.id} className="flex items-center gap-2">
-              <Badge tone={version.isChampion ? 'success' : 'neutral'}>v{version.version}</Badge>
+              <Badge tone={version.isChampion ? 'brand' : 'neutral'} title={version.isChampion ? 'Modelo seleccionado por validación' : undefined}>
+                v{version.version}{version.isChampion ? ' · campeón' : ''}
+              </Badge>
               {isAdmin && !version.isChampion ? (
                 <Button size="sm" variant="ghost" onClick={() => onPromote({ model, version })}>
                   Promover
@@ -122,19 +132,21 @@ export default function ModelComparisonPage() {
       }, null)
     : null
 
+  const champion = comparison.data?.find((row) => row.isChampion)
+
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="label-caps">Comparación</p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl tracking-tight">Modelos frente a líneas base</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
+    <div className="space-y-5">
+      <div className="border-b border-hairline-subtle pb-4">
+        <p className="label-caps-ticked">Comparación · misma partición, mismas fechas</p>
+        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Modelos frente a líneas base</h1>
+        <p className="mt-1 max-w-3xl text-[13px] text-ink-secondary">
           LSTM y GRU evaluados contra {BASELINES.join(', ')} sobre exactamente la misma partición y las mismas
           fechas (R-05).
         </p>
       </div>
 
-      <Panel tone="raised">
-        <PanelHeader title="Experimento de comparación" />
+      <Panel>
+        <PanelHeader title="Experimento de comparación" marker="none" />
         <div className="max-w-md">
           <SelectField
             label="Experimento"
@@ -170,7 +182,7 @@ export default function ModelComparisonPage() {
         />
       ) : comparison.data && comparison.data.length > 0 ? (
         <>
-          <section aria-label="Resumen de la comparativa" className="grid gap-4 sm:grid-cols-3">
+          <section aria-label="Resumen de la comparativa" className="grid gap-x-6 gap-y-5 rounded border border-hairline-subtle bg-deep p-4 sm:grid-cols-3">
             <MetricCard
               label="Modelos evaluados"
               value={comparison.data.length}
@@ -181,35 +193,42 @@ export default function ModelComparisonPage() {
               label="Menor MAE"
               value={best ? formatNumber(best.mae, 4) : '—'}
               unit={best ? 'USD' : undefined}
-              tone="success"
+              tone="idle"
               hint={best?.label}
             />
             <MetricCard
               label="Campeón"
-              value={comparison.data.find((row) => row.isChampion)?.modelName ?? '—'}
+              value={champion?.modelName ?? '—'}
               tone="idle"
-              hint="Elegido por validación"
+              hint="Modelo seleccionado por validación"
             />
           </section>
 
           <Panel tone="raised">
             <PanelHeader title="Métricas por modelo" subtitle="Menor es mejor en MAE, RMSE y MAPE" />
             <MetricComparisonChart rows={comparison.data} />
-            <div className="mt-2 flex flex-wrap items-center gap-3">
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-hairline-subtle pt-2.5">
               <StatusDot tone="idle" label="Validación decide el campeón" />
               <StatusDot tone="warning" label="Prueba: uso único" />
             </div>
           </Panel>
 
-          <Panel tone="raised">
-            <PanelHeader title="Detalle" subtitle="Dirección de acierto y desviación entre semillas" />
-            <ul className="divide-y divide-hairline-subtle">
+          <Panel tone="raised" flush>
+            <div className="p-5 pb-3">
+              <PanelHeader title="Detalle por modelo" subtitle="Dirección de acierto y desviación entre semillas" />
+            </div>
+            <ul className="divide-y divide-hairline-subtle border-t border-hairline-subtle">
               {comparison.data.map((row) => (
-                <li key={row.label} className="flex flex-wrap items-center gap-3 py-2.5">
-                  <span className="text-sm text-ink">{row.modelName ?? row.label}</span>
+                <li
+                  key={row.label}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 hover:bg-surface-2"
+                  style={row.isChampion ? { boxShadow: 'inset 2px 0 0 var(--xmr-brand)' } : undefined}
+                >
+                  <span className="text-sm font-medium text-ink">{row.modelName ?? row.label}</span>
                   {row.family ? <Badge tone="neutral">{row.family}</Badge> : null}
+                  {BASELINE_FAMILIES.includes(row.family ?? '') ? <Badge tone="neutral">línea base</Badge> : null}
                   {row.isChampion ? (
-                    <Badge tone="success" dot>
+                    <Badge tone="brand" title="Modelo seleccionado por validación">
                       campeón
                     </Badge>
                   ) : null}
@@ -240,7 +259,7 @@ export default function ModelComparisonPage() {
             onRetry={() => void models.refetch()}
           />
         ) : models.data && models.data.items.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="grid gap-3 lg:grid-cols-2">
             {models.data.items.map((model) => (
               <ModelVersionsCard
                 key={model.id}
@@ -290,10 +309,10 @@ export default function ModelComparisonPage() {
             onRetry={() => promoteMutation.reset()}
           />
         ) : (
-          <p className="text-sm text-ink-secondary">
+          <p className="text-sm leading-normal text-ink-secondary">
             Se promoverá la versión{' '}
-            <span className="font-mono text-ink">{promotion?.version.version}</span> del modelo{' '}
-            <span className="font-mono text-ink">{promotion?.model.name}</span>, creada el{' '}
+            <span className="font-mono text-[13px] text-ink">{promotion?.version.version}</span> del modelo{' '}
+            <span className="font-mono text-[13px] text-ink">{promotion?.model.name}</span>, creada el{' '}
             {formatDateTime(promotion?.version.createdAt)}.
           </p>
         )}

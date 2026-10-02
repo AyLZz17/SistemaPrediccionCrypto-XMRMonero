@@ -1,5 +1,5 @@
 /**
- * MANDATORY project footer (see frontend/README.md § Footer).
+ * MANDATORY project footer (see frontend/README.md — Footer).
  *
  * The exact string below is a contractual requirement and must appear, character
  * for character, on EVERY route and every visible state of the application.
@@ -39,24 +39,25 @@ export function Footer({ className }: { className?: string }) {
       aria-label="Pie de página y aviso legal"
       data-testid="app-footer"
       className={[
-        'border-t border-hairline-subtle bg-surface-inset/80',
+        'border-t border-hairline-subtle bg-raised',
         className ?? 'mt-auto w-full',
       ]
         .filter(Boolean)
         .join(' ')}
     >
+      <span aria-hidden="true" className="block h-0.5 bg-brand" />
       <div className="mx-auto w-full max-w-content px-4 py-4 sm:px-6">
         <nav
           aria-label="Documentos legales y contacto"
           data-testid="footer-legal-nav"
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-b border-hairline-subtle pb-3 sm:justify-start"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-hairline-subtle pb-3"
         >
           {LEGAL_DOCUMENTS.map((document) => (
             <a
               key={document.key}
               href={document.path}
               data-testid={`footer-link-${document.key}`}
-              className="text-xs text-ink-secondary underline-offset-2 transition-colors duration-fast hover:text-ink hover:underline"
+              className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
             >
               {document.label}
             </a>
@@ -64,27 +65,27 @@ export function Footer({ className }: { className?: string }) {
           <a
             href={`mailto:${LEGAL_CONTACT_EMAIL}`}
             data-testid="footer-contact-link"
-            className="text-xs text-ink-secondary underline-offset-2 transition-colors duration-fast hover:text-ink hover:underline"
+            className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
           >
             Contacto
           </a>
           <a
             href={dataRequestHref('Derechos de titular de datos')}
             data-testid="footer-data-request-link"
-            className="text-xs text-ink-secondary underline-offset-2 transition-colors duration-fast hover:text-ink hover:underline"
+            className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
           >
             Eliminar o actualizar mis datos
           </a>
         </nav>
 
-        <div className="mt-3 flex flex-col items-center justify-between gap-2 text-center sm:flex-row sm:text-left">
+        <div className="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <p
             data-testid="app-footer-text"
-            className="font-mono text-xs leading-relaxed tracking-wide text-ink-secondary"
+            className="font-mono text-[11px] leading-relaxed tracking-wide text-ink-secondary"
           >
             {FOOTER_TEXT}
           </p>
-          <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+          <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">
             XMR-Forecast · capacidad predictiva evaluada · no es asesoría financiera
           </p>
         </div>

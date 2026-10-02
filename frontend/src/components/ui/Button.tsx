@@ -14,18 +14,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<ButtonVariant, string> = {
+  // Institutional red fill: the single loudest element on any screen.
   primary:
-    'border-hairline-default bg-elevated text-ink hover:border-hairline-strong hover:bg-surface-2',
+    'border border-brand-deep bg-brand-solid text-ink-inverse shadow-card-sm hover:bg-brand',
   secondary:
-    'border-hairline-default bg-surface-2 text-ink-secondary hover:border-hairline-strong hover:bg-surface-3 hover:text-ink',
-  ghost: 'border-transparent bg-transparent text-ink-secondary hover:text-ink hover:bg-surface-1',
-  danger: 'border-accent-red/30 bg-accent-red-soft text-accent-red hover:bg-accent-red/15 hover:border-accent-red/50',
+    'border border-hairline-default bg-surface-2 text-ink hover:border-hairline-strong hover:bg-surface-3',
+  ghost: 'border border-transparent bg-transparent text-ink-secondary hover:text-ink hover:bg-surface-2',
+  danger:
+    'border border-accent-red/40 bg-accent-red-soft text-accent-red hover:bg-accent-red/15 hover:border-accent-red/60',
 }
 
 const SIZES: Record<ButtonSize, string> = {
   sm: 'h-8 px-3 text-xs',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-12 px-6 text-base',
+  md: 'h-9 px-4 text-sm',
+  lg: 'h-11 px-6 text-sm',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -50,8 +52,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={clsx(
-        'relative inline-flex items-center justify-center gap-2 rounded-md border font-medium',
-        'transition-all duration-fast ease-out',
+        'relative inline-flex items-center justify-center gap-2 rounded border font-medium',
+        'transition-colors duration-fast ease-out',
         'disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none',
         VARIANTS[variant],
         SIZES[size],

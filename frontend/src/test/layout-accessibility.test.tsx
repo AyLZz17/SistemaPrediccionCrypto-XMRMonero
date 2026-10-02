@@ -131,7 +131,9 @@ describe('Sidebar', () => {
     installFetchStub({})
     renderWithProviders('/metrics', <AuthenticatedLayout />)
     const link = await screen.findByRole('link', { name: /métricas/i })
-    expect(link.className).toMatch(/bg-accent-cyan-soft/)
+    expect(link).toHaveAttribute('aria-current', 'page')
+    // Visual marker is the red leading bar (.nav-active), not a cyan fill.
+    expect(link.className).toMatch(/nav-active/)
   })
 
   it('declares the minimum role for each entry in NAV_GROUPS', () => {

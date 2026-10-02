@@ -4,9 +4,10 @@ import { toApiError, type ApiError } from '../../api/errors'
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
-const TONES: Record<AlertTone, { wrap: string; icon: ReactNode; role: 'alert' | 'status' }> = {
+const TONES: Record<AlertTone, { wrap: string; bar: string; icon: ReactNode; role: 'alert' | 'status' }> = {
   info: {
     wrap: 'border-hairline-default bg-surface-2 text-ink-secondary',
+    bar: 'bg-ink-muted',
     icon: (
       <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5v4.2M8 11.2v.6" strokeLinecap="round" />
     ),
@@ -14,16 +15,19 @@ const TONES: Record<AlertTone, { wrap: string; icon: ReactNode; role: 'alert' | 
   },
   success: {
     wrap: 'border-accent-green/40 bg-accent-green-soft text-accent-green',
+    bar: 'bg-accent-green',
     icon: <path d="M3 8.4l3.2 3.1L13 4.8" strokeLinecap="round" strokeLinejoin="round" />,
     role: 'status',
   },
   warning: {
     wrap: 'border-accent-amber/45 bg-accent-amber-soft text-accent-amber',
+    bar: 'bg-accent-amber',
     icon: <path d="M8 2.2 14.4 13H1.6L8 2.2zM8 6.4v3M8 11.2v.5" strokeLinecap="round" strokeLinejoin="round" />,
     role: 'alert',
   },
   danger: {
     wrap: 'border-accent-red/50 bg-accent-red-soft text-accent-red',
+    bar: 'bg-accent-red',
     icon: (
       <>
         <circle cx="8" cy="8" r="6.5" />
@@ -42,20 +46,17 @@ export interface AlertProps {
   className?: string
 }
 
-/** Neutral, non-alarming notice used for the R-11 legal disclaimer. */
+/** Neutral, non-alarming notice used for methodology notes and R-11 context. */
 export function Notice({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
       className={clsx(
-        'flex gap-3 rounded-md border border-hairline bg-surface-inset px-4 py-3 text-sm text-ink-secondary',
+        'flex gap-3 rounded border border-hairline bg-surface-inset px-4 py-3 text-[13px] leading-normal text-ink-secondary',
         className,
       )}
     >
-      <svg viewBox="0 0 16 16" className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-        <circle cx="8" cy="8" r="6.5" />
-        <path d="M8 7.4v3.6M8 4.9v.5" strokeLinecap="round" />
-      </svg>
-      <div className="min-w-0 leading-normal">{children}</div>
+      <span aria-hidden="true" className="mt-1 h-8 w-0.5 shrink-0 bg-ink-muted" />
+      <div className="min-w-0">{children}</div>
     </div>
   )
 }
@@ -66,11 +67,12 @@ export function Alert({ tone = 'info', title, children, action, className }: Ale
     <div
       role={config.role}
       className={clsx(
-        'flex items-start gap-3 rounded-md border px-4 py-3 text-sm',
+        'flex items-start gap-3 rounded border px-4 py-3 text-sm',
         config.wrap,
         className,
       )}
     >
+      <span aria-hidden="true" className={clsx('mt-0.5 h-9 w-0.5 shrink-0', config.bar)} />
       <svg
         viewBox="0 0 16 16"
         className="mt-0.5 h-4 w-4 shrink-0"
@@ -119,7 +121,7 @@ export function ApiErrorAlert({ error, onRetry, className, title }: ApiErrorAler
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-md border border-current/40 px-3 py-1.5 text-xs font-medium transition-colors duration-fast hover:bg-white/10"
+            className="rounded border border-current/40 px-3 py-1.5 text-xs font-medium transition-colors duration-fast hover:bg-white/10"
           >
             Reintentar
           </button>

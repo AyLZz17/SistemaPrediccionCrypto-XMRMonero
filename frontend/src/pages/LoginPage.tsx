@@ -6,6 +6,7 @@ import { toApiError } from '../api/errors'
 import { ApiErrorAlert, Button, Notice, Panel, TextField } from '../components/ui'
 import { GoogleButton } from '../components/auth/GoogleButton'
 import { Disclaimer } from '../components/common/Disclaimer'
+import { BrandMark } from '../components/layout/BrandMark'
 
 interface LocationState {
   from?: { pathname?: string; search?: string; hash?: string }
@@ -45,17 +46,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">Iniciar sesión</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Accede al panel de XMR-Forecast. La sesión caduca sola y se renueva de forma silenciosa.
-        </p>
+    <div className="mx-auto w-full max-w-md space-y-5">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <BrandMark size={36} />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Iniciar sesión</h1>
+          <p className="mt-1 text-sm leading-normal text-ink-secondary">
+            Accede al panel de XMR-Forecast. La sesión caduca sola y se renueva de forma silenciosa.
+          </p>
+        </div>
       </div>
 
       {error ? <ApiErrorAlert error={error} onRetry={() => setError(null)} /> : null}
 
-      <Panel>
+      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Correo electronico"
@@ -101,7 +105,7 @@ export default function LoginPage() {
       </Panel>
 
       <Notice>
-        El boton de Google delega todo el flujo OAuth en el backend (Authorization Code + OIDC). Este frontend
+        El botón de Google delega todo el flujo OAuth en el backend (Authorization Code + OIDC). Este frontend
         nunca almacena un client secret de Google.
       </Notice>
 

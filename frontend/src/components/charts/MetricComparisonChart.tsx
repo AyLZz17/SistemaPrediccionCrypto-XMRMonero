@@ -11,10 +11,15 @@ import {
 } from 'recharts'
 import type { ComparisonRow } from '../../api'
 
+/**
+ * Ledger-palette series: ink for MAE, brand red for RMSE, cold gray for MAPE
+ * and green for direction accuracy. No cyan: this chart reports outcomes,
+ * not connectivity.
+ */
 const SERIES = [
-  { key: 'mae', label: 'MAE (USD)', color: 'var(--xmr-accent-cyan)' },
-  { key: 'rmse', label: 'RMSE (USD)', color: 'var(--xmr-accent-amber)' },
-  { key: 'mape', label: 'MAPE (%)', color: 'var(--xmr-text-secondary)' },
+  { key: 'mae', label: 'MAE (USD)', color: 'var(--xmr-text-primary)' },
+  { key: 'rmse', label: 'RMSE (USD)', color: 'var(--xmr-brand-strong)' },
+  { key: 'mape', label: 'MAPE (%)', color: 'var(--xmr-text-muted)' },
   { key: 'directionAccuracy', label: 'Dirección (%)', color: 'var(--xmr-accent-green)' },
 ] as const
 
@@ -41,7 +46,7 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
   return (
     <div className="h-80 w-full min-w-0" role="img" aria-label="Comparativa de métricas por modelo">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="24%">
           <CartesianGrid stroke="var(--xmr-border-hairline)" vertical={false} />
           <XAxis
             dataKey="name"
@@ -56,9 +61,9 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
           />
           <Tooltip
             contentStyle={{
-              background: 'var(--xmr-surface-2)',
+              background: 'var(--xmr-surface-modal)',
               border: '1px solid var(--xmr-border-default)',
-              borderRadius: 'var(--xmr-radius-md)',
+              borderRadius: 'var(--xmr-radius-sm)',
               fontFamily: 'var(--xmr-font-mono)',
               fontSize: 12,
               color: 'var(--xmr-text-primary)',
@@ -73,7 +78,7 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
               dataKey={series.key}
               name={series.label}
               fill={series.color}
-              radius={[3, 3, 0, 0]}
+              radius={[2, 2, 0, 0]}
               isAnimationActive={false}
             />
           ))}

@@ -17,6 +17,8 @@ export default {
           3: 'var(--xmr-surface-3)',
           inset: 'var(--xmr-surface-inset)',
           overlay: 'var(--xmr-surface-overlay)',
+          table: 'var(--xmr-surface-table)',
+          modal: 'var(--xmr-surface-modal)',
         },
         // Borders
         hairline: {
@@ -26,12 +28,19 @@ export default {
           strong: 'var(--xmr-border-strong)',
           focus: 'var(--xmr-border-focus)',
         },
-        // Text
+        // Text (warm white + cold grays)
         ink: {
           DEFAULT: 'rgb(var(--xmr-text-primary-ch) / <alpha-value>)',
           secondary: 'rgb(var(--xmr-text-secondary-ch) / <alpha-value>)',
           muted: 'rgb(var(--xmr-text-muted-ch) / <alpha-value>)',
           inverse: 'var(--xmr-text-inverse)',
+        },
+        // Brand red: emphasis and state only, never a page fill
+        brand: {
+          DEFAULT: 'rgb(var(--xmr-brand-ch) / <alpha-value>)',
+          deep: 'var(--xmr-brand-deep)',
+          solid: 'var(--xmr-brand-solid)',
+          strong: 'rgb(var(--xmr-brand-strong-ch) / <alpha-value>)',
         },
         // Accents (state / alert / metric accents only)
         accent: {
@@ -55,6 +64,7 @@ export default {
           red: 'var(--xmr-accent-red-soft)',
           amber: 'var(--xmr-accent-amber-soft)',
         },
+        'brand-soft': 'var(--xmr-brand-soft)',
       },
       borderColor: {
         'accent-soft': {
@@ -63,6 +73,7 @@ export default {
           red: 'var(--xmr-accent-red-glow)',
           amber: 'var(--xmr-accent-amber-glow)',
         },
+        'brand-line': 'rgb(var(--xmr-brand-line-ch) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['var(--xmr-font-sans)'],
@@ -96,7 +107,7 @@ export default {
         'card-lg': 'var(--xmr-shadow-lg)',
         'card-sm': 'var(--xmr-shadow-sm)',
         'focus': 'var(--xmr-shadow-focus)',
-        inset: 'var(--xmr-shadow-inset)',
+        'inset': 'var(--xmr-shadow-inset)',
       },
       backdropBlur: {
         glass: 'var(--xmr-glass-blur)',
@@ -120,8 +131,8 @@ export default {
       keyframes: {
         'pulse-ring': {
           '0%': { boxShadow: '0 0 0 0 var(--xmr-accent-cyan-glow)' },
-          '70%': { boxShadow: '0 0 0 8px rgba(6, 182, 212, 0)' },
-          '100%': { boxShadow: '0 0 0 0 rgba(6, 182, 212, 0)' },
+          '70%': { boxShadow: '0 0 0 8px rgba(79, 179, 199, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(79, 179, 199, 0)' },
         },
         'fade-in': {
           from: { opacity: '0', transform: 'translateY(4px)' },
@@ -137,6 +148,10 @@ export default {
         'spin-slow': {
           to: { transform: 'rotate(360deg)' },
         },
+        'blink-caret': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.25' },
+        },
       },
       animation: {
         'pulse-ring': 'pulse-ring 2.4s var(--xmr-ease-out) infinite',
@@ -144,6 +159,7 @@ export default {
         'fade-in-slow': 'fade-in-slow var(--xmr-duration-slow) linear both',
         shimmer: 'shimmer 1.6s infinite',
         'spin-slow': 'spin-slow 1.1s linear infinite',
+        'blink-caret': 'blink-caret 1.2s steps(2, start) infinite',
       },
     },
   },

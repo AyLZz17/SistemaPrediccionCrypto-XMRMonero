@@ -45,26 +45,28 @@ export default function LogsPage() {
   const errors = lines.filter((line) => line.level === 'ERROR').length
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="label-caps">Administracion</p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Logs</h1>
-          <p className="mt-1 text-sm text-ink-secondary">
-            Registro operativo de tareas. No se exponen tokens, credenciales ni datos sensibles.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <StatusDot tone={jobs.isError ? 'danger' : 'success'} label={jobs.isError ? 'Error al leer' : 'Stream activo'} pulse={autoRefresh} />
-          <Button size="sm" variant="secondary" onClick={() => void jobs.refetch()}>
-            Refrescar
-          </Button>
+    <div className="space-y-5">
+      <div className="border-b border-hairline-subtle pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="label-caps-ticked">Administración · consola operativa</p>
+            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Logs</h1>
+            <p className="mt-1 text-[13px] text-ink-secondary">
+              Registro operativo de tareas. No se exponen tokens, credenciales ni datos sensibles.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <StatusDot tone={jobs.isError ? 'danger' : 'success'} label={jobs.isError ? 'Error al leer' : 'Stream activo'} pulse={autoRefresh} />
+            <Button size="sm" variant="secondary" onClick={() => void jobs.refetch()}>
+              Refrescar
+            </Button>
+          </div>
         </div>
       </div>
 
-      <section aria-label="Resumen del log" className="grid gap-4 sm:grid-cols-3">
+      <section aria-label="Resumen del log" className="grid gap-x-6 gap-y-5 rounded border border-hairline-subtle bg-deep p-4 sm:grid-cols-3">
         <MetricCard label="Eventos" value={lines.length} tone="idle" />
-        <MetricCard label="Errores" value={errors} tone={errors > 0 ? 'danger' : 'success'} />
+        <MetricCard label="Errores" value={errors} tone={errors > 0 ? 'danger' : 'idle'} />
         <MetricCard
           label="Tareas en curso"
           value={lines.filter((line) => line.level === 'RUNNING').length}
@@ -77,12 +79,12 @@ export default function LogsPage() {
           title="Consola"
           subtitle="Salida de la cola de tareas"
           actions={
-            <label className="flex items-center gap-2 text-xs text-ink-secondary">
+            <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
               <input
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={(event) => setAutoRefresh(event.target.checked)}
-                className="h-3.5 w-3.5 rounded border-hairline-strong bg-surface-2 accent-[var(--xmr-accent-cyan)]"
+                className="h-3.5 w-3.5 rounded-sm border-hairline-strong bg-surface-2 accent-brand"
               />
               Auto refresco
             </label>
@@ -96,7 +98,7 @@ export default function LogsPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="filtrar por id, tipo o mensaje"
-            className="font-mono"
+            className="font-mono text-xs"
           />
           <SelectField label="Severidad" name="severity" value={severity} onChange={(event) => setSeverity(event.target.value)}>
             <option value="ALL">Todas</option>
@@ -122,7 +124,7 @@ export default function LogsPage() {
           />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title="Sin lineas que mostrar"
+            title="Sin líneas que mostrar"
             description="Ajusta el filtro o espera a que se generen nuevas tareas."
           />
         ) : (
@@ -130,28 +132,28 @@ export default function LogsPage() {
             role="log"
             aria-label="Registro de operaciones"
             aria-live="polite"
-            className="max-h-[28rem] overflow-y-auto rounded-md border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs leading-relaxed"
+            className="max-h-[28rem] overflow-y-auto rounded-sm border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs leading-relaxed"
           >
             <ul className="space-y-1">
               {filtered.map((line, index) => (
-                <li key={`${line.timestamp}-${index}`} className="flex flex-wrap gap-2">
-                  <span className="text-ink-muted">{formatDateTime(line.timestamp)}</span>
+                <li key={`${line.timestamp}-${index}`} className="flex flex-wrap gap-x-2 border-b border-hairline-subtle/50 py-0.5 last:border-b-0">
+                  <span className="shrink-0 tabular-nums text-ink-muted">{formatDateTime(line.timestamp)}</span>
                   <span
                     className={
                       line.level === 'ERROR'
-                        ? 'text-accent-red'
+                        ? 'shrink-0 text-accent-red'
                         : line.level === 'WARN'
-                          ? 'text-accent-amber'
+                          ? 'shrink-0 text-accent-amber'
                           : line.level === 'SUCCESS'
-                            ? 'text-accent-green'
+                            ? 'shrink-0 text-accent-green'
                             : line.level === 'RUNNING'
-                              ? 'text-accent-cyan'
-                              : 'text-ink-secondary'
+                              ? 'shrink-0 text-accent-cyan'
+                              : 'shrink-0 text-ink-secondary'
                     }
                   >
                     [{line.level.padEnd(7, ' ')}]
                   </span>
-                  <span className="text-ink-secondary">{line.text}</span>
+                  <span className="min-w-0 flex-1 break-words text-ink-secondary">{line.text}</span>
                 </li>
               ))}
             </ul>

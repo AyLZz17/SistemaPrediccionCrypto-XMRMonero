@@ -68,19 +68,19 @@ export default function AccountPage() {
   if (!user) {
     return (
       <Notice>
-        No hay sesion activa. <a className="link-accent" href="/login">Inicia sesion</a> para ver tu cuenta.
+        No hay sesión activa. <a className="link-accent" href="/login">Inicia sesión</a> para ver tu cuenta.
       </Notice>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="label-caps">Cuenta</p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Mi cuenta</h1>
+    <div className="space-y-5">
+      <div className="border-b border-hairline-subtle pb-4">
+        <p className="label-caps-ticked">Cuenta · identidad y credenciales</p>
+        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Mi cuenta</h1>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-5 lg:grid-cols-2">
         <Panel tone="raised">
           <PanelHeader
             title="Perfil"
@@ -91,35 +91,35 @@ export default function AccountPage() {
               </Button>
             }
           />
-          <dl className="space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
+          <dl className="divide-y divide-hairline-subtle border-t border-hairline-subtle text-sm">
+            <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Nombre completo</dt>
-              <dd className="text-ink">{user.fullName}</dd>
+              <dd className="font-medium text-ink">{user.fullName}</dd>
             </div>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Correo</dt>
               <dd className="font-mono text-xs text-ink">{user.email}</dd>
             </div>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Rol</dt>
               <dd>
-                <Badge tone={hasAtLeast(user.role, 'ADMIN') ? 'danger' : hasAtLeast(user.role, 'ANALYST') ? 'active' : 'neutral'}>
+                <Badge tone={hasAtLeast(user.role, 'ADMIN') ? 'danger' : 'neutral'}>
                   {ROLE_LABELS[user.role]}
                 </Badge>
               </dd>
             </div>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Identificador</dt>
-              <dd className="font-mono text-xs text-ink-muted">{user.id}</dd>
+              <dd className="font-mono text-xs tabular-nums text-ink-muted">{user.id}</dd>
             </div>
             {user.lastLoginAt ? (
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-ink-secondary">Ultimo acceso</dt>
-                <dd className="font-mono text-xs text-ink">{formatDateTime(user.lastLoginAt)}</dd>
+              <div className="flex items-center justify-between gap-3 py-2">
+                <dt className="text-ink-secondary">Último acceso</dt>
+                <dd className="font-mono text-xs tabular-nums text-ink">{formatDateTime(user.lastLoginAt)}</dd>
               </div>
             ) : null}
           </dl>
-          <div className="mt-5 border-t border-hairline-subtle pt-4">
+          <div className="mt-4 border-t border-hairline-subtle pt-4">
             <Button variant="danger" onClick={() => void handleLogout()}>
               Cerrar sesion y revocar token
             </Button>

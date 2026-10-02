@@ -21,22 +21,29 @@ const TEXT: Record<IndicatorTone, string> = {
 }
 
 /**
- * Values read as foreground data, so neutral tones render in ink and only real
- * state (success/warning/danger) takes colour. This keeps cyan out of KPI
- * values: cyan is reserved for focus, interaction and connectivity.
+ * Ledger stat block: flat, ruled by a top hairline, value in warm ink.
+ * Colour appears only on the delta line (up/down) and on explicit state
+ * tones — never on the value itself. Designed to sit side by side in a
+ * divided strip, not as isolated floating cards.
  */
 const VALUE_TEXT: Record<IndicatorTone, string> = {
   idle: 'text-ink',
   active: 'text-ink',
-  success: 'text-success',
-  warning: 'text-warning',
-  danger: 'text-danger',
+  success: 'text-ink',
+  warning: 'text-ink',
+  danger: 'text-ink',
 }
 
 const TREND_TEXT: Record<'up' | 'down' | 'flat', string> = {
   up: 'text-success',
   down: 'text-danger',
   flat: 'text-ink-muted',
+}
+
+const TREND_GLYPH: Record<'up' | 'down' | 'flat', string> = {
+  up: '▲',
+  down: '▼',
+  flat: '—',
 }
 
 export interface StatusDotProps {
@@ -91,17 +98,17 @@ export function ActivityBar({ label, tone = 'active', progress, className }: Act
         aria-valuemin={pct === undefined ? undefined : 0}
         aria-valuemax={pct === undefined ? undefined : 100}
         aria-valuenow={pct === undefined ? undefined : Math.round(pct * 100)}
-        className="relative h-1.5 w-full overflow-hidden rounded-full bg-surface-inset"
+        className="relative h-1 w-full overflow-hidden rounded-sm bg-surface-inset"
       >
         {pct === undefined ? (
           <span
             aria-hidden="true"
-            className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-active/70 animate-pulse"
+            className="absolute inset-y-0 left-0 w-1/3 rounded-sm bg-active/70 animate-pulse"
           />
         ) : (
           <span
             aria-hidden="true"
-            className={clsx('block h-full rounded-full transition-all duration-slow ease-out', DOT[tone])}
+            className={clsx('block h-full rounded-sm transition-all duration-slow ease-out', DOT[tone])}
             style={{ width: `${pct * 100}%` }}
           />
         )}
@@ -120,29 +127,23 @@ export interface MetricCardProps {
   className?: string
 }
 
-/** Compact KPI tile. Values are monospace for terminal-like alignment. */
+/** Flat ledger stat: top rule, caps label, tabular value, delta line. */
 export function MetricCard({ label, value, unit, hint, tone = 'idle', trend, className }: MetricCardProps) {
   return (
-    <div
-      className={clsx(
-        'rounded-lg border border-hairline-subtle bg-surface-1 p-4 transition-all duration-base ease-out hover:border-hairline-strong hover:shadow-card',
-        className,
-      )}
-    >
+    <div className={clsx('border-t-2 border-hairline-strong pt-3', className)}>
       <p className="label-caps">{label}</p>
-      <p className="mt-2 flex items-baseline gap-1.5">
-        <span className={clsx('font-mono text-2xl font-semibold tabular-nums', VALUE_TEXT[tone])}>{value}</span>
+      <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5">
+        <span className={clsx('font-mono text-[22px] font-semibold tabular-nums leading-none', VALUE_TEXT[tone])}>{value}</span>
         {unit ? <span className="font-mono text-xs text-ink-muted">{unit}</span> : null}
         {trend ? (
-          <span aria-hidden="true" className={clsx('ml-1 text-xs', TREND_TEXT[trend])}>
-            {trend === 'up' ? '▲' : trend === 'down' ? '▼' : '─'}
+          <span className={clsx('font-mono text-xs tabular-nums', TREND_TEXT[trend])}>
+            <span aria-hidden="true">{TREND_GLYPH[trend]} </span>
+            <span className="sr-only">{trend === 'up' ? 'Sube' : trend === 'down' ? 'Baja' : 'Estable'}</span>
+            <span aria-hidden="true">{trend === 'up' ? 'sube' : trend === 'down' ? 'baja' : 'estable'}</span>
           </span>
         ) : null}
-        {trend ? (
-          <span className="sr-only">{trend === 'up' ? 'Sube' : trend === 'down' ? 'Baja' : 'Estable'}</span>
-        ) : null}
       </p>
-      {hint ? <p className="mt-1.5 text-xs text-ink-muted">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 text-xs leading-normal text-ink-muted">{hint}</p> : null}
     </div>
   )
 }

@@ -67,7 +67,7 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <Panel>
+      <Panel tone="raised">
         <StatusDot
           tone={verified ? 'success' : error ? 'danger' : 'active'}
           label={
@@ -82,8 +82,8 @@ export default function VerifyEmailPage() {
 
         {verified ? (
           <>
-            <h1 className="mt-3 text-xl font-semibold text-ink">Correo confirmado</h1>
-            <p className="mt-2 text-sm text-ink-secondary">
+            <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">Correo confirmado</h1>
+            <p className="mt-2 text-sm leading-normal text-ink-secondary">
               Tu direccion ya esta verificada. Ya puedes iniciar sesion con normalidad.
             </p>
             <div className="mt-5">
@@ -94,7 +94,7 @@ export default function VerifyEmailPage() {
           </>
         ) : (
           <>
-            <h1 className="mt-3 text-xl font-semibold text-ink">
+            <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">
               {verifying ? 'Confirmando tu correo' : 'No pudimos confirmar el correo'}
             </h1>
             {error ? (
@@ -139,7 +139,7 @@ export default function VerifyEmailPage() {
               </div>
             ) : null}
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4">
               <Link to="/login">
                 <Button variant="secondary">Ir a iniciar sesion</Button>
               </Link>

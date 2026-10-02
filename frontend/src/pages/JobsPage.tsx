@@ -33,7 +33,7 @@ export default function JobsPage() {
   })
 
   const columns: Array<Column<Job>> = [
-    { key: 'id', header: 'id', render: (row) => <span className="font-mono text-xs">{row.id.slice(0, 8)}</span> },
+    { key: 'id', header: 'id', render: (row) => <span className="font-mono text-xs tabular-nums">{row.id.slice(0, 8)}</span> },
     { key: 'type', header: 'Tipo', render: (row) => <span className="font-mono text-xs">{row.type}</span> },
     { key: 'status', header: 'Estado', render: (row) => <StatusPill status={row.status} /> },
     {
@@ -52,7 +52,7 @@ export default function JobsPage() {
     {
       key: 'createdAt',
       header: 'Creada',
-      render: (row) => <span className="font-mono text-xs">{formatDateTime(row.createdAt)}</span>,
+      render: (row) => <span className="font-mono text-xs tabular-nums">{formatDateTime(row.createdAt)}</span>,
     },
     {
       key: 'actions',
@@ -73,39 +73,45 @@ export default function JobsPage() {
   ).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="label-caps">Cola</p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">Monitor de tareas</h1>
-          <p className="mt-1 text-sm text-ink-secondary">
-            Ingesta, entrenamiento y pronostico encolados por el backend. El frontend solo observa y cancela.
-          </p>
+    <div className="space-y-5">
+      <div className="border-b border-hairline-subtle pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="label-caps-ticked">Cola · ingesta y cómputo</p>
+            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Monitor de tareas</h1>
+            <p className="mt-1 text-[13px] text-ink-secondary">
+              Ingesta, entrenamiento y pronóstico encolados por el backend. El frontend solo observa y cancela.
+            </p>
+          </div>
+          <StatusDot
+            tone={activeCount > 0 ? 'active' : 'idle'}
+            label={`${activeCount} en curso`}
+            pulse={activeCount > 0}
+          />
         </div>
-        <StatusDot
-          tone={activeCount > 0 ? 'active' : 'idle'}
-          label={`${activeCount} en curso`}
-          pulse={activeCount > 0}
-        />
       </div>
 
-      <Panel tone="raised">
-        <PanelHeader
-          title="Tareas"
-          subtitle={jobs.isFetching ? 'Actualizando...' : 'Actualizacion automatica mientras haya actividad'}
-        />
-        {jobs.isPending ? (
-          <SkeletonTable rows={5} columns={5} />
-        ) : jobs.isError ? (
-          <ErrorState
-            message={toApiError(jobs.error).friendlyMessage}
-            requestId={toApiError(jobs.error).requestId}
-            onRetry={() => void jobs.refetch()}
+      <Panel tone="raised" flush>
+        <div className="p-5 pb-3">
+          <PanelHeader
+            title="Tareas"
+            subtitle={jobs.isFetching ? 'Actualizando...' : 'Actualización automática mientras haya actividad'}
           />
+        </div>
+        {jobs.isPending ? (
+          <div className="p-5 pt-0"><SkeletonTable rows={5} columns={5} /></div>
+        ) : jobs.isError ? (
+          <div className="p-5 pt-0">
+            <ErrorState
+              message={toApiError(jobs.error).friendlyMessage}
+              requestId={toApiError(jobs.error).requestId}
+              onRetry={() => void jobs.refetch()}
+            />
+          </div>
         ) : jobs.data && jobs.data.items.length > 0 ? (
           <>
-            <DataTable caption="Cola de tareas" columns={columns} rows={jobs.data.items} rowKey={(row) => row.id} />
-            <div className="mt-4">
+            <DataTable caption="Cola de tareas" columns={columns} rows={jobs.data.items} rowKey={(row) => row.id} dense />
+            <div className="px-1 pb-1">
               <Pagination
                 page={jobs.data.page}
                 totalPages={jobs.data.totalPages}
@@ -117,10 +123,12 @@ export default function JobsPage() {
             </div>
           </>
         ) : (
-          <EmptyState
-            title="La cola esta vacia"
-            description="No hay tareas pendientes ni en ejecucion. Lanza una ingesta o un entrenamiento desde la seccion de experimentos."
-          />
+          <div className="p-5 pt-0">
+            <EmptyState
+              title="La cola está vacía"
+              description="No hay tareas pendientes ni en ejecución. Lanza una ingesta o un entrenamiento desde la sección de experimentos."
+            />
+          </div>
         )}
       </Panel>
 
@@ -128,7 +136,7 @@ export default function JobsPage() {
         open={target !== null}
         onClose={() => setTarget(null)}
         title="Cancelar tarea"
-        description="La tarea se detendra en el backend. Los artefactos parciales se conservan para trazabilidad."
+        description="La tarea se detendrá en el backend. Los artefactos parciales se conservan para trazabilidad."
         dismissible
         footer={
           <>
@@ -155,8 +163,8 @@ export default function JobsPage() {
           />
         ) : (
           <Notice>
-            Vas a cancelar la tarea <span className="font-mono">{target?.id}</span> de tipo{' '}
-            <span className="font-mono">{target?.type}</span>.
+            Vas a cancelar la tarea <span className="font-mono text-xs">{target?.id}</span> de tipo{' '}
+            <span className="font-mono text-xs">{target?.type}</span>.
           </Notice>
         )}
       </Modal>

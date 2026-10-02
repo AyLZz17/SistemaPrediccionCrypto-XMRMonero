@@ -1,9 +1,9 @@
 import { useId } from 'react'
 
 /**
- * Dependency-free sparkline (no chart library in the critical path) so the
- * dashboard stays light. Purely decorative: the accessible summary lives in
- * the visually hidden caption.
+ * Dependency-free trend line (no chart library in the critical path) so the
+ * dashboard stays light. Decorative only in shape: the accessible summary
+ * lives in the `<title>`, with min/max/first/last values.
  */
 export function Sparkline({
   values,
@@ -20,11 +20,13 @@ export function Sparkline({
 }) {
   const titleId = useId()
   if (values.length < 2) {
-    return <div className="h-12 rounded-md border border-hairline-subtle bg-surface-inset" aria-hidden="true" />
+    return <div className="h-12 rounded-sm border border-hairline-subtle bg-surface-inset" aria-hidden="true" />
   }
 
   const min = Math.min(...values)
   const max = Math.max(...values)
+  const first = values[0]!
+  const last = values[values.length - 1]!
   const span = max - min || 1
   const stepX = width / (values.length - 1)
   const points = values
@@ -44,7 +46,7 @@ export function Sparkline({
       aria-labelledby={titleId}
     >
       <title id={titleId}>
-        {label}: mínimo {min}, máximo {max}
+        {label}: mínimo {min}, máximo {max}, primero {first}, último {last}
       </title>
       <polyline
         points={points}

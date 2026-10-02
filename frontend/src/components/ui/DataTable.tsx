@@ -19,7 +19,7 @@ export interface DataTableProps<T> {
   empty?: ReactNode
   className?: string
   dense?: boolean
-  /** Highlights the champion / selected row. */
+  /** Highlights the champion / selected row with a red leading bar. */
   isRowActive?: (row: T) => boolean
 }
 
@@ -36,7 +36,7 @@ export function DataTable<T>({
   const cellPad = dense ? 'px-3 py-1.5' : 'px-4 py-2.5'
 
   return (
-    <div className={clsx('w-full overflow-x-auto rounded-md border border-hairline-subtle', className)}>
+    <div className={clsx('w-full overflow-x-auto rounded border border-hairline-subtle bg-surface-table', className)}>
       <table className="w-full border-collapse text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -47,7 +47,7 @@ export function DataTable<T>({
                 scope="col"
                 style={column.width ? { width: column.width } : undefined}
                 className={clsx(
-                  'label-caps whitespace-nowrap font-medium',
+                  'whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted',
                   cellPad,
                   column.numeric && 'text-right',
                 )}
@@ -73,8 +73,9 @@ export function DataTable<T>({
                   className={clsx(
                     'border-b border-hairline-subtle transition-colors duration-fast last:border-b-0',
                     'hover:bg-surface-2',
-                    active && 'bg-accent-cyan-soft',
+                    active && 'bg-surface-2',
                   )}
+                  style={active ? { boxShadow: 'inset 2px 0 0 var(--xmr-brand)' } : undefined}
                 >
                   {columns.map((column) => (
                     <td
@@ -118,7 +119,7 @@ export function Pagination({ page, totalPages, total, size, onPageChange, disabl
   return (
     <nav
       aria-label="Paginacion"
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-subtle pt-3 text-xs text-ink-muted"
+      className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-subtle px-4 py-2.5 text-xs text-ink-muted"
     >
       <p className="font-mono tabular-nums">
         {from}-{to} de {total} registro{total === 1 ? '' : 's'}
@@ -128,7 +129,7 @@ export function Pagination({ page, totalPages, total, size, onPageChange, disabl
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={disabled || page <= 0}
-          className="rounded-md border border-hairline bg-surface-2 px-3 py-1.5 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-sm border border-hairline bg-surface-2 px-3 py-1.5 font-mono uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           Anterior
         </button>
@@ -139,7 +140,7 @@ export function Pagination({ page, totalPages, total, size, onPageChange, disabl
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={disabled || totalPages === 0 || page >= totalPages - 1}
-          className="rounded-md border border-hairline bg-surface-2 px-3 py-1.5 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-sm border border-hairline bg-surface-2 px-3 py-1.5 font-mono uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           Siguiente
         </button>

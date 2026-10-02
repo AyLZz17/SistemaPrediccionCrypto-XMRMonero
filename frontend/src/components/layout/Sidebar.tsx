@@ -81,31 +81,37 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         aria-label="Navegación principal"
         className={clsx(
-          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-hairline-subtle bg-surface-1/90 backdrop-blur-glass transition-transform duration-base ease-out',
+          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-hairline-subtle bg-raised transition-transform duration-base ease-out',
           'lg:static lg:translate-x-0',
-          collapsed ? 'lg:w-[72px]' : 'lg:w-sidebar',
+          collapsed ? 'lg:w-[64px]' : 'lg:w-sidebar',
           open ? 'translate-x-0' : '-translate-x-full',
           'w-sidebar',
         )}
       >
-        <div className="flex h-header shrink-0 items-center gap-3 border-b border-hairline-subtle px-4">
+        <div className="flex h-header shrink-0 items-center gap-2.5 border-b border-hairline-subtle px-3.5">
           <BrandMark size={26} />
           {!collapsed ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink">XMR-Forecast</p>
-              <p className="label-caps truncate">Centro de operaciones</p>
+              <p className="truncate text-[13px] font-semibold tracking-tight text-ink">XMR-Forecast</p>
+              <p className="truncate font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+                Centro de operaciones
+              </p>
             </div>
           ) : null}
         </div>
 
-        <nav className="scroll-fade flex-1 space-y-6 px-3 py-4" aria-label="Secciones">
+        <nav className="scroll-fade flex-1 space-y-5 px-2.5 py-4" aria-label="Secciones">
           {NAV_GROUPS.map((group) => {
             const visible = group.items.filter((item) => hasAtLeast(role, item.minimum))
             if (visible.length === 0) return null
             return (
               <div key={group.title}>
-                {!collapsed ? <p className="label-caps mb-2 px-3">{group.title}</p> : null}
-                <ul className="space-y-1">
+                {!collapsed ? (
+                  <p className="mb-1.5 px-2 font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+                    {group.title}
+                  </p>
+                ) : null}
+                <ul className="space-y-0.5">
                   {visible.map((item) => (
                     <li key={item.to}>
                       <NavLink
@@ -113,19 +119,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         title={collapsed ? item.label : undefined}
                         className={({ isActive }) =>
                           clsx(
-                            'group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-all duration-fast ease-out',
+                            'group flex items-center gap-2.5 rounded-sm border border-transparent px-2 py-2 text-[13px] transition-colors duration-fast ease-out',
                             isActive
-                              ? 'border border-accent-cyan/30 bg-accent-cyan-soft text-accent-cyan'
-                              : 'border border-transparent text-ink-secondary hover:border-hairline-subtle hover:bg-surface-2 hover:text-ink',
+                              ? 'nav-active'
+                              : 'text-ink-secondary hover:border-hairline-subtle hover:bg-surface-2 hover:text-ink',
                           )
                         }
                       >
-                        <span aria-hidden="true" className="w-5 shrink-0 text-center font-mono text-sm">
+                        <span aria-hidden="true" className="w-4 shrink-0 text-center font-mono text-[13px]">
                           {item.glyph}
                         </span>
                         {!collapsed ? (
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate">{item.label}</span>
+                          <span className="min-w-0 flex-1 leading-tight">
+                            <span className="block truncate font-medium">{item.label}</span>
                             <span className="block truncate text-[11px] text-ink-muted">{item.description}</span>
                           </span>
                         ) : null}
@@ -138,13 +144,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           })}
         </nav>
 
-        <div className="shrink-0 space-y-3 border-t border-hairline-subtle px-3 py-3">
+        <div className="shrink-0 space-y-2.5 border-t border-hairline-subtle px-2.5 py-3">
           {!collapsed && user ? (
-            <div className="rounded-md border border-hairline-subtle bg-surface-inset p-3">
+            <div className="rounded-sm border border-hairline-subtle bg-surface-inset px-3 py-2.5">
               <p className="truncate text-xs font-medium text-ink">{user.fullName}</p>
               <p className="truncate font-mono text-[11px] text-ink-muted">{user.email}</p>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="label-caps">Rol</span>
+              <div className="mt-1.5 flex items-center justify-between border-t border-hairline-subtle pt-1.5">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Rol</span>
                 <span className="font-mono text-[11px] text-ink-secondary">{ROLE_LABELS[user.role]}</span>
               </div>
             </div>
@@ -155,7 +161,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               type="button"
               onClick={() => setCollapsed((value) => !value)}
               aria-pressed={collapsed}
-              className="rounded-md border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:block"
+              className="rounded-sm border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:block"
             >
               {collapsed ? '»' : '«'}
               <span className="sr-only"> {collapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}</span>

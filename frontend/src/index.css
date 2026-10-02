@@ -14,9 +14,8 @@
     @apply bg-deep font-sans text-base text-ink leading-normal antialiased;
     margin: 0;
     min-height: 100vh;
-    /* Flat, sober backdrop; no accent tints compete with the data. */
-    background-image: linear-gradient(180deg, var(--xmr-bg-deep) 0%, var(--xmr-bg-root) 100%);
-    background-attachment: fixed;
+    /* Flat coal backdrop with a faint top keyline; data carries the colour. */
+    background-image: none;
   }
 
   /* WCAG 2.4.7 — always-visible keyboard focus for every interactive element. */
@@ -27,7 +26,7 @@
   }
 
   ::selection {
-    background-color: var(--xmr-accent-cyan-soft);
+    background-color: var(--xmr-brand-soft-strong);
     color: var(--xmr-text-primary);
   }
 
@@ -48,7 +47,7 @@
 
   *::-webkit-scrollbar-thumb {
     background-color: var(--xmr-border-default);
-    border-radius: var(--xmr-radius-full);
+    border-radius: var(--xmr-radius-sm);
     border: 2px solid transparent;
     background-clip: content-box;
   }
@@ -62,26 +61,37 @@
 }
 
 @layer components {
-  /* Primary panel — restrained glass, clear hierarchy. */
-  .glass-panel {
-    @apply border-hairline-subtle bg-surface-1 shadow-card backdrop-blur-glass;
+  /* Ledger panel — flat coal surface, hairline edge, sharp corners. */
+  .ledger-panel {
+    @apply border border-hairline-subtle bg-surface-1 shadow-card-sm;
   }
 
-  .glass-panel-strong {
-    @apply border-hairline-default bg-surface-2 shadow-card-lg backdrop-blur-glass;
+  .ledger-panel-strong {
+    @apply border border-hairline-default bg-surface-2 shadow-card;
   }
 
-  /* Elevated card — no glass, solid surface for content density. */
-  .elevated-panel {
-    @apply bg-elevated border-hairline-subtle shadow-card rounded-lg;
+  /* Inset well — recessed dark area for tables, consoles and inputs. */
+  .ledger-well {
+    @apply border border-hairline-subtle bg-surface-inset shadow-inset;
   }
 
   .mono {
     @apply font-mono;
   }
 
+  /* Section eyebrow: small mono caps with a red tick. Never decorative
+     colour — the tick marks hierarchy, not branding. */
   .label-caps {
     @apply font-mono text-xs uppercase tracking-wide text-ink-muted;
+  }
+
+  .label-caps-ticked {
+    @apply label-caps flex items-center gap-2;
+  }
+
+  .label-caps-ticked::before {
+    content: '';
+    @apply inline-block h-3 w-0.5 shrink-0 bg-brand;
   }
 
   /* Dark loading skeleton with a travelling highlight. */
@@ -95,8 +105,9 @@
     animation: shimmer 1.6s infinite;
   }
 
+  /* Text links: warm ink, underline on hover, red only for the hover keyline. */
   .link-accent {
-    @apply border-b border-accent-cyan/30 text-accent-cyan transition-colors duration-fast hover:border-accent-cyan;
+    @apply text-ink-secondary underline decoration-hairline-strong underline-offset-2 transition-colors duration-fast hover:text-ink hover:decoration-brand;
   }
 
   .scroll-fade {
@@ -123,17 +134,17 @@
   .data-table tbody tr:last-child {
     @apply border-b-0;
   }
+
+  /* Active navigation marker shared by the sidebar: solid dark row with a
+     red leading bar. Tests assert on `nav-active`. */
+  .nav-active {
+    @apply border-hairline-default bg-surface-3 text-ink;
+    box-shadow: inset 2px 0 0 var(--xmr-brand);
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-
-  .grid-lines {
-    background-image:
-      linear-gradient(var(--xmr-border-hairline) 1px, transparent 1px),
-      linear-gradient(90deg, var(--xmr-border-hairline) 1px, transparent 1px);
-    background-size: 48px 48px;
   }
 }

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { googleAuthorizeUrl, me, type GoogleConsentParams } from '../api/auth'
 import { ApiError, toApiError } from '../api/errors'
 import { useAuthStore } from '../store/authStore'
-import { Button, CheckboxField, Panel, SkeletonPanel, StatusDot } from '../components/ui'
+import { Button, CheckboxField, Panel, PanelHeader, SkeletonPanel, StatusDot } from '../components/ui'
 
 /** authorize URL, or `#` if the env is broken (never a blank dead end). */
 function safeAuthorizeUrl(consent: GoogleConsentParams): string {
@@ -133,17 +133,17 @@ export default function GoogleCallbackPage() {
     const authorizeHref = safeAuthorizeUrl({ acceptTerms, acceptDataPolicy, acceptMarketing })
     return (
       <div className="mx-auto w-full max-w-md space-y-5">
-        <Panel>
-          <p className="label-caps">Alta de cuenta con Google</p>
-          <h1 className="mt-2 text-xl font-semibold text-ink">
+        <Panel tone="raised">
+          <p className="label-caps-ticked">Alta de cuenta con Google</p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
             Acepta los documentos para crear tu cuenta
           </h1>
-          <p className="mt-2 text-sm text-ink-secondary">
+          <p className="mt-2 text-sm leading-normal text-ink-secondary">
             Google ha confirmado tu identidad, pero todavia no existe una cuenta en el sistema.
             Para crearla necesitamos tu aceptacion expresa de los siguientes documentos.
           </p>
 
-          <div className="mt-4 space-y-3" data-testid="google-consent">
+          <div className="mt-4 space-y-3 border-t border-hairline-subtle pt-4" data-testid="google-consent">
             <CheckboxField
               data-testid="google-accept-terms"
               name="acceptTerms"
@@ -185,7 +185,7 @@ export default function GoogleCallbackPage() {
             />
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4">
             {/* Navegacion completa: el endpoint de autorizacion responde 307 y
                 el navegador debe salir hacia Google con state y consentimiento. */}
             <Button
@@ -207,12 +207,12 @@ export default function GoogleCallbackPage() {
   if (error) {
     return (
       <div className="mx-auto w-full max-w-md space-y-5">
-        <Panel className="border-accent-red/40">
+        <Panel tone="danger">
           <div className="flex items-center gap-3">
             <StatusDot tone="danger" label="Fallo de autenticacion" />
           </div>
-          <h1 className="mt-3 text-xl font-semibold text-ink">No pudimos iniciar sesion con Google</h1>
-          <p className="mt-2 text-sm text-ink-secondary">{error.friendlyMessage}</p>
+          <PanelHeader title="No pudimos iniciar sesion con Google" marker="danger" as="h1" className="mt-3" />
+          <p className="text-sm leading-normal text-ink-secondary">{error.friendlyMessage}</p>
           {error.requestId ? (
             <p className="mt-3 font-mono text-xs text-ink-muted">requestId: {error.requestId}</p>
           ) : null}
@@ -232,7 +232,7 @@ export default function GoogleCallbackPage() {
   return (
     <div className="mx-auto w-full max-w-md space-y-5" role="status" aria-busy="true">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">Completando inicio de sesion</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Completando inicio de sesion</h1>
         <p className="mt-1 text-sm text-ink-secondary">
           Estamos validando la respuesta de Google con el backend. No cierres esta ventana.
         </p>

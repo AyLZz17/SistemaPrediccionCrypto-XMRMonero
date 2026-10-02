@@ -1,81 +1,109 @@
 /**
  * XMR-Forecast — design tokens (single source of truth).
  *
- * Every colour / alpha / border / shadow / typography / state value used by the
- * UI resolves from these CSS custom properties. Components and Tailwind utilities
- * reference them through `tailwind.config.js` -> `theme.extend`; hardcoded hex
- * values are not allowed anywhere else (see frontend/README.md § Design tokens).
+ * Quantitative-terminal identity: deep black coal surfaces, warm-white ink,
+ * cold-gray secondary text, and a controlled brand red used ONLY as an
+ * emphasis/state colour (active navigation bar, primary actions, danger),
+ * never as a large fill. Green is strictly for up/success, amber for
+ * warnings, cyan strictly for focus/active/connectivity.
+ *
+ * Every colour used by the UI resolves from these CSS custom properties.
+ * Components and Tailwind utilities reference them through
+ * `tailwind.config.js` -> `theme.extend`; hardcoded hex values are not
+ * allowed anywhere else (see frontend/README.md § Design tokens).
  *
  * Mode is permanently dark (`color-scheme: dark`). There is no light theme.
  *
- * Contrast targets (WCAG AA), measured against --xmr-bg-deep (#080b10):
- *   --xmr-text-primary   15.2:1  (body text, >= 4.5 required)
- *   --xmr-text-secondary  9.6:1  (body text, >= 4.5 required)
- *   --xmr-text-muted      5.9:1  (small text, >= 4.5 required)
- *   --xmr-accent-green   11.3:1  (large text / UI, >= 3 required)
- *   --xmr-accent-cyan    10.9:1
- *   --xmr-accent-red      6.1:1
- *   --xmr-accent-amber   10.0:1
+ * Contrast targets (WCAG AA), measured against --xmr-bg-deep (#0a0a0c):
+ *   --xmr-text-primary    ~15.5:1  (body text, >= 4.5 required)
+ *   --xmr-text-secondary  ~7.4:1   (body text, >= 4.5 required)
+ *   --xmr-text-muted      ~4.6:1   (secondary text, >= 4.5 required)
+ *   --xmr-brand-strong    ~5.1:1   (text / UI, >= 4.5 for text, >= 3 for UI)
+ *   --xmr-accent-green    ~8.2:1
+ *   --xmr-accent-amber    ~8.6:1
+ *   --xmr-accent-cyan     ~7.3:1
+ *   white on --xmr-brand-solid ~8.7:1 (primary buttons)
  */
 
 :root {
   color-scheme: dark;
 
   /* ---------------------------------------------------------------- base */
-  --xmr-bg-root: #040609;         /* deepest black, app background */
-  --xmr-bg-deep: #080b10;         /* page background, contrast reference */
-  --xmr-bg-raised: #0b0f15;       /* subtle raised band */
-  --xmr-bg-elevated: #0f141c;     /* panels, cards */
+  --xmr-bg-root: #050506;           /* app backdrop, near-black */
+  --xmr-bg-deep: #0a0a0c;           /* page background, contrast reference */
+  --xmr-bg-raised: #101014;         /* raised bands, sidebar */
+  --xmr-bg-elevated: #16161b;       /* solid elevated fills */
 
-  /* ------------------------------------------------------------- surfaces */
-  --xmr-surface-1: rgba(14, 20, 28, 0.80);   /* primary panel */
-  --xmr-surface-2: rgba(18, 26, 36, 0.85);   /* raised panel */
-  --xmr-surface-3: rgba(24, 34, 46, 0.90);   /* inset / wells */
-  --xmr-surface-inset: rgba(6, 9, 13, 0.70); /* deep inset */
-  --xmr-surface-overlay: rgba(4, 6, 9, 0.92); /* modals, dropdowns */
-  --xmr-glass-blur: 12px;                       /* restrained glass */
+  /* ------------------------------------------------------------- surfaces
+     Translucent blacks; blur is restrained (8px) and decorative
+     glassmorphism is not used — panels read as solid coal. */
+  --xmr-surface-1: rgba(17, 17, 22, 0.82);    /* primary panel */
+  --xmr-surface-2: rgba(23, 23, 29, 0.88);    /* raised panel */
+  --xmr-surface-3: rgba(31, 31, 39, 0.92);    /* wells, hover */
+  --xmr-surface-inset: rgba(3, 3, 5, 0.72);   /* deep inset, inputs */
+  --xmr-surface-overlay: rgba(6, 6, 8, 0.96); /* dropdowns, menus */
+  --xmr-surface-table: rgba(13, 13, 17, 0.66);/* table body */
+  --xmr-surface-modal: #131318;               /* dialogs: solid for focus */
+  --xmr-glass-blur: 8px;
 
   /* -------------------------------------------------------------- borders */
-  --xmr-border-hairline: rgba(148, 163, 184, 0.08);  /* finest */
-  --xmr-border-subtle: rgba(148, 163, 184, 0.14);    /* default panel */
-  --xmr-border-default: rgba(148, 163, 184, 0.22);   /* interactive */
-  --xmr-border-strong: rgba(148, 163, 184, 0.35);    /* focus / active */
+  --xmr-border-hairline: rgba(243, 240, 233, 0.07);  /* finest dividers */
+  --xmr-border-subtle: rgba(243, 240, 233, 0.12);    /* default panel edge */
+  --xmr-border-default: rgba(243, 240, 233, 0.20);   /* interactive edge */
+  --xmr-border-strong: rgba(243, 240, 233, 0.32);    /* emphasis edge */
   --xmr-border-focus: var(--xmr-accent-cyan);        /* focus ring only */
 
-  /* ----------------------------------------------------------------- text */
-  --xmr-text-primary: #e8eef6;
-  --xmr-text-secondary: #abb8cc;
-  --xmr-text-muted: #7a899e;
-  --xmr-text-inverse: #040609;
+  /* ----------------------------------------------------------------- text
+     Warm white for primary ink, cold grays for secondary information. */
+  --xmr-text-primary: #f3f0e9;
+  --xmr-text-secondary: #9aa4af;
+  --xmr-text-muted: #707a88;
+  --xmr-text-inverse: #ffffff;
 
-  /* -------------------------------------------------------------- accents
-     Used ONLY for state, alerts, metrics — never as large fills. */
-  --xmr-accent-green: #1ed76b;
-  --xmr-accent-cyan: #06b6d4;
-  --xmr-accent-red: #ef4444;
-  --xmr-accent-amber: #f59e0b;
+  /* -------------------------------------------------- brand red (emphasis)
+     Dark institutional red as the product mark; the bright variant is for
+     text/state on dark backgrounds. Red is an accent, never a page fill. */
+  --xmr-brand: #c1272d;                 /* mark, active bars, keylines */
+  --xmr-brand-deep: #8f1b21;            /* pressed / deep emphasis */
+  --xmr-brand-solid: #a81f26;           /* primary button fill (white text) */
+  --xmr-brand-strong: #e5484d;          /* danger / down text on dark */
+  --xmr-brand-soft: rgba(193, 39, 45, 0.12);
+  --xmr-brand-line: rgba(193, 39, 45, 0.55);
 
   /* Channel triplets for real alpha modifiers in Tailwind. */
-  --xmr-accent-green-ch: 30 215 107;
-  --xmr-accent-cyan-ch: 6 182 212;
-  --xmr-accent-red-ch: 239 68 68;
-  --xmr-accent-amber-ch: 245 158 11;
+  --xmr-brand-ch: 193 39 45;
+  --xmr-brand-strong-ch: 229 72 77;
+  --xmr-brand-line-ch: 193 39 45;
 
-  --xmr-text-primary-ch: 232 238 246;
-  --xmr-text-secondary-ch: 171 184 204;
-  --xmr-text-muted-ch: 122 137 158;
+  /* --------------------------------------------------- state accents
+     Green = up/success ONLY. Amber = warning ONLY. Cyan = active, focus
+     and connectivity ONLY. */
+  --xmr-accent-green: #3fb97e;
+  --xmr-accent-amber: #e2a63d;
+  --xmr-accent-cyan: #4fb3c7;
+  --xmr-accent-red: var(--xmr-brand-strong);
+
+  --xmr-accent-green-ch: 63 185 126;
+  --xmr-accent-amber-ch: 226 166 61;
+  --xmr-accent-cyan-ch: 79 179 199;
+  --xmr-accent-red-ch: 229 72 77;
+
+  --xmr-text-primary-ch: 243 240 233;
+  --xmr-text-secondary-ch: 154 164 175;
+  --xmr-text-muted-ch: 112 122 136;
 
   /* Soft tints (10-12% alpha) for badges, pills, subtle backgrounds. */
-  --xmr-accent-green-soft: rgba(30, 215, 107, 0.10);
-  --xmr-accent-cyan-soft: rgba(6, 182, 212, 0.10);
-  --xmr-accent-red-soft: rgba(239, 68, 68, 0.10);
-  --xmr-accent-amber-soft: rgba(245, 158, 11, 0.10);
+  --xmr-accent-green-soft: rgba(63, 185, 126, 0.10);
+  --xmr-accent-amber-soft: rgba(226, 166, 61, 0.10);
+  --xmr-accent-cyan-soft: rgba(79, 179, 199, 0.10);
+  --xmr-accent-red-soft: rgba(229, 72, 77, 0.10);
+  --xmr-brand-soft-strong: rgba(193, 39, 45, 0.16);
 
-  /* Glow variants — only for focus rings and active connection dots. */
-  --xmr-accent-cyan-glow: rgba(6, 182, 212, 0.35);
-  --xmr-accent-green-glow: rgba(30, 215, 107, 0.30);
-  --xmr-accent-red-glow: rgba(239, 68, 68, 0.30);
-  --xmr-accent-amber-glow: rgba(245, 158, 11, 0.30);
+  /* Glow variants — only for focus rings and live connection dots. */
+  --xmr-accent-cyan-glow: rgba(79, 179, 199, 0.35);
+  --xmr-accent-green-glow: rgba(63, 185, 126, 0.30);
+  --xmr-accent-red-glow: rgba(229, 72, 77, 0.32);
+  --xmr-accent-amber-glow: rgba(226, 166, 61, 0.30);
 
   /* --------------------------------------------------------------- states */
   --xmr-state-idle: var(--xmr-text-muted);
@@ -83,43 +111,45 @@
   --xmr-state-success: var(--xmr-accent-green);   /* up, ok, completed */
   --xmr-state-warning: var(--xmr-accent-amber);   /* pending, caution */
   --xmr-state-danger: var(--xmr-accent-red);      /* down, error, failed */
-  --xmr-state-disabled: rgba(148, 163, 184, 0.30);
+  --xmr-state-disabled: rgba(154, 164, 175, 0.30);
 
-  /* -------------------------------------------------------------- shadows */
-  --xmr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --xmr-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.50);
-  --xmr-shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.60);
+  /* -------------------------------------------------------------- shadows
+     Flat and restrained: depth comes from borders, not elevation. */
+  --xmr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --xmr-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --xmr-shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.55);
   --xmr-shadow-focus: 0 0 0 2px var(--xmr-bg-root), 0 0 0 4px var(--xmr-border-focus);
-  --xmr-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --xmr-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 
   /* ----------------------------------------------------------- typography */
   --xmr-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, "Noto Sans", sans-serif;
   --xmr-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
-  --xmr-text-xs: 0.70rem;      /* 11.2px */
-  --xmr-text-sm: 0.8125rem;    /* 13px */
-  --xmr-text-base: 0.9375rem;  /* 15px */
-  --xmr-text-lg: 1.0625rem;    /* 17px */
-  --xmr-text-xl: 1.25rem;      /* 20px */
-  --xmr-text-2xl: 1.5rem;      /* 24px */
-  --xmr-text-3xl: 1.875rem;    /* 30px */
-  --xmr-tracking-wide: 0.08em;
-  --xmr-tracking-tight: -0.02em;
-  --xmr-leading-tight: 1.2;
+  --xmr-text-xs: 0.6875rem;      /* 11px */
+  --xmr-text-sm: 0.8125rem;      /* 13px */
+  --xmr-text-base: 0.9375rem;    /* 15px */
+  --xmr-text-lg: 1.0625rem;      /* 17px */
+  --xmr-text-xl: 1.25rem;        /* 20px */
+  --xmr-text-2xl: 1.5rem;        /* 24px */
+  --xmr-text-3xl: 1.75rem;       /* 28px — terminal type stays compact */
+  --xmr-tracking-wide: 0.09em;
+  --xmr-tracking-tight: -0.015em;
+  --xmr-leading-tight: 1.25;
   --xmr-leading-normal: 1.55;
 
-  /* --------------------------------------------------------------- radii */
-  --xmr-radius-sm: 6px;
-  --xmr-radius-md: 8px;
-  --xmr-radius-lg: 10px;
-  --xmr-radius-full: 999px;
+  /* --------------------------------------------------------------- radii
+     Deliberately sharp: small radii, no pill cards. */
+  --xmr-radius-sm: 3px;
+  --xmr-radius-md: 5px;
+  --xmr-radius-lg: 8px;
+  --xmr-radius-full: 999px;   /* dots and unread counters only */
 
   /* ----------------------------------------------------------- animation */
   --xmr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --xmr-duration-fast: 100ms;
-  --xmr-duration-base: 160ms;
-  --xmr-duration-slow: 300ms;
+  --xmr-duration-base: 150ms;
+  --xmr-duration-slow: 280ms;
 
   /* --------------------------------------------------------------- focus */
   --xmr-focus-ring-color: var(--xmr-accent-cyan);
@@ -129,9 +159,9 @@
     0 0 0 calc(var(--xmr-focus-ring-width) + var(--xmr-focus-ring-offset)) var(--xmr-focus-ring-color);
 
   /* -------------------------------------------------------------- layout */
-  --xmr-sidebar-width: 264px;
-  --xmr-header-height: 56px;
-  --xmr-footer-height: 56px;
+  --xmr-sidebar-width: 232px;
+  --xmr-header-height: 52px;
+  --xmr-footer-height: 52px;
   --xmr-content-max: 1440px;
 }
 

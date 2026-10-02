@@ -20,11 +20,11 @@ export function LegalPage({
   children: ReactNode
 }) {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
-      <Panel>
-        <p className="label-caps">Documentos legales</p>
-        <h1 className="mt-2 text-2xl font-semibold text-ink">{title}</h1>
-        <p className="mt-2 text-sm text-ink-secondary">{subtitle}</p>
+    <div className="mx-auto w-full max-w-3xl space-y-5">
+      <Panel tone="raised">
+        <p className="label-caps-ticked">Documentos legales</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+        <p className="mt-2 text-sm leading-normal text-ink-secondary">{subtitle}</p>
 
         <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-hairline-subtle pt-3 font-mono text-xs text-ink-muted">
           <div>
@@ -52,7 +52,7 @@ export function LegalPage({
 
       <aside
         aria-label="Advertencia sobre el alcance de este documento"
-        className="rounded-md border border-hairline bg-surface-inset/70 p-4 text-xs leading-relaxed text-ink-muted"
+        className="rounded border border-hairline bg-surface-inset p-4 text-xs leading-relaxed text-ink-muted"
       >
         Este documento describe como opera el servicio y como se tratan los datos
         personales de quien lo usa. Se redacto para este proyecto y para el marco
@@ -80,8 +80,11 @@ export function LegalPage({
 /** Section heading of a legal document. */
 export function LegalSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="space-y-2">
-      <h2 className="text-base font-semibold text-ink">{title}</h2>
+    <section className="space-y-2 border-t border-hairline-subtle pt-4 first:border-t-0 first:pt-0">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+        <span aria-hidden="true" className="inline-block h-3.5 w-0.5 bg-brand" />
+        {title}
+      </h2>
       {children}
     </section>
   )

@@ -75,7 +75,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 animate-fade-in-slow bg-surface-overlay backdrop-blur-sm"
+        className="absolute inset-0 animate-fade-in-slow bg-surface-overlay"
         onClick={dismissible ? onClose : undefined}
         aria-hidden="true"
       />
@@ -86,27 +86,31 @@ export function Modal({
         aria-labelledby="modal-title"
         aria-describedby={description ? 'modal-description' : undefined}
         className={clsx(
-          'relative w-full animate-fade-in rounded-lg border border-hairline bg-surface-2 p-5 shadow-card-lg',
+          'relative max-h-[90vh] w-full animate-fade-in overflow-y-auto rounded-md border border-hairline-default bg-surface-modal p-5 shadow-card-lg',
           SIZES[size],
         )}
       >
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-brand" />
         <div className="mb-4 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h2 id="modal-title" className="text-lg font-semibold text-ink">
-              {title}
-            </h2>
-            {description ? (
-              <p id="modal-description" className="mt-1 text-sm text-ink-secondary">
-                {description}
-              </p>
-            ) : null}
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span aria-hidden="true" className="mt-1 h-4 w-0.5 shrink-0 bg-brand" />
+            <div className="min-w-0">
+              <h2 id="modal-title" className="text-base font-semibold text-ink">
+                {title}
+              </h2>
+              {description ? (
+                <p id="modal-description" className="mt-1 text-[13px] text-ink-secondary">
+                  {description}
+                </p>
+              ) : null}
+            </div>
           </div>
           {dismissible ? (
             <button
               type="button"
               onClick={onClose}
               aria-label="Cerrar dialogo"
-              className="shrink-0 rounded-md border border-hairline p-1.5 text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+              className="shrink-0 rounded-sm border border-hairline p-1.5 text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
                 <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
@@ -115,7 +119,7 @@ export function Modal({
           ) : null}
         </div>
         {children}
-        {footer ? <div className="mt-5 flex flex-wrap justify-end gap-2">{footer}</div> : null}
+        {footer ? <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-hairline-subtle pt-4">{footer}</div> : null}
       </div>
     </div>,
     document.body,
