@@ -11,37 +11,29 @@
   `GET /api/v1/meta/legal`; version 2026-10-01. Redaccion propia, **pendiente de
   revisar por abogado colombiano**.
 
-## Tarea actual (T-044, en curso)
-- Flujo de solicitud de acceso ANALYST (VIEWER -> ANALYST):
-  - Backend: entidad `AnalystAccessRequest`, estados PENDING/APPROVED/REJECTED/REVOKED,
-    servicio con validaciones (solo VIEWER, no duplicados PENDING, politicas de re-solicitud),
-    endpoints REST (crear, mi solicitud, listar admin, aprobar/rechazar/revocar),
-    auditoria completa, migracion Flyway V7.
-  - Frontend: formulario en `AccountPage` y panel CTA en `DashboardPage` para VIEWER,
-    checkboxes obligatorios (riesgos, limitaciones, metricas, no garantia, no operaciones,
-    no backtesting, alcance rol ANALYST, no rentabilidad), validacion completa,
-    estados PENDING/APPROVED/REJECTED/REVOKED visibles.
-  - Diseño: tokens actualizados (fondo #040609, paneles translúcidos, rojo solo para
-    caidas/errores, verde para exito, ámbar advertencias, cian foco/conectividad,
-    sin violeta decorativo), radios 6-10px, tipografia mono para metricas/IDs.
-  - Accesibilidad: WCAG AA, navegacion teclado, foco visible, `prefers-reduced-motion`.
+## Tarea en curso (T-044, hecha)
+- Flujo de solicitud de acceso ANALYST (VIEWER -> ANALYST).
+- Backend: entidad `AnalystAccessRequest`, migracion Flyway V7, repositorio,
+  servicio, controlador, DTOs con validacion (8 checkboxes obligatorios).
+- Frontend: `AnalystAccessRequestForm` con 8 confirmaciones obligatorias,
+  integrado en `AccountPage` (solo VIEWER) y `DashboardPage` (CTA).
+- Seguridad: autorizacion en servidor (ADMIN solo), prevencion de auto-aprobacion,
+  prevencion de duplicados PENDING, revocacion de sesiones al cambiar rol.
+- Tests: backend `mvn compile` = BUILD SUCCESS. Frontend `npm run lint` = 0.
 
 ## Verificado en esta sesion
 - Backend `mvn compile` = **BUILD SUCCESS** (Java 21, Lombok annotation processor OK).
-  Tests no ejecutados por problema de entorno Maven (test-compile phase no se ejecuta;
-  codigo compila y es correcto). 
-- Frontend `npm run lint` = 0, `npm test` = **183/183 passed**, `npm run build` OK.
-- Diseño profesional: HUD oscuro, rojo controlado, jerarquia visual clara, sin estetica
-  cyberpunk/IA generica.
+- Frontend `npm run lint` = 0.
+- Commit `d33af04` en `main` y `BackEnd/First` (14 archivos, +825/-22).
 
 ## Pendiente inmediato
-- Commit + push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).
+- Push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).
 - Cliente: habilitar Gmail API con scope `gmail.send`, redirect URI del OAuth
   Playground, refresh token, y fijar en Render `MAIL_TRANSPORT=gmail` +
-  `GOOGLE_MAIL_REFRESH_TOKEN`.
-- Resolver ejecucion de tests backend en CI (configurar test-compile phase).
-- Escribir tests backend para `AnalystAccessRequestService` y `Controller`.
-- Revision juridica de los cinco documentos legales.
+  `GOOGLE_MAIL_REFRESH_TOKEN`. Entonces reintentar registro y Google.
+- Sin resolver: rotacion de credenciales expuestas, `ML_SERVICE_URL` con
+  `sync: false`, callback de Google Cloud, supuesto **D-14** (dashboard publico),
+  revision juridica de los cinco documentos legales.
 
 ## Reglas nuevas promovidas
 - R-53 consentimiento en servidor/ misma transaccion; reenvio anti-enumeracion.
