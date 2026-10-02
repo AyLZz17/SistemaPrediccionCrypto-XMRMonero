@@ -19,9 +19,8 @@ function formatUsd(value: number | undefined): string {
 }
 
 /**
- * Top strip of the authenticated shell: symbol + live XMR-USD quote, API
- * state, notifications and identity. Flat coal bar, hairline bottom edge —
- * the red accent appears only in the unread counter and destructive hover.
+ * Command bar of the authenticated shell: brand, live XMR-USD ticker in
+ * tabular type, API state, notifications and identity on one ruled strip.
  */
 export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const navigate = useNavigate()
@@ -69,13 +68,13 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <header
       aria-label="Cabecera de la aplicación"
-      className="sticky top-0 z-20 flex h-header shrink-0 items-center gap-2 border-b border-hairline-subtle bg-deep px-3 sm:gap-3 sm:px-4"
+      className="sticky top-0 z-20 flex h-header shrink-0 items-center gap-3 border-b-2 border-hairline-strong bg-raised px-3 sm:px-4"
     >
       <button
         type="button"
         onClick={onMenuClick}
         aria-label="Abrir menú de navegación"
-        className="rounded-sm border border-hairline p-2 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:hidden"
+        className="rounded-none border border-hairline-default p-2 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:hidden"
       >
         <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
           <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
@@ -83,36 +82,24 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
       </button>
 
       <Link to="/dashboard" className="flex items-center gap-2 lg:hidden" aria-label="XMR-Forecast, panel">
-        <BrandMark size={24} />
-        <span className="text-[13px] font-semibold tracking-tight text-ink">XMR-Forecast</span>
+        <BrandMark size={26} />
+        <span className="font-mono text-[13px] font-semibold tracking-wide text-ink">XMR-FORECAST</span>
       </Link>
 
-      <div
-        className="hidden items-stretch gap-0 overflow-hidden rounded-sm border border-hairline-subtle bg-surface-inset sm:flex"
-        aria-label="Precio de XMR-USD"
-      >
-        <span className="flex items-center border-r border-hairline-subtle bg-surface-2 px-2.5 font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
-          {DEFAULT_SYMBOL}
-        </span>
-        <span className="flex items-center px-2.5 font-mono text-sm font-semibold tabular-nums text-ink">
+      <p className="hidden items-baseline gap-2.5 font-mono tabular-nums lg:flex" aria-label="Precio de XMR-USD">
+        <span className="text-[11px] uppercase tracking-wide text-ink-muted">{DEFAULT_SYMBOL}</span>
+        <span className="text-[15px] font-semibold text-ink">
           {formatUsd(quote.data?.price)}
         </span>
         {typeof changePercent === 'number' ? (
-          <span
-            className={clsx(
-              'flex items-center border-l border-hairline-subtle px-2.5 font-mono text-xs tabular-nums',
-              isUp ? 'text-accent-green' : 'text-accent-red',
-            )}
-          >
-            <span aria-hidden="true" className="mr-1">{isUp ? '▲' : '▼'}</span>
-            {isUp ? '+' : ''}
-            {changePercent.toFixed(2)}%
+          <span className={clsx('text-xs', isUp ? 'text-accent-green' : 'text-accent-red')}>
+            <span aria-hidden="true">{isUp ? '▲' : '▼'}</span> {isUp ? '+' : ''}{changePercent.toFixed(2)}%
             <span className="sr-only">{isUp ? 'sube' : 'baja'}</span>
           </span>
         ) : null}
-      </div>
+      </p>
 
-      <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5">
+      <div className="ml-auto flex items-center gap-2 sm:gap-3">
         <StatusDot
           tone={quote.isError ? 'danger' : quote.isPending ? 'warning' : 'success'}
           label={quote.isError ? 'Sin conexión' : quote.isPending ? 'Conectando' : 'En línea'}
@@ -128,7 +115,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-label={`Notificaciones${unread > 0 ? `, ${unread} sin leer` : ''}`}
-            className="relative rounded-sm border border-hairline p-2 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+            className="relative rounded-none border border-hairline-default p-2 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
           >
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M8 1.8a4 4 0 0 0-4 4v2.4L2.8 10.4h10.4L12 8.2V5.8a4 4 0 0 0-4-4z" strokeLinejoin="round" />
@@ -146,11 +133,11 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
               ref={menuRef}
               role="menu"
               aria-label="Notificaciones"
-              className="absolute right-0 top-full z-30 mt-2 w-72 animate-fade-in rounded border border-hairline-default bg-surface-modal p-2 shadow-card-lg"
+              className="absolute right-0 top-full z-30 mt-2 w-72 animate-fade-in rounded-sm border border-hairline-strong bg-surface-modal p-2 shadow-card-lg"
             >
-              <p className="label-caps px-2 py-1.5">Notificaciones</p>
+              <p className="border-b border-hairline-subtle px-2 pb-1.5 font-mono text-[10px] uppercase tracking-wide text-ink-muted">Notificaciones</p>
               {notifications.data && notifications.data.items.length > 0 ? (
-                <ul className="max-h-72 space-y-0.5 overflow-y-auto">
+                <ul className="max-h-72 space-y-px overflow-y-auto pt-1">
                   {notifications.data.items.map((item) => (
                     <li key={item.id}>
                       <button
@@ -160,13 +147,13 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                           void markNotificationRead(item.id).catch(() => undefined)
                           setMenuOpen(false)
                         }}
-                        className="w-full rounded-sm px-2 py-2 text-left transition-colors duration-fast hover:bg-surface-3"
+                        className="w-full px-2 py-2 text-left transition-colors duration-fast hover:bg-surface-3"
                       >
                         <span className="flex items-center gap-2">
                           {!item.read ? (
-                            <span aria-label="Sin leer" className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-red" />
+                            <span aria-label="Sin leer" className="h-1.5 w-1.5 shrink-0 bg-accent-red" />
                           ) : null}
-                          <span className="truncate text-xs font-medium text-ink">{item.title}</span>
+                          <span className="truncate text-xs font-semibold text-ink">{item.title}</span>
                         </span>
                         {item.body ? (
                           <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{item.body}</span>
@@ -182,8 +169,8 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           ) : null}
         </div>
 
-        <div className="hidden min-w-0 flex-col items-end border-l border-hairline-subtle pl-2.5 leading-tight md:flex">
-          <span data-testid="header-identity" className="max-w-[180px] truncate text-xs font-medium text-ink">
+        <div className="hidden min-w-0 flex-col items-end border-l border-hairline-subtle pl-3 leading-tight md:flex">
+          <span data-testid="header-identity" className="max-w-[180px] truncate text-xs font-semibold text-ink">
             {user?.fullName || user?.email}
           </span>
           <span className="max-w-[180px] truncate font-mono text-[10px] uppercase tracking-wide text-ink-muted">
@@ -193,7 +180,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
         <Link
           to="/account"
-          className="hidden rounded-sm border border-hairline px-2.5 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink sm:inline-block"
+          className="hidden rounded-none border border-hairline-default px-2.5 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink sm:inline-block"
         >
           Cuenta
         </Link>
@@ -204,7 +191,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
             logout(null)
             navigate('/login', { replace: true })
           }}
-          className="rounded-sm border border-hairline px-2.5 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-accent-red/50 hover:text-accent-red"
+          className="rounded-none border border-accent-red/40 px-2.5 py-2 font-mono text-[11px] uppercase tracking-wide text-accent-red transition-colors duration-fast hover:bg-accent-red-soft"
         >
           Salir
         </button>

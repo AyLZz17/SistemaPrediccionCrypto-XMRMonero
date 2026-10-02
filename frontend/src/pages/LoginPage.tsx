@@ -46,20 +46,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <BrandMark size={36} />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Iniciar sesión</h1>
-          <p className="mt-1 text-sm leading-normal text-ink-secondary">
-            Accede al panel de XMR-Forecast. La sesión caduca sola y se renueva de forma silenciosa.
-          </p>
+    <div className="mx-auto w-full max-w-md">
+      <Panel tone="strong">
+        <div className="mb-5 flex items-center gap-3 border-b-2 border-hairline-strong pb-4">
+          <BrandMark size={34} />
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-Forecast · acceso</p>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-ink">Iniciar sesión</h1>
+          </div>
         </div>
-      </div>
+        <p className="mb-4 text-[13px] leading-normal text-ink-secondary">
+          Accede al panel de XMR-Forecast. La sesión caduca sola y se renueva de forma silenciosa.
+        </p>
 
-      {error ? <ApiErrorAlert error={error} onRetry={() => setError(null)} /> : null}
+        {error ? <div className="mb-4"><ApiErrorAlert error={error} onRetry={() => setError(null)} /></div> : null}
 
-      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Correo electronico"
@@ -94,7 +95,7 @@ export default function LoginPage() {
 
         <GoogleButton returnTo={from} label="Continuar con Google" />
 
-        <div className="mt-5 flex flex-wrap justify-between gap-2 text-xs">
+        <div className="mt-5 flex flex-wrap justify-between gap-2 border-t border-hairline-subtle pt-4 font-mono text-[11px] uppercase tracking-wide">
           <Link to="/forgot-password" className="link-accent">
             Olvide mi contrasena
           </Link>
@@ -104,12 +105,16 @@ export default function LoginPage() {
         </div>
       </Panel>
 
-      <Notice>
-        El botón de Google delega todo el flujo OAuth en el backend (Authorization Code + OIDC). Este frontend
-        nunca almacena un client secret de Google.
-      </Notice>
+      <div className="mt-4">
+        <Notice>
+          El botón de Google delega todo el flujo OAuth en el backend (Authorization Code + OIDC). Este frontend
+          nunca almacena un client secret de Google.
+        </Notice>
+      </div>
 
-      <Disclaimer variant="short" />
+      <div className="mt-4">
+        <Disclaimer variant="short" />
+      </div>
     </div>
   )
 }

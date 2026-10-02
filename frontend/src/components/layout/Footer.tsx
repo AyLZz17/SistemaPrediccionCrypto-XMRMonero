@@ -39,56 +39,61 @@ export function Footer({ className }: { className?: string }) {
       aria-label="Pie de página y aviso legal"
       data-testid="app-footer"
       className={[
-        'border-t border-hairline-subtle bg-raised',
+        'border-t-2 border-hairline-strong bg-raised',
         className ?? 'mt-auto w-full',
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <span aria-hidden="true" className="block h-0.5 bg-brand" />
       <div className="mx-auto w-full max-w-content px-4 py-4 sm:px-6">
-        <nav
-          aria-label="Documentos legales y contacto"
-          data-testid="footer-legal-nav"
-          className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-hairline-subtle pb-3"
-        >
-          {LEGAL_DOCUMENTS.map((document) => (
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <nav
+            aria-label="Documentos legales y contacto"
+            data-testid="footer-legal-nav"
+            className="grid max-w-2xl grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3"
+          >
+            {LEGAL_DOCUMENTS.map((document) => (
+              <a
+                key={document.key}
+                href={document.path}
+                data-testid={`footer-link-${document.key}`}
+                className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
+              >
+                {document.label}
+              </a>
+            ))}
             <a
-              key={document.key}
-              href={document.path}
-              data-testid={`footer-link-${document.key}`}
+              href={`mailto:${LEGAL_CONTACT_EMAIL}`}
+              data-testid="footer-contact-link"
               className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
             >
-              {document.label}
+              Contacto
             </a>
-          ))}
-          <a
-            href={`mailto:${LEGAL_CONTACT_EMAIL}`}
-            data-testid="footer-contact-link"
-            className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
-          >
-            Contacto
-          </a>
-          <a
-            href={dataRequestHref('Derechos de titular de datos')}
-            data-testid="footer-data-request-link"
-            className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
-          >
-            Eliminar o actualizar mis datos
-          </a>
-        </nav>
+            <a
+              href={dataRequestHref('Derechos de titular de datos')}
+              data-testid="footer-data-request-link"
+              className="font-mono text-[11px] uppercase tracking-wide text-ink-muted transition-colors duration-fast hover:text-ink"
+            >
+              Eliminar o actualizar mis datos
+            </a>
+          </nav>
 
-        <div className="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-          <p
-            data-testid="app-footer-text"
-            className="font-mono text-[11px] leading-relaxed tracking-wide text-ink-secondary"
-          >
-            {FOOTER_TEXT}
-          </p>
-          <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">
-            XMR-Forecast · capacidad predictiva evaluada · no es asesoría financiera
-          </p>
+          <div className="shrink-0 md:max-w-xs md:text-right">
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+              XMR-Forecast · capacidad predictiva evaluada
+            </p>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+              No es asesoría financiera
+            </p>
+          </div>
         </div>
+
+        <p
+          data-testid="app-footer-text"
+          className="mt-3 border-t border-hairline-subtle pt-3 font-mono text-[11px] leading-relaxed tracking-wide text-ink-secondary"
+        >
+          {FOOTER_TEXT}
+        </p>
       </div>
     </footer>
   )

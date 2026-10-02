@@ -40,12 +40,12 @@ export function CandlestickChart({ candles }: { candles: Candle[] }) {
     <div>
       <div className="h-80 w-full min-w-0" role="img" aria-label="Gráfico de velas japonesas de XMR-USD">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="28%">
+          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="36%">
             <CartesianGrid stroke="var(--xmr-border-hairline)" vertical={false} />
             <XAxis
               dataKey="date"
               tick={{ fill: 'var(--xmr-text-muted)', fontSize: 10, fontFamily: 'var(--xmr-font-mono)' }}
-              axisLine={{ stroke: 'var(--xmr-border-default)' }}
+              axisLine={{ stroke: 'var(--xmr-border-strong)' }}
               tickLine={false}
               minTickGap={24}
             />
@@ -60,15 +60,15 @@ export function CandlestickChart({ candles }: { candles: Candle[] }) {
               cursor={{ fill: 'var(--xmr-surface-2)' }}
               contentStyle={{
                 background: 'var(--xmr-surface-modal)',
-                border: '1px solid var(--xmr-border-default)',
+                border: '1px solid var(--xmr-border-strong)',
                 borderRadius: 'var(--xmr-radius-sm)',
                 fontFamily: 'var(--xmr-font-mono)',
                 fontSize: 12,
                 color: 'var(--xmr-text-primary)',
               }}
             />
-            <Bar dataKey="range" fill="var(--xmr-border-default)" radius={[1, 1, 0, 0]} isAnimationActive={false} />
-            <Bar dataKey="body" radius={[1, 1, 0, 0]} isAnimationActive={false}>
+            <Bar dataKey="range" fill="var(--xmr-border-default)" radius={0} isAnimationActive={false} />
+            <Bar dataKey="body" radius={0} isAnimationActive={false}>
               {data.map((entry) => (
                 <Cell key={`${entry.date}-${entry.fill}`} fill={entry.fill} />
               ))}
@@ -76,17 +76,17 @@ export function CandlestickChart({ candles }: { candles: Candle[] }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-hairline-subtle pt-2">
-        <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
+      <ul className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-hairline-subtle pt-2 font-mono text-[11px] text-ink-muted">
+        <li className="flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2 w-2 bg-accent-green" />
           {'cierre \u2265 apertura · sube'}
-        </span>
-        <span className="flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
+        </li>
+        <li className="flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2 w-2 bg-accent-red" />
           {'cierre < apertura · baja'}
-        </span>
-        <span className="ml-auto font-mono text-[11px] text-ink-muted">Últimas {data.length} velas diarias</span>
-      </div>
+        </li>
+        <li className="ml-auto tabular-nums">Últimas {data.length} velas diarias</li>
+      </ul>
     </div>
   )
 }

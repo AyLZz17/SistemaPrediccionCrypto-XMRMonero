@@ -17,8 +17,7 @@ import {
   EmptyState,
   ErrorState,
   MetricCard,
-  Panel,
-  PanelHeader,
+  Section,
   SkeletonStat,
   SkeletonTable,
   StatusDot,
@@ -88,130 +87,157 @@ export default function PublicDashboardPage() {
   const directionUp = metrics.data?.validation?.directionAccuracy
 
   return (
-    <div className="space-y-8" data-testid="public-dashboard">
-      {/* --------------------------------------------- cabecera de producto */}
-      <div className="border-b border-hairline-subtle pb-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 max-w-3xl">
-            <p className="label-caps-ticked">Panel público · sin sesión · XMR-USD</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-              Monero (XMR): capacidad predictiva evaluada
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-normal text-ink-secondary">
-              Resumen de mercado, métricas y comparación de modelos en acceso anónimo. La creación de
-              pronósticos, la gestión de experimentos y el histórico completo requieren iniciar sesión.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2 border-l border-hairline-subtle pl-4">
-            <StatusDot
-              tone={summary.isError ? 'danger' : summary.isPending ? 'warning' : 'success'}
-              label={summary.isError ? 'API sin respuesta' : summary.isPending ? 'Consultando' : 'API operativa'}
-              pulse={summary.isFetching}
-            />
-            {status.data?.dataUpdatedAt ? (
-              <Badge tone="neutral" title="Última actualización de los datos">
-                Datos: {formatDateTime(status.data.dataUpdatedAt)}
-              </Badge>
-            ) : null}
-          </div>
+    <div className="space-y-9" data-testid="public-dashboard">
+      {/* ------------------------------------------------------ masthead */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-hairline-strong pb-5">
+        <div className="min-w-0 max-w-3xl">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+            Panel público · sin sesión · XMR-USD
+          </p>
+          <h1 className="mt-2 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            Monero (XMR): capacidad predictiva evaluada
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-normal text-ink-secondary">
+            Resumen de mercado, métricas y comparación de modelos en acceso anónimo. La creación de
+            pronósticos, la gestión de experimentos y el histórico completo requieren iniciar sesión.
+          </p>
         </div>
+        <dl className="grid shrink-0 grid-cols-2 gap-px border border-hairline-subtle bg-hairline-subtle">
+          <div className="bg-deep px-4 py-2.5">
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">API</dt>
+            <dd className="mt-1">
+              <StatusDot
+                tone={summary.isError ? 'danger' : summary.isPending ? 'warning' : 'success'}
+                label={summary.isError ? 'API sin respuesta' : summary.isPending ? 'Consultando' : 'API operativa'}
+                pulse={summary.isFetching}
+              />
+            </dd>
+          </div>
+          <div className="bg-deep px-4 py-2.5">
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Datos</dt>
+            <dd className="mt-1">
+              {status.data?.dataUpdatedAt ? (
+                <Badge tone="neutral" title="Última actualización de los datos">
+                  Datos: {formatDateTime(status.data.dataUpdatedAt)}
+                </Badge>
+              ) : (
+                <span className="font-mono text-[11px] text-ink-muted">—</span>
+              )}
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <Disclaimer variant="short" />
 
-      {/* --------------------------------------------- cinta de cotización */}
-      <section aria-label="Resumen de mercado" data-testid="summary" className="grid gap-px overflow-hidden rounded border border-hairline-subtle bg-hairline-subtle sm:grid-cols-2 xl:grid-cols-4">
-        {summary.isPending ? (
-          <div className="bg-deep p-4 sm:col-span-2 xl:col-span-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <SkeletonStat />
-              <SkeletonStat />
-              <SkeletonStat />
-              <SkeletonStat />
+      {/* ------------------------------------------------------- 01 mercado */}
+      <Section
+        index="01"
+        eyebrow="Mercado ahora"
+        title="Resumen de mercado"
+        actions={
+          <span className="font-mono text-[11px] tabular-nums text-ink-muted">
+            {summary.data?.source ? `Fuente: ${summary.data.source}` : ''}
+          </span>
+        }
+      >
+        <div aria-label="Resumen de mercado" data-testid="summary" className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+          {summary.isPending ? (
+            <div className="sm:col-span-2 xl:col-span-4">
+              <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+                <SkeletonStat />
+                <SkeletonStat />
+                <SkeletonStat />
+                <SkeletonStat />
+              </div>
             </div>
-          </div>
-        ) : summary.isError ? (
-          <div className="bg-deep p-4 sm:col-span-2 xl:col-span-4">
+          ) : summary.isError ? (
+            <div className="sm:col-span-2 xl:col-span-4">
+              <ErrorState
+                title="No se pudo leer el resumen de mercado"
+                message={toApiError(summary.error).friendlyMessage}
+                requestId={toApiError(summary.error).requestId}
+                onRetry={() => void summary.refetch()}
+              />
+            </div>
+          ) : (
+            <>
+              <MetricCard
+                label="Precio XMR-USD"
+                value={formatUsd(summary.data?.price)}
+                tone="idle"
+                trend={up ? 'up' : 'down'}
+                hint="Último cierre disponible"
+              />
+              <MetricCard
+                label="Variación"
+                value={typeof summary.data?.changePercent === 'number' ? summary.data.changePercent.toFixed(2) : '—'}
+                unit="%"
+                tone={up ? 'success' : 'danger'}
+                hint={
+                  summary.data?.updatedAt
+                    ? `Actualizado ${formatDateTime(summary.data.updatedAt)}`
+                    : 'Sin marca de actualización'
+                }
+              />
+              <MetricCard
+                label="Máximo / mínimo"
+                value={`${formatUsd(summary.data?.high)} / ${formatUsd(summary.data?.low)}`}
+                tone="idle"
+                hint="Sesión del último dato ingerido"
+              />
+              <MetricCard
+                label="Cierre anterior"
+                value={formatUsd(summary.data?.previousClose)}
+                tone="idle"
+                hint={
+                  summary.data?.marketTime
+                    ? `Mercado a ${formatDateTime(summary.data.marketTime)}`
+                    : 'Base de la variación diaria'
+                }
+              />
+            </>
+          )}
+        </div>
+      </Section>
+
+      {/* ------------------------------------------------------- 02 serie */}
+      <Section
+        index="02"
+        eyebrow="Serie histórica"
+        title="Velas diarias de XMR-USD"
+        description="Hasta 365 velas en acceso anónimo; el conjunto completo está dentro de la sesión"
+      >
+        <div className="console-well p-3 sm:p-4">
+          {series.isPending ? (
+            <SkeletonTable rows={4} columns={4} />
+          ) : series.isError ? (
             <ErrorState
-              title="No se pudo leer el resumen de mercado"
-              message={toApiError(summary.error).friendlyMessage}
-              requestId={toApiError(summary.error).requestId}
-              onRetry={() => void summary.refetch()}
+              title="No se pudo leer la serie histórica"
+              message={toApiError(series.error).friendlyMessage}
+              requestId={toApiError(series.error).requestId}
+              onRetry={() => void series.refetch()}
             />
-          </div>
-        ) : (
-          <>
-            <div className="bg-deep p-4">
-              <p className="label-caps">Precio XMR-USD</p>
-              <p className="mt-1.5 font-mono text-[22px] font-semibold tabular-nums leading-none text-ink">
-                {formatUsd(summary.data?.price)}
-              </p>
-              <p className="mt-1.5 font-mono text-[11px] tabular-nums text-ink-muted">
-                {summary.data?.source ? `Fuente: ${summary.data.source}` : 'Último cierre disponible'}
-              </p>
-            </div>
-            <div className="bg-deep p-4">
-              <p className="label-caps">Variación</p>
-              <p className={`mt-1.5 font-mono text-[22px] font-semibold tabular-nums leading-none ${up ? 'text-accent-green' : 'text-accent-red'}`}>
-                {typeof summary.data?.changePercent === 'number' ? summary.data.changePercent.toFixed(2) : '—'}
-                <span className="ml-1 text-xs font-normal">%</span>
-              </p>
-              <p className="mt-1.5 text-xs text-ink-muted">
-                {summary.data?.updatedAt ? `Actualizado ${formatDateTime(summary.data.updatedAt)}` : 'Sin marca de actualización'}
-                <span className={`ml-2 font-mono text-[11px] ${up ? 'text-accent-green' : 'text-accent-red'}`}>{up ? '▲ sube' : '▼ baja'}</span>
-              </p>
-            </div>
-            <div className="bg-deep p-4">
-              <p className="label-caps">Máximo / mínimo</p>
-              <p className="mt-1.5 font-mono text-[22px] font-semibold tabular-nums leading-none text-ink">
-                {formatUsd(summary.data?.high)} <span className="text-xs font-normal text-ink-muted">/</span> {formatUsd(summary.data?.low)}
-              </p>
-              <p className="mt-1.5 text-xs text-ink-muted">Sesión del último dato ingerido</p>
-            </div>
-            <div className="bg-deep p-4">
-              <p className="label-caps">Cierre anterior</p>
-              <p className="mt-1.5 font-mono text-[22px] font-semibold tabular-nums leading-none text-ink">
-                {formatUsd(summary.data?.previousClose)}
-              </p>
-              <p className="mt-1.5 text-xs text-ink-muted">
-                {summary.data?.marketTime ? `Mercado a ${formatDateTime(summary.data.marketTime)}` : 'Base de la variación diaria'}
-              </p>
-            </div>
-          </>
-        )}
-      </section>
+          ) : series.data && series.data.length > 0 ? (
+            <CandlestickChart candles={series.data} />
+          ) : (
+            <EmptyState
+              title="Todavía no hay velas publicadas"
+              description="En cuanto se ingieran datos, la gráfica aparecerá aquí sin necesidad de recargar."
+            />
+          )}
+        </div>
+      </Section>
 
-      {/* --------------------------------------------- serie histórica */}
-      <Panel tone="raised">
-        <PanelHeader
-          title="Serie histórica"
-          subtitle="Hasta 365 velas en acceso anónimo; el conjunto completo está dentro de la sesión"
-        />
-        {series.isPending ? (
-          <SkeletonTable rows={4} columns={4} />
-        ) : series.isError ? (
-          <ErrorState
-            title="No se pudo leer la serie histórica"
-            message={toApiError(series.error).friendlyMessage}
-            requestId={toApiError(series.error).requestId}
-            onRetry={() => void series.refetch()}
-          />
-        ) : series.data && series.data.length > 0 ? (
-          <CandlestickChart candles={series.data} />
-        ) : (
-          <EmptyState
-            title="Todavía no hay velas publicadas"
-            description="En cuanto se ingieran datos, la gráfica aparecerá aquí sin necesidad de recargar."
-          />
-        )}
-      </Panel>
-
-      {/* --------------------------------------------- métricas públicas */}
+      {/* ------------------------------------------------------- 03 métricas */}
       <section aria-labelledby="public-metrics-title" data-testid="public-metrics">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b-2 border-hairline-strong pb-2.5">
           <div>
-            <p className="label-caps-ticked">Métricas públicas · resultado de validación</p>
-            <h2 id="public-metrics-title" className="mt-1.5 text-xl font-semibold tracking-tight text-ink">
+            <p className="flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-wide">
+              <span aria-hidden="true" className="font-semibold tabular-nums text-brand-strong">03</span>
+              <span className="text-ink-muted">Métricas públicas · resultado de validación</span>
+            </p>
+            <h2 id="public-metrics-title" className="mt-1 text-xl font-semibold tracking-tight text-ink">
               {metrics.data?.experimentCode
                 ? `Corrida ${metrics.data.experimentCode}`
                 : 'Resultados de la última corrida'}
@@ -220,23 +246,23 @@ export default function PublicDashboardPage() {
           <Badge tone="neutral">Partición cronológica · sin mezcla</Badge>
         </div>
 
-        {metrics.isPending ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <SkeletonStat />
-            <SkeletonStat />
-            <SkeletonStat />
-            <SkeletonStat />
-          </div>
-        ) : metrics.isError ? (
-          <ErrorState
-            title="No se pudieron leer las métricas públicas"
-            message={toApiError(metrics.error).friendlyMessage}
-            requestId={toApiError(metrics.error).requestId}
-            onRetry={() => void metrics.refetch()}
-          />
-        ) : metrics.data && metrics.data.available ? (
-          <Panel>
-            <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="pt-4">
+          {metrics.isPending ? (
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+              <SkeletonStat />
+              <SkeletonStat />
+              <SkeletonStat />
+              <SkeletonStat />
+            </div>
+          ) : metrics.isError ? (
+            <ErrorState
+              title="No se pudieron leer las métricas públicas"
+              message={toApiError(metrics.error).friendlyMessage}
+              requestId={toApiError(metrics.error).requestId}
+              onRetry={() => void metrics.refetch()}
+            />
+          ) : metrics.data && metrics.data.available ? (
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
               <MetricCard
                 label="MAE"
                 value={formatUsd(metrics.data.validation?.mae)}
@@ -265,21 +291,23 @@ export default function PublicDashboardPage() {
                 hint="Aciertos sube / baja sobre validación"
               />
             </div>
-          </Panel>
-        ) : (
-          <EmptyState
-            title="Todavía no hay corridas publicadas"
-            description="Cuando termine un experimento, sus métricas aparecerán aquí. No se muestran cifras sin una corrida real que las respalde."
-          />
-        )}
+          ) : (
+            <EmptyState
+              title="Todavía no hay corridas publicadas"
+              description="Cuando termine un experimento, sus métricas aparecerán aquí. No se muestran cifras sin una corrida real que las respalde."
+            />
+          )}
+        </div>
       </section>
 
-      {/* --------------------------------------------- comparación */}
-      <Panel tone="raised" data-testid="comparison">
-        <PanelHeader
-          title="Comparación de modelos"
-          subtitle="Misma corrida y misma partición (validación) para todas las familias"
-        />
+      {/* ------------------------------------------------------- 04 comparativa */}
+      <Section
+        index="04"
+        eyebrow="Evidencia comparada"
+        title="Comparación de modelos"
+        description="Misma corrida y misma partición (validación) para todas las familias"
+        data-testid="comparison"
+      >
         {comparison.isPending ? (
           <SkeletonTable rows={3} columns={4} />
         ) : comparison.isError ? (
@@ -291,57 +319,58 @@ export default function PublicDashboardPage() {
           />
         ) : comparison.data && comparison.data.length > 0 ? (
           <>
-            <MetricComparisonChart rows={comparison.data.map(toComparisonRow)} />
+            <div className="console-well p-3 sm:p-4">
+              <MetricComparisonChart rows={comparison.data.map(toComparisonRow)} />
+            </div>
             {/* Contraparte textual del gráfico: sin ella la comparación no es
                 legible con lector de pantalla ni con CSS desactivado (WCAG). */}
-            <table className="mt-4 w-full border-collapse text-left text-sm">
-              <caption className="label-caps pb-2 text-left">
-                Comparación de modelos sobre validación
-              </caption>
-              <thead>
-                <tr className="border-b border-hairline bg-surface-inset">
-                  <th scope="col" className="px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted">Modelo</th>
-                  <th scope="col" className="px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted">Familia</th>
-                  <th scope="col" className="px-3 py-2 text-right font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted">MAE</th>
-                  <th scope="col" className="px-3 py-2 text-right font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted">RMSE</th>
-                  <th scope="col" className="px-3 py-2 text-right font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted">MAPE</th>
-                  <th scope="col" className="px-3 py-2 text-right font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted">Dirección</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparison.data.map((row) => (
-                  <tr
-                    key={row.label}
-                    className="border-b border-hairline-subtle/60 last:border-b-0 hover:bg-surface-2"
-                    style={row.isChampion ? { boxShadow: 'inset 2px 0 0 var(--xmr-brand)' } : undefined}
-                  >
-                    <th scope="row" className="px-3 py-2 text-left font-medium text-ink">
-                      {row.label}
-                      {row.isChampion ? (
-                        <Badge tone="brand" title="Versión campeona elegida por validación" className="ml-2">
-                          campeón
-                        </Badge>
-                      ) : null}
-                    </th>
-                    <td className="px-3 py-2 font-mono text-xs text-ink-muted">{row.family}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums text-ink">
-                      {formatUsd(row.metrics.mae)}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums text-ink">
-                      {formatUsd(row.metrics.rmse)}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums text-ink">
-                      {typeof row.metrics.mape === 'number' ? `${row.metrics.mape.toFixed(2)} %` : '—'}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums text-ink">
-                      {typeof row.metrics.directionAccuracy === 'number'
-                        ? `${(row.metrics.directionAccuracy * 100).toFixed(1)} %`
-                        : '—'}
-                    </td>
+            <div className="relative mt-4 w-full overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm">
+                <caption className="label-caps pb-2 text-left">
+                  Comparación de modelos sobre validación
+                </caption>
+                <thead>
+                  <tr className="border-b-2 border-hairline-strong">
+                    <th scope="col" className="py-2 pr-3 font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">Modelo</th>
+                    <th scope="col" className="py-2 pr-3 font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">Familia</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">MAE</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">RMSE</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">MAPE</th>
+                    <th scope="col" className="py-2 text-right font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">Dirección</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {comparison.data.map((row) => (
+                    <tr key={row.label} className="border-b border-hairline-subtle last:border-b-0 hover:bg-surface-2">
+                      <th scope="row" className="py-2 pr-3 text-left font-semibold text-ink">
+                        <span aria-hidden="true" className={`mr-2 inline-block h-2 w-2 ${row.isChampion ? 'bg-brand' : 'bg-ink-muted'}`} />
+                        {row.label}
+                        {row.isChampion ? (
+                          <Badge tone="brand" title="Versión campeona elegida por validación" className="ml-2">
+                            campeón
+                          </Badge>
+                        ) : null}
+                      </th>
+                      <td className="py-2 pr-3 font-mono text-xs text-ink-muted">{row.family}</td>
+                      <td className="py-2 pr-3 text-right font-mono tabular-nums text-ink">
+                        {formatUsd(row.metrics.mae)}
+                      </td>
+                      <td className="py-2 pr-3 text-right font-mono tabular-nums text-ink">
+                        {formatUsd(row.metrics.rmse)}
+                      </td>
+                      <td className="py-2 pr-3 text-right font-mono tabular-nums text-ink">
+                        {typeof row.metrics.mape === 'number' ? `${row.metrics.mape.toFixed(2)} %` : '—'}
+                      </td>
+                      <td className="py-2 text-right font-mono tabular-nums text-ink">
+                        {typeof row.metrics.directionAccuracy === 'number'
+                          ? `${(row.metrics.directionAccuracy * 100).toFixed(1)} %`
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         ) : (
           <EmptyState
@@ -349,35 +378,37 @@ export default function PublicDashboardPage() {
             description="La comparación se publica cuando hay al menos una corrida completada con métricas de validación."
           />
         )}
-      </Panel>
+      </Section>
 
-      {/* --------------------------------------------- catálogo + estado */}
-      <div className="grid gap-5 lg:grid-cols-5">
-        <section aria-labelledby="public-models-title" className="space-y-3 lg:col-span-3">
-          <div>
-            <p className="label-caps-ticked">Estado general de modelos</p>
-            <h2 id="public-models-title" className="mt-1.5 text-xl font-semibold tracking-tight text-ink">
+      {/* --------------------------------------------- 05 catálogo + estado */}
+      <div className="grid items-start gap-x-10 gap-y-9 lg:grid-cols-5">
+        <section aria-labelledby="public-models-title" className="min-w-0 lg:col-span-3">
+          <div className="border-b-2 border-hairline-strong pb-2.5">
+            <p className="flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-wide">
+              <span aria-hidden="true" className="font-semibold tabular-nums text-brand-strong">05</span>
+              <span className="text-ink-muted">Estado general de modelos</span>
+            </p>
+            <h2 id="public-models-title" className="mt-1 text-xl font-semibold tracking-tight text-ink">
               Catálogo y versiones campeonas
             </h2>
           </div>
 
-          <Panel data-testid="models-list" flush>
+          <div className="pt-4" data-testid="models-list">
             {models.isPending ? (
-              <div className="p-5"><SkeletonTable rows={4} columns={3} /></div>
+              <SkeletonTable rows={4} columns={3} />
             ) : models.isError ? (
-              <div className="p-5">
-                <ErrorState
-                  title="No se pudo leer el catálogo de modelos"
-                  message={toApiError(models.error).friendlyMessage}
-                  requestId={toApiError(models.error).requestId}
-                  onRetry={() => void models.refetch()}
-                />
-              </div>
+              <ErrorState
+                title="No se pudo leer el catálogo de modelos"
+                message={toApiError(models.error).friendlyMessage}
+                requestId={toApiError(models.error).requestId}
+                onRetry={() => void models.refetch()}
+              />
             ) : models.data && models.data.length > 0 ? (
-              <ul className="divide-y divide-hairline-subtle">
+              <ul className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
                 {models.data.map((model) => (
-                  <li key={model.name} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-surface-2">
-                    <span className="text-sm font-medium text-ink">{model.name}</span>
+                  <li key={model.name} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                    <span aria-hidden="true" className={`inline-block h-2 w-2 ${model.hasChampion ? 'bg-brand' : 'bg-ink-muted'}`} />
+                    <span className="text-sm font-semibold text-ink">{model.name}</span>
                     <Badge tone="neutral">{model.family}</Badge>
                     <span className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">{model.task}</span>
                     <span className="ml-auto">
@@ -393,22 +424,26 @@ export default function PublicDashboardPage() {
                 ))}
               </ul>
             ) : (
-              <div className="p-5">
-                <EmptyState
-                  title="El catálogo de modelos está vacío"
-                  description="Los modelos aparecen aquí cuando se registran en el backend."
-                />
-              </div>
+              <EmptyState
+                title="El catálogo de modelos está vacío"
+                description="Los modelos aparecen aquí cuando se registran en el backend."
+              />
             )}
-          </Panel>
+          </div>
         </section>
 
-        <div className="lg:col-span-2">
-          <Panel data-testid="public-status" className="h-full" tone="raised">
-            <PanelHeader
-              title="Estado de actualización"
-              subtitle="Frescura de los datos y última corrida terminada"
-            />
+        <section aria-labelledby="public-status-title" className="min-w-0 lg:col-span-2" data-testid="public-status">
+          <div className="border-b-2 border-hairline-strong pb-2.5">
+            <p className="flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-wide">
+              <span aria-hidden="true" className="font-semibold tabular-nums text-brand-strong">06</span>
+              <span className="text-ink-muted">Frescura y trazabilidad</span>
+            </p>
+            <h2 id="public-status-title" className="mt-1 text-xl font-semibold tracking-tight text-ink">
+              Estado de actualización
+            </h2>
+          </div>
+
+          <div className="pt-4">
             {status.isPending ? (
               <SkeletonTable rows={2} columns={2} />
             ) : status.isError ? (
@@ -419,10 +454,10 @@ export default function PublicDashboardPage() {
                 onRetry={() => void status.refetch()}
               />
             ) : status.data ? (
-              <dl className="divide-y divide-hairline-subtle border-t border-hairline-subtle">
+              <dl className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
                 <div className="flex items-center justify-between gap-3 py-2">
                   <dt className="text-[13px] text-ink-secondary">Última actualización de datos</dt>
-                  <dd className="font-mono text-xs text-ink" data-testid="data-updated-at">
+                  <dd className="font-mono text-xs tabular-nums text-ink" data-testid="data-updated-at">
                     {status.data.dataUpdatedAt ? formatDateTime(status.data.dataUpdatedAt) : 'sin datos'}
                   </dd>
                 </div>
@@ -450,21 +485,21 @@ export default function PublicDashboardPage() {
                 </div>
                 <div className="flex items-center justify-between gap-3 py-2">
                   <dt className="text-[13px] text-ink-secondary">Generado</dt>
-                  <dd className="font-mono text-xs text-ink">{formatDateTime(status.data.generatedAt)}</dd>
+                  <dd className="font-mono text-xs tabular-nums text-ink">{formatDateTime(status.data.generatedAt)}</dd>
                 </div>
               </dl>
             ) : null}
-          </Panel>
-        </div>
+          </div>
+        </section>
       </div>
 
-      {/* --------------------------------------------- funciones avanzadas */}
-      <section data-testid="advanced-locked" aria-labelledby="advanced-locked-title" className="overflow-hidden rounded border border-hairline-default bg-surface-2">
-        <span aria-hidden="true" className="block h-0.5 bg-brand" />
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 id="advanced-locked-title" className="text-base font-semibold text-ink">Funciones avanzadas: requieren sesión</h2>
-            <p className="mt-1 max-w-2xl text-[13px] leading-normal text-ink-secondary">
+      {/* --------------------------------------------------- 07 acceso */}
+      <section data-testid="advanced-locked" aria-labelledby="advanced-locked-title" className="border border-hairline-default bg-surface-1 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">07 · Zona restringida</p>
+            <h2 id="advanced-locked-title" className="mt-1 text-lg font-semibold tracking-tight text-ink">Funciones avanzadas: requieren sesión</h2>
+            <p className="mt-1.5 max-w-2xl text-[13px] leading-normal text-ink-secondary">
               La vista anónima no incluye experimentos, trabajos de ML, predicciones individuales,
               exportaciones, configuración interna, administración ni auditoría. Inicia sesión para
               abrir el panel completo.
@@ -496,14 +531,19 @@ export default function PublicDashboardPage() {
         </div>
       </section>
 
-      {/* --------------------------------------------- limitaciones */}
+      {/* --------------------------------------------------- 08 límites */}
       <section aria-labelledby="public-legal-title">
-        <p className="label-caps-ticked">Limitaciones</p>
-        <h2 id="public-legal-title" className="mb-3 mt-1.5 text-xl font-semibold tracking-tight text-ink">
-          Qué muestra y qué no muestra esta vista
-        </h2>
-        <Panel>
-          <ul className="list-disc space-y-2 pl-5 text-sm leading-normal text-ink-secondary marker:text-ink-muted">
+        <div className="border-b-2 border-hairline-strong pb-2.5">
+          <p className="flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-wide">
+            <span aria-hidden="true" className="font-semibold tabular-nums text-brand-strong">08</span>
+            <span className="text-ink-muted">Limitaciones</span>
+          </p>
+          <h2 id="public-legal-title" className="mt-1 text-xl font-semibold tracking-tight text-ink">
+            Qué muestra y qué no muestra esta vista
+          </h2>
+        </div>
+        <div className="grid gap-6 pt-4 lg:grid-cols-2">
+          <ul className="list-[square] space-y-2 pl-5 text-sm leading-normal text-ink-secondary marker:text-ink-muted">
             <li>
               Muestra agregados globales de mercado, métricas de evaluación publicadas y el estado
               general de los modelos: todo lo que cualquiera puede verificar sin una cuenta.
@@ -521,10 +561,8 @@ export default function PublicDashboardPage() {
               en el panel de estado de esta misma página.
             </li>
           </ul>
-          <div className="mt-4">
-            <Disclaimer variant="full" />
-          </div>
-        </Panel>
+          <Disclaimer variant="full" />
+        </div>
       </section>
     </div>
   )

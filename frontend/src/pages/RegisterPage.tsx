@@ -80,23 +80,26 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <BrandMark size={36} />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Crear cuenta</h1>
-          <p className="mt-1 text-sm leading-normal text-ink-secondary">
-            Accede a la capacidad predictiva evaluada de XMR-Forecast. Empezarás con el rol VIEWER.
-          </p>
+    <div className="mx-auto w-full max-w-md">
+      <Panel tone="strong">
+        <div className="mb-5 flex items-center gap-3 border-b-2 border-hairline-strong pb-4">
+          <BrandMark size={34} />
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-Forecast · alta</p>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-ink">Crear cuenta</h1>
+          </div>
         </div>
-      </div>
+        <p className="mb-4 text-[13px] leading-normal text-ink-secondary">
+          Accede a la capacidad predictiva evaluada de XMR-Forecast. Empezarás con el rol VIEWER.
+        </p>
 
-      {error ? <ApiErrorAlert error={error} /> : null}
-      {done ? (
-        <Notice>Cuenta creada correctamente. Ya puedes iniciar sesion con tu correo.</Notice>
-      ) : null}
+        {error ? <div className="mb-4"><ApiErrorAlert error={error} /></div> : null}
+        {done ? (
+          <div className="mb-4">
+            <Notice>Cuenta creada correctamente. Ya puedes iniciar sesion con tu correo.</Notice>
+          </div>
+        ) : null}
 
-      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Nombre completo"
@@ -144,10 +147,10 @@ export default function RegisterPage() {
           {/* Consentimiento: los dos primeros son obligatorios y el servidor los
               vuelve a comprobar; ninguno viene precargado ni se marca solo. */}
           <div
-            className="space-y-3 border-t border-hairline-subtle pt-4"
+            className="space-y-3 border-t-2 border-hairline-strong pt-3"
             data-testid="register-consent"
           >
-            <p className="label-caps-ticked">Consentimiento</p>
+            <p className="label-caps">Consentimiento</p>
             <CheckboxField
               data-testid="accept-terms"
               name="acceptTerms"
@@ -189,7 +192,7 @@ export default function RegisterPage() {
               hint="Puedes revocarlo en cualquier momento sin que eso afecte tu acceso al servicio."
             />
             {fieldErrors.consent ? (
-              <p role="alert" data-testid="consent-error" className="pl-6 text-xs text-accent-red">
+              <p role="alert" data-testid="consent-error" className="font-mono text-[11px] uppercase tracking-wide text-accent-red">
                 {fieldErrors.consent}
               </p>
             ) : null}
@@ -212,7 +215,7 @@ export default function RegisterPage() {
           consent={{ acceptTerms, acceptDataPolicy, acceptMarketing }}
         />
 
-        <p className="mt-5 text-center text-xs text-ink-secondary">
+        <p className="mt-5 border-t border-hairline-subtle pt-4 text-center font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
           Ya tienes cuenta?{' '}
           <Link to="/login" className="link-accent">
             Inicia sesion
@@ -220,7 +223,9 @@ export default function RegisterPage() {
         </p>
       </Panel>
 
-      <Disclaimer variant="short" />
+      <div className="mt-4">
+        <Disclaimer variant="short" />
+      </div>
     </div>
   )
 }

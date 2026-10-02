@@ -86,37 +86,36 @@ export function Modal({
         aria-labelledby="modal-title"
         aria-describedby={description ? 'modal-description' : undefined}
         className={clsx(
-          'relative max-h-[90vh] w-full animate-fade-in overflow-y-auto rounded-md border border-hairline-default bg-surface-modal p-5 shadow-card-lg',
+          'relative max-h-[90vh] w-full animate-fade-in overflow-y-auto rounded border border-hairline-strong bg-surface-modal p-5 shadow-card-lg sm:p-6',
           SIZES[size],
         )}
       >
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-brand" />
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-start gap-2.5">
-            <span aria-hidden="true" className="mt-1 h-4 w-0.5 shrink-0 bg-brand" />
+        <div className="mb-4 border-b border-hairline-subtle pb-3">
+          <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 id="modal-title" className="text-base font-semibold text-ink">
+              <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Acción requerida</p>
+              <h2 id="modal-title" className="mt-1 text-base font-semibold leading-tight text-ink">
                 {title}
               </h2>
               {description ? (
-                <p id="modal-description" className="mt-1 text-[13px] text-ink-secondary">
+                <p id="modal-description" className="mt-1 text-[13px] leading-normal text-ink-secondary">
                   {description}
                 </p>
               ) : null}
             </div>
+            {dismissible ? (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Cerrar dialogo"
+                className="shrink-0 rounded-none border border-hairline-default p-1.5 text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+              >
+                <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                  <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
+                </svg>
+              </button>
+            ) : null}
           </div>
-          {dismissible ? (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Cerrar dialogo"
-              className="shrink-0 rounded-sm border border-hairline p-1.5 text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
-            >
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
-              </svg>
-            </button>
-          ) : null}
         </div>
         {children}
         {footer ? <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-hairline-subtle pt-4">{footer}</div> : null}

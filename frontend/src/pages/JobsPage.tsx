@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { cancelJob, fetchJobs } from '../api'
 import { toApiError } from '../api/errors'
-import { ActivityBar, Button, EmptyState, ErrorState, Modal, Notice, Panel, PanelHeader, SkeletonTable, StatusDot } from '../components/ui'
+import { ActivityBar, Button, EmptyState, ErrorState, Modal, Notice, Section, SkeletonTable, StatusDot } from '../components/ui'
 import { DataTable, Pagination, type Column } from '../components/ui'
 import { StatusPill } from '../components/common/StatusPill'
 import { formatDateTime } from '../utils/format'
@@ -34,7 +34,7 @@ export default function JobsPage() {
 
   const columns: Array<Column<Job>> = [
     { key: 'id', header: 'id', render: (row) => <span className="font-mono text-xs tabular-nums">{row.id.slice(0, 8)}</span> },
-    { key: 'type', header: 'Tipo', render: (row) => <span className="font-mono text-xs">{row.type}</span> },
+    { key: 'type', header: 'Tipo', render: (row) => <span className="font-mono text-xs font-semibold">{row.type}</span> },
     { key: 'status', header: 'Estado', render: (row) => <StatusPill status={row.status} /> },
     {
       key: 'progress',
@@ -73,13 +73,13 @@ export default function JobsPage() {
   ).length
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="label-caps-ticked">Cola · ingesta y cómputo</p>
-            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Monitor de tareas</h1>
-            <p className="mt-1 text-[13px] text-ink-secondary">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Cola · ingesta y cómputo</p>
+            <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Monitor de tareas</h1>
+            <p className="mt-1.5 max-w-3xl text-[13px] text-ink-secondary">
               Ingesta, entrenamiento y pronóstico encolados por el backend. El frontend solo observa y cancela.
             </p>
           </div>
@@ -91,27 +91,23 @@ export default function JobsPage() {
         </div>
       </div>
 
-      <Panel tone="raised" flush>
-        <div className="p-5 pb-3">
-          <PanelHeader
-            title="Tareas"
-            subtitle={jobs.isFetching ? 'Actualizando...' : 'Actualización automática mientras haya actividad'}
-          />
-        </div>
+      <Section
+        index="01"
+        eyebrow={jobs.isFetching ? 'Actualizando…' : 'Refresco automático con actividad'}
+        title="Tareas"
+      >
         {jobs.isPending ? (
-          <div className="p-5 pt-0"><SkeletonTable rows={5} columns={5} /></div>
+          <SkeletonTable rows={5} columns={5} />
         ) : jobs.isError ? (
-          <div className="p-5 pt-0">
-            <ErrorState
-              message={toApiError(jobs.error).friendlyMessage}
-              requestId={toApiError(jobs.error).requestId}
-              onRetry={() => void jobs.refetch()}
-            />
-          </div>
+          <ErrorState
+            message={toApiError(jobs.error).friendlyMessage}
+            requestId={toApiError(jobs.error).requestId}
+            onRetry={() => void jobs.refetch()}
+          />
         ) : jobs.data && jobs.data.items.length > 0 ? (
           <>
             <DataTable caption="Cola de tareas" columns={columns} rows={jobs.data.items} rowKey={(row) => row.id} dense />
-            <div className="px-1 pb-1">
+            <div className="mt-1">
               <Pagination
                 page={jobs.data.page}
                 totalPages={jobs.data.totalPages}
@@ -123,14 +119,12 @@ export default function JobsPage() {
             </div>
           </>
         ) : (
-          <div className="p-5 pt-0">
-            <EmptyState
-              title="La cola está vacía"
-              description="No hay tareas pendientes ni en ejecución. Lanza una ingesta o un entrenamiento desde la sección de experimentos."
-            />
-          </div>
+          <EmptyState
+            title="La cola está vacía"
+            description="No hay tareas pendientes ni en ejecución. Lanza una ingesta o un entrenamiento desde la sección de experimentos."
+          />
         )}
-      </Panel>
+      </Section>
 
       <Modal
         open={target !== null}

@@ -19,10 +19,16 @@ export interface DataTableProps<T> {
   empty?: ReactNode
   className?: string
   dense?: boolean
-  /** Highlights the champion / selected row with a red leading bar. */
+  /** Highlights the champion / selected row. */
   isRowActive?: (row: T) => boolean
 }
 
+/**
+ * Ledger table: unboxed, ruled with a strong double-weight header rule.
+ * The scroll wrapper is positioned (`relative`) so screen-reader-only content
+ * inside cells (e.g. labelled selects) cannot escape the scroll container and
+ * stretch the page on narrow viewports.
+ */
 export function DataTable<T>({
   caption,
   columns,
@@ -36,18 +42,18 @@ export function DataTable<T>({
   const cellPad = dense ? 'px-3 py-1.5' : 'px-4 py-2.5'
 
   return (
-    <div className={clsx('w-full overflow-x-auto rounded border border-hairline-subtle bg-surface-table', className)}>
+    <div className={clsx('relative w-full overflow-x-auto', className)}>
       <table className="w-full border-collapse text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
-          <tr className="border-b border-hairline bg-surface-inset">
+          <tr className="border-b-2 border-hairline-strong">
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
                 style={column.width ? { width: column.width } : undefined}
                 className={clsx(
-                  'whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-wide text-ink-muted',
+                  'whitespace-nowrap font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary',
                   cellPad,
                   column.numeric && 'text-right',
                 )}
@@ -73,9 +79,8 @@ export function DataTable<T>({
                   className={clsx(
                     'border-b border-hairline-subtle transition-colors duration-fast last:border-b-0',
                     'hover:bg-surface-2',
-                    active && 'bg-surface-2',
+                    active && 'bg-brand-soft',
                   )}
-                  style={active ? { boxShadow: 'inset 2px 0 0 var(--xmr-brand)' } : undefined}
                 >
                   {columns.map((column) => (
                     <td
@@ -119,9 +124,9 @@ export function Pagination({ page, totalPages, total, size, onPageChange, disabl
   return (
     <nav
       aria-label="Paginacion"
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-subtle px-4 py-2.5 text-xs text-ink-muted"
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-hairline-subtle pt-2.5 font-mono text-[11px] uppercase tracking-wide text-ink-muted"
     >
-      <p className="font-mono tabular-nums">
+      <p className="tabular-nums">
         {from}-{to} de {total} registro{total === 1 ? '' : 's'}
       </p>
       <div className="flex items-center gap-2">
@@ -129,18 +134,18 @@ export function Pagination({ page, totalPages, total, size, onPageChange, disabl
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={disabled || page <= 0}
-          className="rounded-sm border border-hairline bg-surface-2 px-3 py-1.5 font-mono uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-none border border-hairline-default bg-surface-2 px-3 py-1.5 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           Anterior
         </button>
-        <span className="font-mono tabular-nums text-ink-secondary">
+        <span className="tabular-nums text-ink-secondary">
           Pagina {current} / {Math.max(totalPages, 1)}
         </span>
         <button
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={disabled || totalPages === 0 || page >= totalPages - 1}
-          className="rounded-sm border border-hairline bg-surface-2 px-3 py-1.5 font-mono uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-none border border-hairline-default bg-surface-2 px-3 py-1.5 text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           Siguiente
         </button>

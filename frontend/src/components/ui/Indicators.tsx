@@ -20,20 +20,6 @@ const TEXT: Record<IndicatorTone, string> = {
   danger: 'text-danger',
 }
 
-/**
- * Ledger stat block: flat, ruled by a top hairline, value in warm ink.
- * Colour appears only on the delta line (up/down) and on explicit state
- * tones — never on the value itself. Designed to sit side by side in a
- * divided strip, not as isolated floating cards.
- */
-const VALUE_TEXT: Record<IndicatorTone, string> = {
-  idle: 'text-ink',
-  active: 'text-ink',
-  success: 'text-ink',
-  warning: 'text-ink',
-  danger: 'text-ink',
-}
-
 const TREND_TEXT: Record<'up' | 'down' | 'flat', string> = {
   up: 'text-success',
   down: 'text-danger',
@@ -55,7 +41,7 @@ export interface StatusDotProps {
   'data-testid'?: string
 }
 
-/** Small non-color-only status cue: dot shape + optional text label. */
+/** Small non-color-only status cue: square marker + text label. */
 export function StatusDot({ tone = 'idle', pulse = false, label, className, ...rest }: StatusDotProps) {
   return (
     <span
@@ -64,9 +50,9 @@ export function StatusDot({ tone = 'idle', pulse = false, label, className, ...r
     >
       <span
         aria-hidden="true"
-        className={clsx('relative inline-flex h-2 w-2 rounded-full', DOT[tone], pulse && 'animate-pulse')}
+        className={clsx('relative inline-flex h-1.5 w-1.5', DOT[tone], pulse && 'animate-pulse')}
       />
-      {label ? <span className="font-mono text-xs uppercase tracking-wide">{label}</span> : null}
+      {label ? <span className="font-mono text-[11px] uppercase tracking-wide">{label}</span> : null}
     </span>
   )
 }
@@ -87,7 +73,7 @@ export function ActivityBar({ label, tone = 'active', progress, className }: Act
       <div className="flex items-center justify-between gap-3">
         <span className="label-caps">{label}</span>
         {pct !== undefined ? (
-          <span className="font-mono text-xs tabular-nums text-ink-secondary">
+          <span className="font-mono text-[11px] tabular-nums text-ink-secondary">
             {Math.round(pct * 100)}%
           </span>
         ) : null}
@@ -98,17 +84,17 @@ export function ActivityBar({ label, tone = 'active', progress, className }: Act
         aria-valuemin={pct === undefined ? undefined : 0}
         aria-valuemax={pct === undefined ? undefined : 100}
         aria-valuenow={pct === undefined ? undefined : Math.round(pct * 100)}
-        className="relative h-1 w-full overflow-hidden rounded-sm bg-surface-inset"
+        className="relative h-1 w-full overflow-hidden bg-surface-inset"
       >
         {pct === undefined ? (
           <span
             aria-hidden="true"
-            className="absolute inset-y-0 left-0 w-1/3 rounded-sm bg-active/70 animate-pulse"
+            className="absolute inset-y-0 left-0 w-1/3 bg-active/70 animate-pulse"
           />
         ) : (
           <span
             aria-hidden="true"
-            className={clsx('block h-full rounded-sm transition-all duration-slow ease-out', DOT[tone])}
+            className={clsx('block h-full transition-all duration-slow ease-out', DOT[tone])}
             style={{ width: `${pct * 100}%` }}
           />
         )}
@@ -127,23 +113,29 @@ export interface MetricCardProps {
   className?: string
 }
 
-/** Flat ledger stat: top rule, caps label, tabular value, delta line. */
+/**
+ * Ledger stat: open composition, no box. Caps label, tabular value in warm
+ * ink, delta as glyph + word (never colour alone), muted hint line.
+ */
 export function MetricCard({ label, value, unit, hint, tone = 'idle', trend, className }: MetricCardProps) {
+  void tone
   return (
-    <div className={clsx('border-t-2 border-hairline-strong pt-3', className)}>
+    <div className={clsx('border-t-2 border-hairline-strong pt-2.5', className)}>
       <p className="label-caps">{label}</p>
-      <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5">
-        <span className={clsx('font-mono text-[22px] font-semibold tabular-nums leading-none', VALUE_TEXT[tone])}>{value}</span>
+      <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
+        <span className="font-mono text-[26px] font-semibold tabular-nums leading-none text-ink">{value}</span>
         {unit ? <span className="font-mono text-xs text-ink-muted">{unit}</span> : null}
+      </p>
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs">
         {trend ? (
-          <span className={clsx('font-mono text-xs tabular-nums', TREND_TEXT[trend])}>
+          <span className={clsx('font-mono tabular-nums', TREND_TEXT[trend])}>
             <span aria-hidden="true">{TREND_GLYPH[trend]} </span>
+            <span>{trend === 'up' ? 'sube' : trend === 'down' ? 'baja' : 'estable'}</span>
             <span className="sr-only">{trend === 'up' ? 'Sube' : trend === 'down' ? 'Baja' : 'Estable'}</span>
-            <span aria-hidden="true">{trend === 'up' ? 'sube' : trend === 'down' ? 'baja' : 'estable'}</span>
           </span>
         ) : null}
+        {hint ? <span className="text-ink-muted">{hint}</span> : null}
       </p>
-      {hint ? <p className="mt-1.5 text-xs leading-normal text-ink-muted">{hint}</p> : null}
     </div>
   )
 }

@@ -12,6 +12,7 @@ import {
   Notice,
   Panel,
   PanelHeader,
+  Section,
   SelectField,
   SkeletonStat,
   StatusDot,
@@ -41,11 +42,11 @@ export default function MetricsPage() {
   const validation = metrics.data?.validation
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
-        <p className="label-caps-ticked">Evaluación · métrica registrada</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Métricas</h1>
-        <p className="mt-1 max-w-3xl text-[13px] text-ink-secondary">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Evaluación · métrica registrada</p>
+        <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Métricas</h1>
+        <p className="mt-1.5 max-w-3xl text-[13px] text-ink-secondary">
           MAE, RMSE, MAPE y proporción de aciertos de dirección. El campeón se elige con validación; la
           prueba se reporta una sola vez (R-24).
         </p>
@@ -54,7 +55,7 @@ export default function MetricsPage() {
       <Disclaimer variant="full" />
 
       <Panel>
-        <PanelHeader title="Seleccionar experimento" subtitle="Las métricas se piden al backend por id" marker="none" />
+        <PanelHeader title="Seleccionar experimento" subtitle="Las métricas se piden al backend por id" />
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <SelectField
             label="Experimento"
@@ -92,7 +93,7 @@ export default function MetricsPage() {
           description="Las métricas de MAE, RMSE, MAPE y dirección aparecerán aquí, separadas en validación y prueba."
         />
       ) : metrics.isPending ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
           <SkeletonStat />
           <SkeletonStat />
           <SkeletonStat />
@@ -105,56 +106,46 @@ export default function MetricsPage() {
           onRetry={() => void metrics.refetch()}
         />
       ) : (
-        <div className="space-y-5">
-          <section aria-label="Metricas de validacion">
-            <Panel tone="raised">
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-                  <span aria-hidden="true" className="inline-block h-4 w-0.5 bg-ink-muted" />
-                  Validación
-                </h2>
-                <StatusDot tone="idle" label="decide al campeón" />
-              </div>
-              <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
-                <MetricCard label="MAE" value={formatNumber(validation?.mae ?? metrics.data?.mae, 4)} unit="USD" tone="idle" />
-                <MetricCard label="RMSE" value={formatNumber(validation?.rmse ?? metrics.data?.rmse, 4)} unit="USD" tone="idle" />
-                <MetricCard label="MAPE" value={formatNumber(validation?.mape ?? metrics.data?.mape, 4)} unit="%" tone="idle" />
-                <MetricCard
-                  label="Dirección"
-                  value={formatNumber(
-                    (validation?.directionAccuracy ?? metrics.data?.directionAccuracy ?? 0) * 100,
-                    2,
-                  )}
-                  unit="%"
-                  tone="idle"
-                  hint="Aciertos sube / baja"
-                />
-              </div>
-            </Panel>
-          </section>
+        <div className="space-y-9">
+          <Section
+            index="01"
+            eyebrow="Validación · decide al campeón"
+            title="Métricas de validación"
+          >
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCard label="MAE" value={formatNumber(validation?.mae ?? metrics.data?.mae, 4)} unit="USD" tone="idle" />
+              <MetricCard label="RMSE" value={formatNumber(validation?.rmse ?? metrics.data?.rmse, 4)} unit="USD" tone="idle" />
+              <MetricCard label="MAPE" value={formatNumber(validation?.mape ?? metrics.data?.mape, 4)} unit="%" tone="idle" />
+              <MetricCard
+                label="Dirección"
+                value={formatNumber(
+                  (validation?.directionAccuracy ?? metrics.data?.directionAccuracy ?? 0) * 100,
+                  2,
+                )}
+                unit="%"
+                tone="idle"
+                hint="Aciertos sube / baja"
+              />
+            </div>
+          </Section>
 
-          <section aria-label="Metricas de prueba">
-            <Panel tone="raised">
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-                  <span aria-hidden="true" className="inline-block h-4 w-0.5 bg-accent-amber" />
-                  Prueba · evaluación final
-                </h2>
-                <StatusDot tone="warning" label="uso único" />
-              </div>
-              <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
-                <MetricCard label="MAE" value={formatNumber(test?.mae, 4)} unit="USD" tone="idle" />
-                <MetricCard label="RMSE" value={formatNumber(test?.rmse, 4)} unit="USD" tone="idle" />
-                <MetricCard label="MAPE" value={formatNumber(test?.mape, 4)} unit="%" tone="idle" />
-                <MetricCard
-                  label="Dirección"
-                  value={formatNumber((test?.directionAccuracy ?? 0) * 100, 2)}
-                  unit="%"
-                  tone="idle"
-                />
-              </div>
-            </Panel>
-          </section>
+          <Section
+            index="02"
+            eyebrow="Prueba · evaluación final de uso único"
+            title="Métricas de prueba"
+          >
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCard label="MAE" value={formatNumber(test?.mae, 4)} unit="USD" tone="idle" />
+              <MetricCard label="RMSE" value={formatNumber(test?.rmse, 4)} unit="USD" tone="idle" />
+              <MetricCard label="MAPE" value={formatNumber(test?.mape, 4)} unit="%" tone="idle" />
+              <MetricCard
+                label="Dirección"
+                value={formatNumber((test?.directionAccuracy ?? 0) * 100, 2)}
+                unit="%"
+                tone="idle"
+              />
+            </div>
+          </Section>
 
           <Notice>
             Si el modelo recurrente no supera a las líneas base, ese resultado se publica tal cual. El

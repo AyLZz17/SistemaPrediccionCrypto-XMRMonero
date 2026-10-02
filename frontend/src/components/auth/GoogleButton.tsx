@@ -54,8 +54,8 @@ export function GoogleButton({
       aria-label={compact ? text : undefined}
       className={
         compact
-          ? 'flex items-center gap-2 rounded-sm border border-hairline bg-surface-2 px-3 py-2 text-xs font-medium text-ink transition-colors duration-fast hover:border-hairline-strong hover:bg-surface-3'
-          : 'flex h-10 w-full items-center justify-center gap-2.5 rounded-sm border border-hairline-default bg-surface-2 px-4 text-sm font-medium text-ink transition-colors duration-fast ease-out hover:border-hairline-strong hover:bg-surface-3'
+          ? 'flex items-center gap-2 rounded-none border border-hairline-default bg-surface-2 px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink transition-colors duration-fast hover:border-hairline-strong hover:bg-surface-3'
+          : 'flex h-10 w-full items-center justify-center gap-2.5 rounded-none border border-hairline-default bg-surface-2 px-4 text-sm font-semibold text-ink transition-colors duration-fast ease-out hover:border-hairline-strong hover:bg-surface-3'
       }
     >
       <svg viewBox="0 0 18 18" className="h-4 w-4 shrink-0" aria-hidden="true">

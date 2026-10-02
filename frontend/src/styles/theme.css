@@ -1,56 +1,61 @@
 /**
  * XMR-Forecast — design tokens (single source of truth).
  *
- * Quantitative-terminal identity: deep black coal surfaces, warm-white ink,
- * cold-gray secondary text, and a controlled brand red used ONLY as an
- * emphasis/state colour (active navigation bar, primary actions, danger),
- * never as a large fill. Green is strictly for up/success, amber for
+ * "Ledger console" identity: deep black coal, warm-white ink, cold-gray
+ * secondary text, and a controlled brand red used ONLY as an emphasis/state
+ * colour (active navigation block, primary actions, danger, champion marks),
+ * never as a page fill. Green is strictly for up/success, amber for
  * warnings, cyan strictly for focus/active/connectivity.
+ *
+ * Content is composed of ruled LEDGER SECTIONS (numbered mono eyebrows with
+ * a hairline rule), not stacks of identical boxes. Boxes are reserved for
+ * forms, dialogs, menus and terminals.
  *
  * Every colour used by the UI resolves from these CSS custom properties.
  * Components and Tailwind utilities reference them through
  * `tailwind.config.js` -> `theme.extend`; hardcoded hex values are not
- * allowed anywhere else (see frontend/README.md § Design tokens).
+ * allowed anywhere else (see frontend/README.md § Design tokens), except the
+ * third-party Google logo colours in `GoogleButton.tsx`.
  *
  * Mode is permanently dark (`color-scheme: dark`). There is no light theme.
  *
- * Contrast targets (WCAG AA), measured against --xmr-bg-deep (#0a0a0c):
- *   --xmr-text-primary    ~15.5:1  (body text, >= 4.5 required)
- *   --xmr-text-secondary  ~7.4:1   (body text, >= 4.5 required)
- *   --xmr-text-muted      ~4.6:1   (secondary text, >= 4.5 required)
- *   --xmr-brand-strong    ~5.1:1   (text / UI, >= 4.5 for text, >= 3 for UI)
- *   --xmr-accent-green    ~8.2:1
- *   --xmr-accent-amber    ~8.6:1
- *   --xmr-accent-cyan     ~7.3:1
- *   white on --xmr-brand-solid ~8.7:1 (primary buttons)
+ * Contrast (WCAG AA), measured against --xmr-bg-deep (#0a0a0c):
+ *   --xmr-text-primary    17.4:1  (body text, >= 4.5 required)
+ *   --xmr-text-secondary   7.8:1  (body text, >= 4.5 required)
+ *   --xmr-text-muted       4.6:1  (secondary text, >= 4.5 required)
+ *   --xmr-brand-strong     5.1:1  (text / UI, >= 4.5 for text, >= 3 for UI)
+ *   --xmr-accent-green     8.0:1
+ *   --xmr-accent-amber     9.2:1
+ *   --xmr-accent-cyan      8.1:1
+ *   white on --xmr-brand-solid 7.3:1 (primary buttons)
  */
 
 :root {
   color-scheme: dark;
 
   /* ---------------------------------------------------------------- base */
-  --xmr-bg-root: #050506;           /* app backdrop, near-black */
+  --xmr-bg-root: #060607;           /* app backdrop, near-black */
   --xmr-bg-deep: #0a0a0c;           /* page background, contrast reference */
-  --xmr-bg-raised: #101014;         /* raised bands, sidebar */
-  --xmr-bg-elevated: #16161b;       /* solid elevated fills */
+  --xmr-bg-raised: #0e0e12;         /* rails, mastheads */
+  --xmr-bg-elevated: #141419;       /* solid elevated fills */
 
   /* ------------------------------------------------------------- surfaces
-     Translucent blacks; blur is restrained (8px) and decorative
-     glassmorphism is not used — panels read as solid coal. */
-  --xmr-surface-1: rgba(17, 17, 22, 0.82);    /* primary panel */
-  --xmr-surface-2: rgba(23, 23, 29, 0.88);    /* raised panel */
-  --xmr-surface-3: rgba(31, 31, 39, 0.92);    /* wells, hover */
-  --xmr-surface-inset: rgba(3, 3, 5, 0.72);   /* deep inset, inputs */
+     Translucent blacks for boxes (forms, dialogs, menus, consoles). Ledger
+     content itself sits directly on the page background between rules. */
+  --xmr-surface-1: rgba(16, 16, 21, 0.84);    /* primary box */
+  --xmr-surface-2: rgba(22, 22, 28, 0.90);    /* raised box */
+  --xmr-surface-3: rgba(30, 30, 38, 0.94);    /* wells, hover */
+  --xmr-surface-inset: rgba(3, 3, 5, 0.74);   /* deep inset, inputs, console */
   --xmr-surface-overlay: rgba(6, 6, 8, 0.96); /* dropdowns, menus */
-  --xmr-surface-table: rgba(13, 13, 17, 0.66);/* table body */
-  --xmr-surface-modal: #131318;               /* dialogs: solid for focus */
+  --xmr-surface-table: rgba(12, 12, 16, 0.60);/* table wrapper */
+  --xmr-surface-modal: #121217;               /* dialogs: solid for focus */
   --xmr-glass-blur: 8px;
 
   /* -------------------------------------------------------------- borders */
   --xmr-border-hairline: rgba(243, 240, 233, 0.07);  /* finest dividers */
-  --xmr-border-subtle: rgba(243, 240, 233, 0.12);    /* default panel edge */
+  --xmr-border-subtle: rgba(243, 240, 233, 0.12);    /* default edge */
   --xmr-border-default: rgba(243, 240, 233, 0.20);   /* interactive edge */
-  --xmr-border-strong: rgba(243, 240, 233, 0.32);    /* emphasis edge */
+  --xmr-border-strong: rgba(243, 240, 233, 0.34);    /* section rules */
   --xmr-border-focus: var(--xmr-accent-cyan);        /* focus ring only */
 
   /* ----------------------------------------------------------------- text
@@ -62,8 +67,8 @@
 
   /* -------------------------------------------------- brand red (emphasis)
      Dark institutional red as the product mark; the bright variant is for
-     text/state on dark backgrounds. Red is an accent, never a page fill. */
-  --xmr-brand: #c1272d;                 /* mark, active bars, keylines */
+     text/state on dark backgrounds. An accent, never a page fill. */
+  --xmr-brand: #c1272d;                 /* mark, active blocks, keylines */
   --xmr-brand-deep: #8f1b21;            /* pressed / deep emphasis */
   --xmr-brand-solid: #a81f26;           /* primary button fill (white text) */
   --xmr-brand-strong: #e5484d;          /* danger / down text on dark */
@@ -114,10 +119,10 @@
   --xmr-state-disabled: rgba(154, 164, 175, 0.30);
 
   /* -------------------------------------------------------------- shadows
-     Flat and restrained: depth comes from borders, not elevation. */
+     Almost flat: separation comes from rules and borders, not elevation. */
   --xmr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.55);
-  --xmr-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --xmr-shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.55);
+  --xmr-shadow-md: 0 3px 10px rgba(0, 0, 0, 0.40);
+  --xmr-shadow-lg: 0 8px 22px rgba(0, 0, 0, 0.50);
   --xmr-shadow-focus: 0 0 0 2px var(--xmr-bg-root), 0 0 0 4px var(--xmr-border-focus);
   --xmr-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 
@@ -132,17 +137,17 @@
   --xmr-text-lg: 1.0625rem;      /* 17px */
   --xmr-text-xl: 1.25rem;        /* 20px */
   --xmr-text-2xl: 1.5rem;        /* 24px */
-  --xmr-text-3xl: 1.75rem;       /* 28px — terminal type stays compact */
+  --xmr-text-3xl: 1.75rem;       /* 28px */
   --xmr-tracking-wide: 0.09em;
   --xmr-tracking-tight: -0.015em;
   --xmr-leading-tight: 1.25;
   --xmr-leading-normal: 1.55;
 
   /* --------------------------------------------------------------- radii
-     Deliberately sharp: small radii, no pill cards. */
-  --xmr-radius-sm: 3px;
-  --xmr-radius-md: 5px;
-  --xmr-radius-lg: 8px;
+     Sharp console corners. */
+  --xmr-radius-sm: 2px;
+  --xmr-radius-md: 3px;
+  --xmr-radius-lg: 5px;
   --xmr-radius-full: 999px;   /* dots and unread counters only */
 
   /* ----------------------------------------------------------- animation */
@@ -159,8 +164,8 @@
     0 0 0 calc(var(--xmr-focus-ring-width) + var(--xmr-focus-ring-offset)) var(--xmr-focus-ring-color);
 
   /* -------------------------------------------------------------- layout */
-  --xmr-sidebar-width: 232px;
-  --xmr-header-height: 52px;
+  --xmr-sidebar-width: 248px;
+  --xmr-header-height: 56px;
   --xmr-footer-height: 52px;
   --xmr-content-max: 1440px;
 }

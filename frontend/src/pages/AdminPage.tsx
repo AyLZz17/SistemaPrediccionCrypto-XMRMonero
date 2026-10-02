@@ -9,8 +9,7 @@ import {
   EmptyState,
   ErrorState,
   Notice,
-  Panel,
-  PanelHeader,
+  Section,
   SkeletonTable,
   StatusDot,
 } from '../components/ui'
@@ -43,7 +42,7 @@ export default function AdminPage() {
       header: 'Usuario',
       render: (row) => (
         <div>
-          <p className="font-medium text-ink">{row.fullName}</p>
+          <p className="font-semibold text-ink">{row.fullName}</p>
           <p className="font-mono text-xs text-ink-muted">{row.email}</p>
         </div>
       ),
@@ -52,8 +51,11 @@ export default function AdminPage() {
       key: 'role',
       header: 'Rol actual',
       render: (row) => (
-        <span className={`font-mono text-xs uppercase tracking-wide ${row.role === 'ADMIN' ? 'text-accent-red' : 'text-ink-secondary'}`}>
-          {ROLE_LABELS[row.role]}
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className={`inline-block h-2 w-2 ${row.role === 'ADMIN' ? 'bg-accent-red' : 'bg-ink-muted'}`} />
+          <span className={`font-mono text-xs uppercase tracking-wide ${row.role === 'ADMIN' ? 'text-accent-red' : 'text-ink-secondary'}`}>
+            {ROLE_LABELS[row.role]}
+          </span>
         </span>
       ),
     },
@@ -79,7 +81,7 @@ export default function AdminPage() {
               if (nextRole === row.role) return
               roleMutation.mutate({ id: row.id, role: nextRole })
             }}
-            className="rounded-sm border border-hairline bg-surface-2 px-2 py-1.5 font-mono text-xs text-ink transition-colors duration-fast hover:border-hairline-strong disabled:opacity-50"
+            className="rounded-none border border-hairline-default bg-surface-2 px-2 py-1.5 font-mono text-xs text-ink transition-colors duration-fast hover:border-hairline-strong disabled:opacity-50"
           >
             {ROLES.map((role) => (
               <option key={role} value={role}>
@@ -95,13 +97,13 @@ export default function AdminPage() {
   const adminCount = (users.data?.items ?? []).filter((user) => hasAtLeast(user.role, 'ADMIN')).length
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="label-caps-ticked">Administración · herramienta interna</p>
-            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Usuarios y roles</h1>
-            <p className="mt-1 text-[13px] text-ink-secondary">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Administración · herramienta interna</p>
+            <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Usuarios y roles</h1>
+            <p className="mt-1.5 max-w-3xl text-[13px] text-ink-secondary">
               Gestión de privilegios. El backend valida cada cambio y lo registra en la auditoría.
             </p>
           </div>
@@ -114,24 +116,24 @@ export default function AdminPage() {
 
       {error ? <ApiRoleError error={error} onDismiss={() => setError(null)} /> : null}
 
-      <Panel tone="raised" flush>
-        <div className="p-5 pb-3">
-          <PanelHeader title="Cuentas registradas" subtitle="Selecciona un rol para aplicarlo de inmediato" />
-        </div>
+      <Section
+        index="01"
+        eyebrow="Directorio de cuentas"
+        title="Cuentas registradas"
+        description="Selecciona un rol para aplicarlo de inmediato"
+      >
         {users.isPending ? (
-          <div className="p-5 pt-0"><SkeletonTable rows={5} columns={4} /></div>
+          <SkeletonTable rows={5} columns={4} />
         ) : users.isError ? (
-          <div className="p-5 pt-0">
-            <ErrorState
-              message={toApiError(users.error).friendlyMessage}
-              requestId={toApiError(users.error).requestId}
-              onRetry={() => void users.refetch()}
-            />
-          </div>
+          <ErrorState
+            message={toApiError(users.error).friendlyMessage}
+            requestId={toApiError(users.error).requestId}
+            onRetry={() => void users.refetch()}
+          />
         ) : users.data && users.data.items.length > 0 ? (
           <>
             <DataTable caption="Usuarios de la plataforma" columns={columns} rows={users.data.items} rowKey={(row) => row.id} dense />
-            <div className="px-1 pb-1">
+            <div className="mt-1">
               <Pagination
                 page={users.data.page}
                 totalPages={users.data.totalPages}
@@ -143,20 +145,17 @@ export default function AdminPage() {
             </div>
           </>
         ) : (
-          <div className="p-5 pt-0">
-            <EmptyState title="Sin usuarios" description="El backend no devolvió ninguna cuenta." />
-          </div>
+          <EmptyState title="Sin usuarios" description="El backend no devolvió ninguna cuenta." />
         )}
-      </Panel>
+      </Section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel>
-          <PanelHeader title="Modelo de permisos" marker="none" />
-          <dl className="divide-y divide-hairline-subtle border-t border-hairline-subtle">
+      <div className="grid items-start gap-x-10 gap-y-9 lg:grid-cols-2">
+        <Section index="02" eyebrow="Jerarquía" title="Modelo de permisos" className="min-w-0">
+          <dl className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
             {ROLES.map((role) => (
-              <div key={role} className="flex items-baseline gap-3 py-2.5">
-                <dt className="min-w-28 font-mono text-xs uppercase tracking-wide text-ink">{ROLE_LABELS[role]}</dt>
-                <dd className="text-[13px] leading-normal text-ink-secondary">
+              <div key={role} className="flex items-baseline gap-4 py-2.5">
+                <dt className="w-28 shrink-0 font-mono text-xs font-semibold uppercase tracking-wide text-ink">{ROLE_LABELS[role]}</dt>
+                <dd className="min-w-0 text-[13px] leading-normal text-ink-secondary">
                   {role === 'ADMIN'
                     ? 'Control total, incluida la promoción de modelos y la auditoría.'
                     : role === 'ANALYST'
@@ -166,21 +165,20 @@ export default function AdminPage() {
               </div>
             ))}
           </dl>
-        </Panel>
+        </Section>
 
-        <Panel>
-          <PanelHeader title="Buenas prácticas" subtitle="Controles de seguridad aplicados" marker="none" />
-          <ul className="space-y-2.5 text-[13px] leading-normal text-ink-secondary">
-            <li className="flex gap-2.5">
-              <span className="font-mono text-[11px] tabular-nums text-brand-strong">01</span>
+        <Section index="03" eyebrow="Controles" title="Buenas prácticas" description="Controles de seguridad aplicados" className="min-w-0">
+          <ul className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
+            <li className="flex gap-3 py-2.5 text-[13px] leading-normal text-ink-secondary">
+              <span aria-hidden="true" className="font-mono text-[11px] tabular-nums text-brand-strong">01</span>
               <span>Principio de mínimo privilegio: concede solo el rol que la persona necesita.</span>
             </li>
-            <li className="flex gap-2.5">
-              <span className="font-mono text-[11px] tabular-nums text-brand-strong">02</span>
+            <li className="flex gap-3 py-2.5 text-[13px] leading-normal text-ink-secondary">
+              <span aria-hidden="true" className="font-mono text-[11px] tabular-nums text-brand-strong">02</span>
               <span>Los cambios de rol quedan registrados en la auditoría con su requestId.</span>
             </li>
-            <li className="flex gap-2.5">
-              <span className="font-mono text-[11px] tabular-nums text-brand-strong">03</span>
+            <li className="flex gap-3 py-2.5 text-[13px] leading-normal text-ink-secondary">
+              <span aria-hidden="true" className="font-mono text-[11px] tabular-nums text-brand-strong">03</span>
               <span>Las cuentas ADMIN deben usar MFA en el proveedor de identidad.</span>
             </li>
           </ul>
@@ -190,7 +188,7 @@ export default function AdminPage() {
               directamente. La interfaz solo oculta lo que no corresponde.
             </Notice>
           </div>
-        </Panel>
+        </Section>
       </div>
     </div>
   )

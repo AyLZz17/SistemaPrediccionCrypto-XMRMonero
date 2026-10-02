@@ -67,22 +67,25 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="mx-auto w-full max-w-md">
-      <Panel tone="raised">
-        <StatusDot
-          tone={verified ? 'success' : error ? 'danger' : 'active'}
-          label={
-            verified
-              ? 'Correo confirmado'
-              : verifying
-                ? 'Comprobando el enlace'
-                : 'Confirma tu correo'
-          }
-          pulse={verifying}
-        />
+      <Panel tone="strong">
+        <div className="mb-4 flex items-center justify-between gap-3 border-b-2 border-hairline-strong pb-3">
+          <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-Forecast · verificación</p>
+          <StatusDot
+            tone={verified ? 'success' : error ? 'danger' : 'active'}
+            label={
+              verified
+                ? 'Correo confirmado'
+                : verifying
+                  ? 'Comprobando el enlace'
+                  : 'Confirma tu correo'
+            }
+            pulse={verifying}
+          />
+        </div>
 
         {verified ? (
           <>
-            <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">Correo confirmado</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-ink">Correo confirmado</h1>
             <p className="mt-2 text-sm leading-normal text-ink-secondary">
               Tu direccion ya esta verificada. Ya puedes iniciar sesion con normalidad.
             </p>
@@ -94,7 +97,7 @@ export default function VerifyEmailPage() {
           </>
         ) : (
           <>
-            <h1 className="mt-3 text-xl font-semibold tracking-tight text-ink">
+            <h1 className="text-xl font-semibold tracking-tight text-ink">
               {verifying ? 'Confirmando tu correo' : 'No pudimos confirmar el correo'}
             </h1>
             {error ? (
@@ -108,7 +111,7 @@ export default function VerifyEmailPage() {
             )}
 
             {showResendForm ? (
-              <div className="mt-5 border-t border-hairline-subtle pt-4" data-testid="resend-block">
+              <div className="mt-5 border-t-2 border-hairline-strong pt-4" data-testid="resend-block">
                 {resendState === 'sent' ? (
                   <Notice>
                     Si existe una cuenta pendiente de confirmacion con ese correo, hemos enviado un
@@ -139,7 +142,7 @@ export default function VerifyEmailPage() {
               </div>
             ) : null}
 
-            <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4">
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4 font-mono text-[11px] uppercase tracking-wide">
               <Link to="/login">
                 <Button variant="secondary">Ir a iniciar sesion</Button>
               </Link>

@@ -4,10 +4,9 @@ import { toApiError, type ApiError } from '../../api/errors'
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
-const TONES: Record<AlertTone, { wrap: string; bar: string; icon: ReactNode; role: 'alert' | 'status' }> = {
+const TONES: Record<AlertTone, { wrap: string; icon: ReactNode; role: 'alert' | 'status' }> = {
   info: {
-    wrap: 'border-hairline-default bg-surface-2 text-ink-secondary',
-    bar: 'bg-ink-muted',
+    wrap: 'border-hairline-default bg-surface-1 text-ink-secondary',
     icon: (
       <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5v4.2M8 11.2v.6" strokeLinecap="round" />
     ),
@@ -15,19 +14,16 @@ const TONES: Record<AlertTone, { wrap: string; bar: string; icon: ReactNode; rol
   },
   success: {
     wrap: 'border-accent-green/40 bg-accent-green-soft text-accent-green',
-    bar: 'bg-accent-green',
     icon: <path d="M3 8.4l3.2 3.1L13 4.8" strokeLinecap="round" strokeLinejoin="round" />,
     role: 'status',
   },
   warning: {
     wrap: 'border-accent-amber/45 bg-accent-amber-soft text-accent-amber',
-    bar: 'bg-accent-amber',
     icon: <path d="M8 2.2 14.4 13H1.6L8 2.2zM8 6.4v3M8 11.2v.5" strokeLinecap="round" strokeLinejoin="round" />,
     role: 'alert',
   },
   danger: {
     wrap: 'border-accent-red/50 bg-accent-red-soft text-accent-red',
-    bar: 'bg-accent-red',
     icon: (
       <>
         <circle cx="8" cy="8" r="6.5" />
@@ -51,11 +47,11 @@ export function Notice({ children, className }: { children: ReactNode; className
   return (
     <div
       className={clsx(
-        'flex gap-3 rounded border border-hairline bg-surface-inset px-4 py-3 text-[13px] leading-normal text-ink-secondary',
+        'rounded-sm border border-hairline-subtle bg-surface-inset px-4 py-3 text-[13px] leading-normal text-ink-secondary',
         className,
       )}
     >
-      <span aria-hidden="true" className="mt-1 h-8 w-0.5 shrink-0 bg-ink-muted" />
+      <p className="mb-1 font-mono text-[10px] uppercase tracking-wide text-ink-muted">Nota</p>
       <div className="min-w-0">{children}</div>
     </div>
   )
@@ -67,27 +63,26 @@ export function Alert({ tone = 'info', title, children, action, className }: Ale
     <div
       role={config.role}
       className={clsx(
-        'flex items-start gap-3 rounded border px-4 py-3 text-sm',
+        'rounded-sm border px-4 py-3 text-sm',
         config.wrap,
         className,
       )}
     >
-      <span aria-hidden="true" className={clsx('mt-0.5 h-9 w-0.5 shrink-0', config.bar)} />
-      <svg
-        viewBox="0 0 16 16"
-        className="mt-0.5 h-4 w-4 shrink-0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        aria-hidden="true"
-      >
-        {config.icon}
-      </svg>
-      <div className="min-w-0 flex-1">
-        {title ? <p className="font-semibold">{title}</p> : null}
-        {children ? <div className="leading-normal opacity-95">{children}</div> : null}
+      <div className="flex items-center gap-2.5">
+        <svg
+          viewBox="0 0 16 16"
+          className="h-4 w-4 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          aria-hidden="true"
+        >
+          {config.icon}
+        </svg>
+        {title ? <p className="font-semibold leading-tight">{title}</p> : null}
+        {action ? <div className="ml-auto shrink-0">{action}</div> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {children ? <div className="mt-1.5 leading-normal opacity-95">{children}</div> : null}
     </div>
   )
 }
@@ -121,7 +116,7 @@ export function ApiErrorAlert({ error, onRetry, className, title }: ApiErrorAler
           <button
             type="button"
             onClick={onRetry}
-            className="rounded border border-current/40 px-3 py-1.5 text-xs font-medium transition-colors duration-fast hover:bg-white/10"
+            className="rounded-sm border border-current/40 px-3 py-1.5 text-xs font-medium transition-colors duration-fast hover:bg-white/10"
           >
             Reintentar
           </button>

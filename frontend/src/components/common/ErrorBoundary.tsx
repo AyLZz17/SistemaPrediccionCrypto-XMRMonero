@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Footer } from '../layout/Footer'
-import { Button, Panel, PanelHeader, StatusDot } from '../ui'
+import { Button, Panel, StatusDot } from '../ui'
 
 interface ErrorBoundaryState {
   error: Error | null
@@ -39,18 +39,19 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBound
         <main className="flex flex-1 items-center justify-center p-6">
           <div className="w-full max-w-lg">
             <Panel tone="danger">
-              <div className="flex items-center gap-3">
+              <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Fallo de renderizado</p>
+              <div className="mt-1.5 flex items-center gap-2.5">
                 <StatusDot tone="danger" label="Error 500" />
               </div>
-              <PanelHeader title="La interfaz encontro un error inesperado" marker="danger" as="h2" className="mt-3" />
-              <p className="text-sm leading-normal text-ink-secondary">
+              <h2 className="mt-3 text-xl font-semibold tracking-tight text-ink">La interfaz encontro un error inesperado</h2>
+              <p className="mt-2 text-sm leading-normal text-ink-secondary">
                 Se ha detenido el renderizado de esta vista. Puedes reintentarla; si el problema persiste,
                 comparte el identificador con el equipo de soporte.
               </p>
-              <p className="mt-3 rounded border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs text-ink-muted">
+              <p className="mt-3 rounded-sm border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs text-ink-muted">
                 {error.name}: {error.message}
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4">
                 <Button onClick={this.handleReset}>Reintentar</Button>
                 <Button variant="secondary" onClick={() => window.location.assign('/dashboard')}>
                   Ir al dashboard

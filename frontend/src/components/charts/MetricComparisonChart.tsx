@@ -46,12 +46,12 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
   return (
     <div className="h-80 w-full min-w-0" role="img" aria-label="Comparativa de métricas por modelo">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="24%">
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="28%">
           <CartesianGrid stroke="var(--xmr-border-hairline)" vertical={false} />
           <XAxis
             dataKey="name"
             tick={{ fill: 'var(--xmr-text-muted)', fontSize: 10, fontFamily: 'var(--xmr-font-mono)' }}
-            axisLine={{ stroke: 'var(--xmr-border-default)' }}
+            axisLine={{ stroke: 'var(--xmr-border-strong)' }}
             tickLine={false}
           />
           <YAxis
@@ -62,7 +62,7 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
           <Tooltip
             contentStyle={{
               background: 'var(--xmr-surface-modal)',
-              border: '1px solid var(--xmr-border-default)',
+              border: '1px solid var(--xmr-border-strong)',
               borderRadius: 'var(--xmr-radius-sm)',
               fontFamily: 'var(--xmr-font-mono)',
               fontSize: 12,
@@ -78,7 +78,7 @@ export function MetricComparisonChart({ rows }: { rows: ComparisonRow[] }) {
               dataKey={series.key}
               name={series.label}
               fill={series.color}
-              radius={[2, 2, 0, 0]}
+              radius={0}
               isAnimationActive={false}
             />
           ))}

@@ -11,8 +11,7 @@ import {
   ErrorState,
   Modal,
   Notice,
-  Panel,
-  PanelHeader,
+  Section,
   SelectField,
   TextAreaField,
   TextField,
@@ -74,7 +73,7 @@ export default function ExperimentsPage() {
   })
 
   const experimentColumns: Array<Column<Experiment>> = [
-    { key: 'name', header: 'Experimento', render: (row) => <span className="font-medium text-ink">{row.name}</span> },
+    { key: 'name', header: 'Experimento', render: (row) => <span className="font-semibold text-ink">{row.name}</span> },
     { key: 'task', header: 'Tarea', render: (row) => <span className="font-mono text-xs">{row.task}</span> },
     { key: 'modelFamily', header: 'Familia', render: (row) => row.modelFamily ?? '—' },
     { key: 'status', header: 'Estado', render: (row) => <StatusPill status={row.status} /> },
@@ -146,13 +145,13 @@ export default function ExperimentsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="label-caps-ticked">Entrenamiento · configuración versionada</p>
-            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Experimentos</h1>
-            <p className="mt-1 max-w-3xl text-[13px] text-ink-secondary">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Entrenamiento · configuración versionada</p>
+            <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Experimentos</h1>
+            <p className="mt-1.5 max-w-3xl text-[13px] text-ink-secondary">
               Configuración y corridas de los modelos. El ajuste de hiperparámetros usa solo validación; la
               prueba se evalúa una vez (R-04).
             </p>
@@ -174,20 +173,19 @@ export default function ExperimentsPage() {
         />
       ) : null}
 
-      <Panel tone="raised" flush>
-        <div className="p-5 pb-3">
-          <PanelHeader title="Experimentos registrados" subtitle="Configuraciones de la plataforma" />
-        </div>
+      <Section
+        index="01"
+        eyebrow="Configuraciones de la plataforma"
+        title="Experimentos registrados"
+      >
         {experiments.isPending ? (
-          <div className="p-5 pt-0"><div className="skeleton-bar h-64 w-full" role="status" aria-label="Cargando experimentos" /></div>
+          <div className="skeleton-bar h-64 w-full" role="status" aria-label="Cargando experimentos" />
         ) : experiments.isError ? (
-          <div className="p-5 pt-0">
-            <ErrorState
-              message={toApiError(experiments.error).friendlyMessage}
-              requestId={toApiError(experiments.error).requestId}
-              onRetry={() => void experiments.refetch()}
-            />
-          </div>
+          <ErrorState
+            message={toApiError(experiments.error).friendlyMessage}
+            requestId={toApiError(experiments.error).requestId}
+            onRetry={() => void experiments.refetch()}
+          />
         ) : experiments.data && experiments.data.items.length > 0 ? (
           <>
             <DataTable
@@ -197,7 +195,7 @@ export default function ExperimentsPage() {
               rowKey={(row) => row.id}
               isRowActive={(row) => selected?.id === row.id}
             />
-            <div className="px-1 pb-1">
+            <div className="mt-1">
               <Pagination
                 page={experiments.data.page}
                 totalPages={experiments.data.totalPages}
@@ -209,59 +207,49 @@ export default function ExperimentsPage() {
             </div>
           </>
         ) : (
-          <div className="p-5 pt-0">
-            <EmptyState
-              title="Sin experimentos"
-              description={
-                canLaunch
-                  ? 'Crea el primer experimento para lanzar corridas reproducibles de los modelos.'
-                  : 'Tu rol solo permite consultar. Un ANALYST puede crear experimentos.'
-              }
-              action={
-                canLaunch ? (
-                  <Button size="sm" onClick={() => setCreateOpen(true)}>
-                    Crear experimento
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
+          <EmptyState
+            title="Sin experimentos"
+            description={
+              canLaunch
+                ? 'Crea el primer experimento para lanzar corridas reproducibles de los modelos.'
+                : 'Tu rol solo permite consultar. Un ANALYST puede crear experimentos.'
+            }
+            action={
+              canLaunch ? (
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  Crear experimento
+                </Button>
+              ) : undefined
+            }
+          />
         )}
-      </Panel>
+      </Section>
 
       {selected ? (
-        <Panel tone="raised" flush>
-          <div className="p-5 pb-3">
-            <PanelHeader
-              title={`Corridas de ${selected.name}`}
-              subtitle="Cada fila es una corrida con su semilla y sus métricas"
-              actions={
-                <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
-                  Cerrar
-                </Button>
-              }
-            />
-          </div>
+        <Section
+          index="02"
+          eyebrow="Semilla y métricas por corrida"
+          title={`Corridas de ${selected.name}`}
+          actions={
+            <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+              Cerrar
+            </Button>
+          }
+        >
           {runs.isPending ? (
-            <div className="p-5 pt-0"><div className="skeleton-bar h-48 w-full" role="status" aria-label="Cargando corridas" /></div>
+            <div className="skeleton-bar h-48 w-full" role="status" aria-label="Cargando corridas" />
           ) : runs.isError ? (
-            <div className="p-5 pt-0">
-              <ErrorState
-                message={toApiError(runs.error).friendlyMessage}
-                requestId={toApiError(runs.error).requestId}
-                onRetry={() => void runs.refetch()}
-              />
-            </div>
+            <ErrorState
+              message={toApiError(runs.error).friendlyMessage}
+              requestId={toApiError(runs.error).requestId}
+              onRetry={() => void runs.refetch()}
+            />
           ) : runs.data && runs.data.items.length > 0 ? (
-            <div className="px-0">
-              <DataTable caption="Corridas del experimento" columns={runColumns} rows={runs.data.items} rowKey={(row) => row.id} dense />
-            </div>
+            <DataTable caption="Corridas del experimento" columns={runColumns} rows={runs.data.items} rowKey={(row) => row.id} dense />
           ) : (
-            <div className="p-5 pt-0">
-              <EmptyState title="Este experimento aún no tiene corridas" />
-            </div>
+            <EmptyState title="Este experimento aún no tiene corridas" />
           )}
-        </Panel>
+        </Section>
       ) : null}
 
       <Modal

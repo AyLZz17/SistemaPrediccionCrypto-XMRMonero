@@ -54,15 +54,18 @@ export function AnalystAccessRequestForm() {
   if (request) {
     const statusInfo = STATUS_LABELS[request.status] ?? { label: request.status, tone: 'neutral' as const }
     return (
-      <Panel tone="raised">
+      <Panel tone="strong">
         <PanelHeader title="Solicitud de acceso ANALYST" subtitle="Estado de tu solicitud" />
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-3 border-y border-hairline-subtle py-2.5">
-            <Badge tone={statusInfo.tone}>{statusInfo.label}</Badge>
-            <span className="font-mono text-xs text-ink-muted">
+        <dl className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
+          <div className="flex flex-wrap items-center gap-3 py-2.5">
+            <dt className="sr-only">Estado</dt>
+            <dd><Badge tone={statusInfo.tone}>{statusInfo.label}</Badge></dd>
+            <dd className="font-mono text-xs tabular-nums text-ink-muted">
               {request.createdAt ? formatDateTime(request.createdAt) : ''}
-            </span>
+            </dd>
           </div>
+        </dl>
+        <div className="mt-3 space-y-3">
           {request.status === 'PENDING' ? (
             <p className="text-sm leading-normal text-ink-secondary">
               Tu solicitud está en revisión. Un administrador la evaluará y recibirás una notificación cuando se
@@ -87,7 +90,7 @@ export function AnalystAccessRequestForm() {
             </Alert>
           ) : null}
           {request.decidedAt ? (
-            <p className="font-mono text-xs text-ink-muted">
+            <p className="font-mono text-xs tabular-nums text-ink-muted">
               Decisión: {formatDateTime(request.decidedAt)}
               {request.decidedBy ? ` · ${request.decidedBy}` : ''}
             </p>
@@ -118,7 +121,7 @@ export function AnalystAccessRequestForm() {
   }
 
   return (
-    <Panel tone="raised">
+    <Panel tone="strong">
       <PanelHeader
         title="Solicitud de acceso ANALYST"
         subtitle="Completa el formulario para solicitar acceso a funciones de análisis"
@@ -148,22 +151,22 @@ export function AnalystAccessRequestForm() {
             placeholder="Describe cómo planeas usar las funciones de análisis"
           />
         </div>
-        <fieldset className="rounded-sm border border-hairline-subtle">
-          <legend className="label-caps ml-3 px-1">Confirmación de comprensión</legend>
-          <div className="divide-y divide-hairline-subtle">
+        <fieldset>
+          <legend className="label-caps mb-2 border-b border-hairline-subtle pb-1.5">Confirmación de comprensión</legend>
+          <div className="divide-y divide-hairline-subtle border-y border-hairline-subtle">
             {CUESTIONARIO_ITEMS.map((item, index) => (
               <label
                 key={item.key}
-                className="flex cursor-pointer items-start gap-3 px-3 py-2.5 transition-colors hover:bg-surface-2"
+                className="flex cursor-pointer items-start gap-3 px-1 py-2.5 transition-colors hover:bg-surface-2"
               >
-                <span className="mt-0.5 font-mono text-[11px] text-ink-muted">{String(index + 1).padStart(2, '0')}</span>
+                <span aria-hidden="true" className="mt-0.5 font-mono text-[11px] tabular-nums text-brand-strong">{String(index + 1).padStart(2, '0')}</span>
                 <input
                   type="checkbox"
                   checked={form[item.key]}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, [item.key]: event.target.checked }))
                   }
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-hairline bg-surface-inset accent-brand"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded-none border-hairline-strong bg-surface-2 accent-brand"
                 />
                 <span className="text-[13px] leading-normal text-ink-secondary">{item.label}</span>
               </label>

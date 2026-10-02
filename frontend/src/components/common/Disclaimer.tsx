@@ -38,13 +38,12 @@ export function Disclaimer({
     <aside
       data-testid="disclaimer"
       aria-label="Aviso legal: no es asesoria financiera"
-      className={['rounded border border-hairline bg-surface-inset px-4 py-3', className].filter(Boolean).join(' ')}
+      className={['rounded-sm border border-hairline-default bg-surface-1', className].filter(Boolean).join(' ')}
     >
-      <p className="mb-1.5 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-accent-amber">
-        <span aria-hidden="true" className="inline-block h-3 w-0.5 bg-accent-amber" />
+      <p className="border-b border-hairline-subtle px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-accent-amber">
         Aviso legal · R-11
       </p>
-      <p className="text-[13px] leading-relaxed text-ink-secondary">
+      <p className="px-4 py-2.5 text-[13px] leading-relaxed text-ink-secondary">
         {variant === 'full' ? DISCLAIMER_FULL : DISCLAIMER_SHORT}
       </p>
     </aside>

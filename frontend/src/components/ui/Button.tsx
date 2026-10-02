@@ -21,12 +21,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
     'border border-hairline-default bg-surface-2 text-ink hover:border-hairline-strong hover:bg-surface-3',
   ghost: 'border border-transparent bg-transparent text-ink-secondary hover:text-ink hover:bg-surface-2',
   danger:
-    'border border-accent-red/40 bg-accent-red-soft text-accent-red hover:bg-accent-red/15 hover:border-accent-red/60',
+    'border border-accent-red/40 bg-transparent text-accent-red hover:bg-accent-red-soft hover:border-accent-red/60',
 }
 
 const SIZES: Record<ButtonSize, string> = {
   sm: 'h-8 px-3 text-xs',
-  md: 'h-9 px-4 text-sm',
+  md: 'h-9 px-4 text-[13px]',
   lg: 'h-11 px-6 text-sm',
 }
 
@@ -52,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={clsx(
-        'relative inline-flex items-center justify-center gap-2 rounded border font-medium',
+        'relative inline-flex items-center justify-center gap-2 rounded-sm border font-semibold tracking-wide',
         'transition-colors duration-fast ease-out',
         'disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none',
         VARIANTS[variant],

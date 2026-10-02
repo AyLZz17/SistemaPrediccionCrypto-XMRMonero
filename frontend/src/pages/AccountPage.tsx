@@ -4,7 +4,7 @@ import { changePassword, logout, me } from '../api/auth'
 import { toApiError } from '../api/errors'
 import { useAuthStore } from '../store/authStore'
 import { hasAtLeast, ROLE_LABELS, type User } from '../types'
-import { Alert, Badge, Button, Notice, Panel, PanelHeader, TextField } from '../components/ui'
+import { Alert, Badge, Button, Notice, Panel, PanelHeader, Section, TextField } from '../components/ui'
 import { readRefreshToken } from '../auth/tokenStorage'
 import { formatDateTime } from '../utils/format'
 import { AnalystAccessRequestForm } from '../components/analyst/AnalystAccessRequestForm'
@@ -68,33 +68,30 @@ export default function AccountPage() {
   if (!user) {
     return (
       <Notice>
-        No hay sesión activa. <a className="link-accent" href="/login">Inicia sesión</a> para ver tu cuenta.
+        No hay sesion activa. <a className="link-accent" href="/login">Inicia sesion</a> para ver tu cuenta.
       </Notice>
     )
   }
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
-        <p className="label-caps-ticked">Cuenta · identidad y credenciales</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Mi cuenta</h1>
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Cuenta · identidad y credenciales</p>
+        <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Mi cuenta</h1>
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-2">
-        <Panel tone="raised">
-          <PanelHeader
-            title="Perfil"
-            subtitle="Datos gestionados por el backend"
-            actions={
-              <Button size="sm" variant="secondary" loading={refreshProfile.isPending} onClick={() => refreshProfile.mutate()}>
-                Actualizar
-              </Button>
-            }
-          />
-          <dl className="divide-y divide-hairline-subtle border-t border-hairline-subtle text-sm">
+      <div className="grid items-start gap-x-10 gap-y-9 lg:grid-cols-2">
+        <Section index="01" eyebrow="Ficha registrada" title="Perfil" description="Datos gestionados por el backend" className="min-w-0"
+          actions={
+            <Button size="sm" variant="secondary" loading={refreshProfile.isPending} onClick={() => refreshProfile.mutate()}>
+              Actualizar
+            </Button>
+          }
+        >
+          <dl className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong text-sm">
             <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Nombre completo</dt>
-              <dd className="font-medium text-ink">{user.fullName}</dd>
+              <dd className="font-semibold text-ink">{user.fullName}</dd>
             </div>
             <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Correo</dt>
@@ -114,19 +111,19 @@ export default function AccountPage() {
             </div>
             {user.lastLoginAt ? (
               <div className="flex items-center justify-between gap-3 py-2">
-                <dt className="text-ink-secondary">Último acceso</dt>
+                <dt className="text-ink-secondary">Ultimo acceso</dt>
                 <dd className="font-mono text-xs tabular-nums text-ink">{formatDateTime(user.lastLoginAt)}</dd>
               </div>
             ) : null}
           </dl>
-          <div className="mt-4 border-t border-hairline-subtle pt-4">
+          <div className="mt-4">
             <Button variant="danger" onClick={() => void handleLogout()}>
               Cerrar sesion y revocar token
             </Button>
           </div>
-        </Panel>
+        </Section>
 
-        <Panel tone="raised">
+        <Panel tone="strong" className="min-w-0">
           <PanelHeader title="Cambiar contrasena" subtitle="Minimo 12 caracteres" />
           {done ? <Alert tone="success">Contrasena actualizada correctamente.</Alert> : null}
           <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">

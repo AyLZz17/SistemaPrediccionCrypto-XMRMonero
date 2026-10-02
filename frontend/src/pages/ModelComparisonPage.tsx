@@ -15,6 +15,7 @@ import {
   Notice,
   Panel,
   PanelHeader,
+  Section,
   SelectField,
   SkeletonTable,
   StatusDot,
@@ -50,11 +51,9 @@ function ModelVersionsCard({
   const isBaseline = BASELINE_FAMILIES.includes(model.family)
 
   return (
-    <li
-      className="rounded-sm border border-hairline-subtle bg-deep p-3.5 hover:border-hairline-default"
-      style={isBaseline ? undefined : { boxShadow: 'inset 2px 0 0 var(--xmr-border-strong)' }}
-    >
+    <li className="border border-hairline-subtle bg-deep p-4 hover:border-hairline-default">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span aria-hidden="true" className={`inline-block h-2 w-2 ${isBaseline ? 'bg-ink-muted' : 'bg-brand'}`} />
         <span className="text-sm font-semibold text-ink">{model.name}</span>
         <Badge tone="neutral">{model.family}</Badge>
         {isBaseline ? <Badge tone="neutral" title="Referencia clásica, siempre visible">línea base</Badge> : null}
@@ -135,18 +134,18 @@ export default function ModelComparisonPage() {
   const champion = comparison.data?.find((row) => row.isChampion)
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
-        <p className="label-caps-ticked">Comparación · misma partición, mismas fechas</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Modelos frente a líneas base</h1>
-        <p className="mt-1 max-w-3xl text-[13px] text-ink-secondary">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Comparación · misma partición, mismas fechas</p>
+        <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Modelos frente a líneas base</h1>
+        <p className="mt-1.5 max-w-3xl text-[13px] text-ink-secondary">
           LSTM y GRU evaluados contra {BASELINES.join(', ')} sobre exactamente la misma partición y las mismas
           fechas (R-05).
         </p>
       </div>
 
       <Panel>
-        <PanelHeader title="Experimento de comparación" marker="none" />
+        <PanelHeader title="Experimento de comparación" />
         <div className="max-w-md">
           <SelectField
             label="Experimento"
@@ -170,10 +169,10 @@ export default function ModelComparisonPage() {
           description="Verás MAE, RMSE, MAPE y aciertos de dirección por modelo, incluido el campeón vigente."
         />
       ) : comparison.isPending ? (
-        <Panel tone="raised">
-          <PanelHeader title="Cargando comparativa" />
+        <div>
+          <p className="label-caps mb-3">Cargando comparativa</p>
           <SkeletonTable rows={4} columns={5} />
-        </Panel>
+        </div>
       ) : comparison.isError ? (
         <ErrorState
           message={toApiError(comparison.error).friendlyMessage}
@@ -182,7 +181,7 @@ export default function ModelComparisonPage() {
         />
       ) : comparison.data && comparison.data.length > 0 ? (
         <>
-          <section aria-label="Resumen de la comparativa" className="grid gap-x-6 gap-y-5 rounded border border-hairline-subtle bg-deep p-4 sm:grid-cols-3">
+          <section aria-label="Resumen de la comparativa" className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
             <MetricCard
               label="Modelos evaluados"
               value={comparison.data.length}
@@ -204,27 +203,32 @@ export default function ModelComparisonPage() {
             />
           </section>
 
-          <Panel tone="raised">
-            <PanelHeader title="Métricas por modelo" subtitle="Menor es mejor en MAE, RMSE y MAPE" />
-            <MetricComparisonChart rows={comparison.data} />
-            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-hairline-subtle pt-2.5">
+          <Section
+            index="01"
+            eyebrow="Métricas agregadas"
+            title="Métricas por modelo"
+            description="Menor es mejor en MAE, RMSE y MAPE"
+          >
+            <div className="console-well p-3 sm:p-4">
+              <MetricComparisonChart rows={comparison.data} />
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1">
               <StatusDot tone="idle" label="Validación decide el campeón" />
               <StatusDot tone="warning" label="Prueba: uso único" />
             </div>
-          </Panel>
+          </Section>
 
-          <Panel tone="raised" flush>
-            <div className="p-5 pb-3">
-              <PanelHeader title="Detalle por modelo" subtitle="Dirección de acierto y desviación entre semillas" />
-            </div>
-            <ul className="divide-y divide-hairline-subtle border-t border-hairline-subtle">
+          <Section
+            index="02"
+            eyebrow="Fila por modelo"
+            title="Detalle por modelo"
+            description="Dirección de acierto y desviación entre semillas"
+          >
+            <ul className="divide-y divide-hairline-subtle border-y-2 border-hairline-strong">
               {comparison.data.map((row) => (
-                <li
-                  key={row.label}
-                  className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 hover:bg-surface-2"
-                  style={row.isChampion ? { boxShadow: 'inset 2px 0 0 var(--xmr-brand)' } : undefined}
-                >
-                  <span className="text-sm font-medium text-ink">{row.modelName ?? row.label}</span>
+                <li key={row.label} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                  <span aria-hidden="true" className={`inline-block h-2 w-2 ${row.isChampion ? 'bg-brand' : 'bg-ink-muted'}`} />
+                  <span className="text-sm font-semibold text-ink">{row.modelName ?? row.label}</span>
                   {row.family ? <Badge tone="neutral">{row.family}</Badge> : null}
                   {BASELINE_FAMILIES.includes(row.family ?? '') ? <Badge tone="neutral">línea base</Badge> : null}
                   {row.isChampion ? (
@@ -239,7 +243,7 @@ export default function ModelComparisonPage() {
                 </li>
               ))}
             </ul>
-          </Panel>
+          </Section>
         </>
       ) : (
         <EmptyState
@@ -248,8 +252,12 @@ export default function ModelComparisonPage() {
         />
       )}
 
-      <Panel tone="raised">
-        <PanelHeader title="Versiones por modelo" subtitle="Campeón vigente y promoción" />
+      <Section
+        index="03"
+        eyebrow="Registro de versiones"
+        title="Versiones por modelo"
+        description="Campeón vigente y promoción"
+      >
         {models.isPending ? (
           <SkeletonTable rows={3} columns={2} />
         ) : models.isError ? (
@@ -259,7 +267,7 @@ export default function ModelComparisonPage() {
             onRetry={() => void models.refetch()}
           />
         ) : models.data && models.data.items.length > 0 ? (
-          <ul className="grid gap-3 lg:grid-cols-2">
+          <ul className="grid items-start gap-3 lg:grid-cols-2">
             {models.data.items.map((model) => (
               <ModelVersionsCard
                 key={model.id}
@@ -279,7 +287,7 @@ export default function ModelComparisonPage() {
               : 'La promoción de campeón está reservada al rol ADMIN. Tu rol puede consultar la comparativa.'}
           </Notice>
         </div>
-      </Panel>
+      </Section>
 
       <Modal
         open={promotion !== null}

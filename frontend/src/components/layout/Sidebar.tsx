@@ -11,6 +11,7 @@ export interface NavItem {
   label: string
   description: string
   minimum: Role
+  /** Two-letter console code rendered in the item plate (DB, MK, …). */
   glyph: string
 }
 
@@ -27,26 +28,26 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Operación',
     items: [
-      { to: '/dashboard', label: 'Dashboard', description: 'Estado general del sistema', minimum: 'VIEWER', glyph: '▚' },
-      { to: '/market', label: 'Mercado', description: 'Velas y precio de XMR-USD', minimum: 'VIEWER', glyph: '▤' },
-      { to: '/predictions', label: 'Predicciones', description: 'Pronósticos por modelo', minimum: 'VIEWER', glyph: '◈' },
-      { to: '/jobs', label: 'Tareas', description: 'Monitor de tareas', minimum: 'VIEWER', glyph: '⚙' },
+      { to: '/dashboard', label: 'Dashboard', description: 'Estado general del sistema', minimum: 'VIEWER', glyph: 'DB' },
+      { to: '/market', label: 'Mercado', description: 'Velas y precio de XMR-USD', minimum: 'VIEWER', glyph: 'MK' },
+      { to: '/predictions', label: 'Predicciones', description: 'Pronósticos por modelo', minimum: 'VIEWER', glyph: 'PR' },
+      { to: '/jobs', label: 'Tareas', description: 'Monitor de tareas', minimum: 'VIEWER', glyph: 'JB' },
     ],
   },
   {
     title: 'Modelos',
     items: [
-      { to: '/experiments', label: 'Experimentos', description: 'Configuración y corridas', minimum: 'ANALYST', glyph: '⌬' },
-      { to: '/metrics', label: 'Métricas', description: 'MAE, RMSE, MAPE y dirección', minimum: 'ANALYST', glyph: '∑' },
-      { to: '/models', label: 'Comparativa', description: 'LSTM/GRU vs. baselines', minimum: 'ANALYST', glyph: '⇄' },
+      { to: '/experiments', label: 'Experimentos', description: 'Configuración y corridas', minimum: 'ANALYST', glyph: 'EX' },
+      { to: '/metrics', label: 'Métricas', description: 'MAE, RMSE, MAPE y dirección', minimum: 'ANALYST', glyph: 'MT' },
+      { to: '/models', label: 'Comparativa', description: 'LSTM/GRU vs. baselines', minimum: 'ANALYST', glyph: 'CM' },
     ],
   },
   {
     title: 'Administración',
     items: [
-      { to: '/admin', label: 'Usuarios', description: 'Roles y altas', minimum: 'ADMIN', glyph: '⚿' },
-      { to: '/admin/audit', label: 'Auditoría', description: 'Traza de acciones', minimum: 'ADMIN', glyph: '❐' },
-      { to: '/admin/logs', label: 'Logs', description: 'Operaciones y errores', minimum: 'ADMIN', glyph: '≡' },
+      { to: '/admin', label: 'Usuarios', description: 'Roles y altas', minimum: 'ADMIN', glyph: 'US' },
+      { to: '/admin/audit', label: 'Auditoría', description: 'Traza de acciones', minimum: 'ADMIN', glyph: 'AU' },
+      { to: '/admin/logs', label: 'Logs', description: 'Operaciones y errores', minimum: 'ADMIN', glyph: 'LG' },
     ],
   },
 ]
@@ -81,18 +82,18 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         aria-label="Navegación principal"
         className={clsx(
-          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-hairline-subtle bg-raised transition-transform duration-base ease-out',
+          'fixed inset-y-0 left-0 z-40 flex flex-col border-r-2 border-hairline-strong bg-raised transition-transform duration-base ease-out',
           'lg:static lg:translate-x-0',
-          collapsed ? 'lg:w-[64px]' : 'lg:w-sidebar',
+          collapsed ? 'lg:w-[68px]' : 'lg:w-sidebar',
           open ? 'translate-x-0' : '-translate-x-full',
           'w-sidebar',
         )}
       >
         <div className="flex h-header shrink-0 items-center gap-2.5 border-b border-hairline-subtle px-3.5">
-          <BrandMark size={26} />
+          <BrandMark size={28} />
           {!collapsed ? (
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold tracking-tight text-ink">XMR-Forecast</p>
+              <p className="truncate font-mono text-[13px] font-semibold tracking-wide text-ink">XMR-FORECAST</p>
               <p className="truncate font-mono text-[10px] uppercase tracking-wide text-ink-muted">
                 Centro de operaciones
               </p>
@@ -100,18 +101,21 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           ) : null}
         </div>
 
-        <nav className="scroll-fade flex-1 space-y-5 px-2.5 py-4" aria-label="Secciones">
-          {NAV_GROUPS.map((group) => {
+        <nav className="scroll-fade flex-1 space-y-5 overflow-y-auto px-2.5 py-4" aria-label="Secciones">
+          {NAV_GROUPS.map((group, groupIndex) => {
             const visible = group.items.filter((item) => hasAtLeast(role, item.minimum))
             if (visible.length === 0) return null
             return (
               <div key={group.title}>
                 {!collapsed ? (
-                  <p className="mb-1.5 px-2 font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+                  <p className="mb-1.5 flex items-baseline gap-2 px-1 font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+                    <span aria-hidden="true" className="font-semibold tabular-nums text-ink-muted">
+                      {String(groupIndex + 1).padStart(2, '0')}
+                    </span>
                     {group.title}
                   </p>
                 ) : null}
-                <ul className="space-y-0.5">
+                <ul className="space-y-1 border-t border-hairline-subtle pt-1.5">
                   {visible.map((item) => (
                     <li key={item.to}>
                       <NavLink
@@ -119,19 +123,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         title={collapsed ? item.label : undefined}
                         className={({ isActive }) =>
                           clsx(
-                            'group flex items-center gap-2.5 rounded-sm border border-transparent px-2 py-2 text-[13px] transition-colors duration-fast ease-out',
+                            'group flex items-center gap-2.5 px-1.5 py-2 transition-colors duration-fast ease-out',
                             isActive
                               ? 'nav-active'
-                              : 'text-ink-secondary hover:border-hairline-subtle hover:bg-surface-2 hover:text-ink',
+                              : 'text-ink-secondary hover:bg-surface-2 hover:text-ink',
                           )
                         }
                       >
-                        <span aria-hidden="true" className="w-4 shrink-0 text-center font-mono text-[13px]">
+                        <span aria-hidden="true" className="flex h-7 w-9 shrink-0 items-center justify-center border border-hairline-default font-mono text-[11px] font-semibold tracking-wide">
                           {item.glyph}
                         </span>
                         {!collapsed ? (
                           <span className="min-w-0 flex-1 leading-tight">
-                            <span className="block truncate font-medium">{item.label}</span>
+                            <span className="block truncate text-[13px] font-semibold">{item.label}</span>
                             <span className="block truncate text-[11px] text-ink-muted">{item.description}</span>
                           </span>
                         ) : null}
@@ -144,14 +148,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           })}
         </nav>
 
-        <div className="shrink-0 space-y-2.5 border-t border-hairline-subtle px-2.5 py-3">
+        <div className="shrink-0 space-y-2.5 border-t-2 border-hairline-strong px-2.5 py-3">
           {!collapsed && user ? (
-            <div className="rounded-sm border border-hairline-subtle bg-surface-inset px-3 py-2.5">
-              <p className="truncate text-xs font-medium text-ink">{user.fullName}</p>
+            <div className="border border-hairline-subtle bg-surface-inset px-3 py-2.5">
+              <p className="truncate text-xs font-semibold text-ink">{user.fullName}</p>
               <p className="truncate font-mono text-[11px] text-ink-muted">{user.email}</p>
               <div className="mt-1.5 flex items-center justify-between border-t border-hairline-subtle pt-1.5">
                 <span className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Rol</span>
-                <span className="font-mono text-[11px] text-ink-secondary">{ROLE_LABELS[user.role]}</span>
+                <span className="font-mono text-[11px] font-semibold text-ink-secondary">{ROLE_LABELS[user.role]}</span>
               </div>
             </div>
           ) : null}
@@ -161,7 +165,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               type="button"
               onClick={() => setCollapsed((value) => !value)}
               aria-pressed={collapsed}
-              className="rounded-sm border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:block"
+              className="rounded-none border border-hairline-default px-2 py-1 font-mono text-[11px] text-ink-muted transition-colors duration-fast hover:border-hairline-strong hover:text-ink lg:block"
             >
               {collapsed ? '»' : '«'}
               <span className="sr-only"> {collapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}</span>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { googleAuthorizeUrl, me, type GoogleConsentParams } from '../api/auth'
 import { ApiError, toApiError } from '../api/errors'
 import { useAuthStore } from '../store/authStore'
-import { Button, CheckboxField, Panel, PanelHeader, SkeletonPanel, StatusDot } from '../components/ui'
+import { Button, CheckboxField, Panel, SkeletonPanel, StatusDot } from '../components/ui'
 
 /** authorize URL, or `#` if the env is broken (never a blank dead end). */
 function safeAuthorizeUrl(consent: GoogleConsentParams): string {
@@ -132,13 +132,15 @@ export default function GoogleCallbackPage() {
     // backend no tiene constancia de ellos para esta cuenta nueva.
     const authorizeHref = safeAuthorizeUrl({ acceptTerms, acceptDataPolicy, acceptMarketing })
     return (
-      <div className="mx-auto w-full max-w-md space-y-5">
-        <Panel tone="raised">
-          <p className="label-caps-ticked">Alta de cuenta con Google</p>
-          <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
-            Acepta los documentos para crear tu cuenta
-          </h1>
-          <p className="mt-2 text-sm leading-normal text-ink-secondary">
+      <div className="mx-auto w-full max-w-md">
+        <Panel tone="strong">
+          <div className="mb-4 border-b-2 border-hairline-strong pb-3">
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Alta de cuenta con Google</p>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-ink">
+              Acepta los documentos para crear tu cuenta
+            </h1>
+          </div>
+          <p className="text-sm leading-normal text-ink-secondary">
             Google ha confirmado tu identidad, pero todavia no existe una cuenta en el sistema.
             Para crearla necesitamos tu aceptacion expresa de los siguientes documentos.
           </p>
@@ -185,7 +187,7 @@ export default function GoogleCallbackPage() {
             />
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4">
+          <div className="mt-5 flex flex-wrap gap-2 border-t-2 border-hairline-strong pt-4">
             {/* Navegacion completa: el endpoint de autorizacion responde 307 y
                 el navegador debe salir hacia Google con state y consentimiento. */}
             <Button
@@ -206,17 +208,18 @@ export default function GoogleCallbackPage() {
 
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-5">
+      <div className="mx-auto w-full max-w-md">
         <Panel tone="danger">
-          <div className="flex items-center gap-3">
+          <div className="mb-3 flex items-center justify-between gap-3 border-b-2 border-hairline-strong pb-3">
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-Forecast · OAuth</p>
             <StatusDot tone="danger" label="Fallo de autenticacion" />
           </div>
-          <PanelHeader title="No pudimos iniciar sesion con Google" marker="danger" as="h1" className="mt-3" />
-          <p className="text-sm leading-normal text-ink-secondary">{error.friendlyMessage}</p>
+          <h1 className="text-xl font-semibold tracking-tight text-ink">No pudimos iniciar sesion con Google</h1>
+          <p className="mt-2 text-sm leading-normal text-ink-secondary">{error.friendlyMessage}</p>
           {error.requestId ? (
-            <p className="mt-3 font-mono text-xs text-ink-muted">requestId: {error.requestId}</p>
+            <p className="mt-3 font-mono text-xs tabular-nums text-ink-muted">requestId: {error.requestId}</p>
           ) : null}
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-hairline-subtle pt-4">
             <Link to="/login">
               <Button>Intentar de nuevo</Button>
             </Link>
@@ -230,23 +233,27 @@ export default function GoogleCallbackPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5" role="status" aria-busy="true">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Completando inicio de sesion</h1>
-        <p className="mt-1 text-sm text-ink-secondary">
-          Estamos validando la respuesta de Google con el backend. No cierres esta ventana.
-        </p>
-      </div>
-      <div className="flex justify-center">
-        <StatusDot tone="active" label="Estableciendo la sesion" pulse />
-      </div>
-      <SkeletonPanel>
-        <div className="space-y-2">
-          <div className="skeleton-bar h-3 w-1/3" />
-          <div className="skeleton-bar h-3 w-2/3" />
-          <div className="skeleton-bar h-3 w-1/2" />
+    <div className="mx-auto w-full max-w-md" role="status" aria-busy="true">
+      <Panel tone="strong">
+        <div className="mb-4 border-b-2 border-hairline-strong pb-3 text-center">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">Completando inicio de sesion</h1>
+          <p className="mt-1 text-[13px] text-ink-secondary">
+            Estamos validando la respuesta de Google con el backend. No cierres esta ventana.
+          </p>
         </div>
-      </SkeletonPanel>
+        <div className="flex justify-center">
+          <StatusDot tone="active" label="Estableciendo la sesion" pulse />
+        </div>
+        <div className="mt-4">
+          <SkeletonPanel>
+            <div className="space-y-2">
+              <div className="skeleton-bar h-3 w-1/3" />
+              <div className="skeleton-bar h-3 w-2/3" />
+              <div className="skeleton-bar h-3 w-1/2" />
+            </div>
+          </SkeletonPanel>
+        </div>
+      </Panel>
     </div>
   )
 }

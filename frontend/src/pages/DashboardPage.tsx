@@ -13,7 +13,7 @@ import {
   ErrorState,
   MetricCard,
   Panel,
-  PanelHeader,
+  Section,
   SkeletonStat,
   SkeletonTable,
   StatusDot,
@@ -72,57 +72,59 @@ export default function DashboardPage() {
   const isUp = typeof changePercent === 'number' && changePercent >= 0
 
   return (
-    <div className="space-y-6">
-      {/* ------------------------------------------------------ cabecera */}
-      <div className="border-b border-hairline-subtle pb-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="label-caps-ticked">Centro de operaciones</p>
-            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-              Hola, {user?.fullName?.split(' ')[0] ?? 'usuario'}
-            </h1>
-            <p className="mt-1 text-[13px] text-ink-secondary">
-              Estado del sistema, tareas en ejecución y último parte de predicciones.
-              {' '}
-              <span className="font-mono text-xs text-ink-muted">
-                {user?.role}
-                {quote.data?.updatedAt ? ` · actualizado ${formatDateTime(quote.data.updatedAt)}` : ''}
-              </span>
-            </p>
+    <div className="space-y-9">
+      {/* ------------------------------------------------------ masthead */}
+      <div className="border-b-2 border-hairline-strong pb-5">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Centro de operaciones</p>
+        <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+          Hola, {user?.fullName?.split(' ')[0] ?? 'usuario'}
+        </h1>
+        <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-[13px]">
+          <div className="flex items-baseline gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Sesión</dt>
+            <dd className="font-mono text-xs tabular-nums text-ink">{user?.role}</dd>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <StatusDot
-              tone={quote.isError ? 'danger' : quote.isPending ? 'warning' : 'success'}
-              label={quote.isError ? 'API sin respuesta' : quote.isPending ? 'Consultando' : 'API operativa'}
-              pulse={quote.isFetching}
-            />
-            <StatusDot tone={activeCount > 0 ? 'active' : 'idle'} label={`${activeCount} tareas activas`} pulse={activeCount > 0} />
+          <div className="flex items-baseline gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Mercado</dt>
+            <dd className="font-mono text-xs tabular-nums text-ink">
+              {quote.data?.updatedAt ? formatDateTime(quote.data.updatedAt) : '—'}
+            </dd>
           </div>
-        </div>
+          <div className="flex items-center gap-4">
+            <dd>
+              <StatusDot
+                tone={quote.isError ? 'danger' : quote.isPending ? 'warning' : 'success'}
+                label={quote.isError ? 'API sin respuesta' : quote.isPending ? 'Consultando' : 'API operativa'}
+                pulse={quote.isFetching}
+              />
+            </dd>
+            <dd>
+              <StatusDot tone={activeCount > 0 ? 'active' : 'idle'} label={`${activeCount} tareas activas`} pulse={activeCount > 0} />
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <Disclaimer variant="short" />
 
-      {/* -------------------------------------------------- cinta de KPIs */}
-      <section aria-label="Indicadores principales" className="overflow-hidden rounded border border-hairline-subtle bg-deep">
+      {/* -------------------------------------------------- 01 indicadores */}
+      <section aria-label="Indicadores principales">
         {quote.isPending ? (
-          <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
             <SkeletonStat />
             <SkeletonStat />
             <SkeletonStat />
             <SkeletonStat />
           </div>
         ) : quote.isError ? (
-          <div className="p-4">
-            <ErrorState
-              title="No se pudo leer el precio de mercado"
-              message={toApiError(quote.error).friendlyMessage}
-              requestId={toApiError(quote.error).requestId}
-              onRetry={() => void quote.refetch()}
-            />
-          </div>
+          <ErrorState
+            title="No se pudo leer el precio de mercado"
+            message={toApiError(quote.error).friendlyMessage}
+            requestId={toApiError(quote.error).requestId}
+            onRetry={() => void quote.refetch()}
+          />
         ) : (
-          <div className="grid gap-x-6 gap-y-5 p-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               label="Precio XMR-USD"
               value={formatUsd(quote.data?.price)}
@@ -155,20 +157,22 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* --------------------------------------- actividad + plataforma */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Panel tone="raised" className="lg:col-span-2">
-          <PanelHeader
-            title="Actividad reciente"
-            subtitle="Últimas tareas encoladas y en ejecución"
-            actions={
-              <Link to="/jobs">
-                <Button variant="ghost" size="sm">
-                  Ver monitor
-                </Button>
-              </Link>
-            }
-          />
+      {/* --------------------------------------- 02 actividad + plataforma */}
+      <div className="grid items-start gap-x-10 gap-y-9 lg:grid-cols-3">
+        <Section
+          index="02"
+          eyebrow="Cola de trabajos"
+          title="Actividad reciente"
+          description="Últimas tareas encoladas y en ejecución"
+          className="min-w-0 lg:col-span-2"
+          actions={
+            <Link to="/jobs">
+              <Button variant="ghost" size="sm">
+                Ver monitor
+              </Button>
+            </Link>
+          }
+        >
           {jobs.isPending ? (
             <SkeletonTable rows={4} columns={4} />
           ) : jobs.isError ? (
@@ -178,13 +182,13 @@ export default function DashboardPage() {
               onRetry={() => void jobs.refetch()}
             />
           ) : jobs.data && jobs.data.items.length > 0 ? (
-            <ul className="divide-y divide-hairline-subtle border-t border-hairline-subtle">
+            <ul className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
               {jobs.data.items.map((job) => (
                 <li key={job.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
                   <span className="font-mono text-xs tabular-nums text-ink-muted">{job.id.slice(0, 8)}</span>
-                  <span className="font-mono text-xs text-ink">{job.type}</span>
+                  <span className="font-mono text-xs font-semibold text-ink">{job.type}</span>
                   <StatusPill status={job.status} />
-                  <span className="ml-auto font-mono text-xs text-ink-muted">
+                  <span className="ml-auto font-mono text-xs tabular-nums text-ink-muted">
                     {job.createdAt ? formatDateTime(job.createdAt) : '—'}
                   </span>
                 </li>
@@ -205,11 +209,15 @@ export default function DashboardPage() {
               }
             />
           )}
-        </Panel>
+        </Section>
 
-        <Panel tone="raised">
-          <PanelHeader title="Estado de la plataforma" subtitle="Señales de ejecución" />
-          <dl className="divide-y divide-hairline-subtle border-t border-hairline-subtle text-[13px]">
+        <Section
+          index="03"
+          eyebrow="Señales de ejecución"
+          title="Estado de la plataforma"
+          className="min-w-0"
+        >
+          <dl className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong text-[13px]">
             <div className="flex items-center justify-between gap-3 py-2">
               <dt className="text-ink-secondary">Conectividad API</dt>
               <dd>
@@ -232,7 +240,7 @@ export default function DashboardPage() {
               <dd><Badge tone={statusTone(user?.role === 'ADMIN' ? 'ADMIN' : 'VIEWER')}>{user?.role ?? '—'}</Badge></dd>
             </div>
           </dl>
-          <div className="mt-4 border-t border-hairline-subtle pt-3">
+          <div className="mt-4">
             <p className="label-caps mb-2">Tendencia reciente · cierres diarios</p>
             {sparkValues.length >= 2 ? (
               <Sparkline values={sparkValues} stroke="var(--xmr-text-secondary)" label="Cierre de las últimas velas" />
@@ -242,22 +250,23 @@ export default function DashboardPage() {
               </p>
             )}
           </div>
-        </Panel>
+        </Section>
       </div>
 
-      {/* --------------------------------------------- últimas predicciones */}
-      <Panel tone="raised">
-        <PanelHeader
-          title="Últimas predicciones"
-          subtitle="Pronósticos de cierre y dirección publicados por los modelos"
-          actions={
-            <Link to="/predictions">
-              <Button variant="ghost" size="sm">
-                Ver todas
-              </Button>
-            </Link>
-          }
-        />
+      {/* --------------------------------------------- 04 predicciones */}
+      <Section
+        index="04"
+        eyebrow="Estimaciones registradas"
+        title="Últimas predicciones"
+        description="Pronósticos de cierre y dirección publicados por los modelos"
+        actions={
+          <Link to="/predictions">
+            <Button variant="ghost" size="sm">
+              Ver todas
+            </Button>
+          </Link>
+        }
+      >
         {predictions.isPending ? (
           <SkeletonTable rows={3} columns={4} />
         ) : predictions.isError ? (
@@ -267,15 +276,15 @@ export default function DashboardPage() {
             onRetry={() => void predictions.refetch()}
           />
         ) : predictions.data && predictions.data.items.length > 0 ? (
-          <ul className="divide-y divide-hairline-subtle border-t border-hairline-subtle">
+          <ul className="divide-y divide-hairline-subtle border-t-2 border-hairline-strong">
             {predictions.data.items.map((prediction) => (
-              <li key={prediction.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+              <li key={prediction.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5">
                 <span className="font-mono text-xs tabular-nums text-ink-muted">{prediction.targetDate}</span>
-                <span className="text-sm text-ink">{prediction.modelName ?? prediction.modelId}</span>
+                <span className="text-sm font-semibold text-ink">{prediction.modelName ?? prediction.modelId}</span>
                 <span className="font-mono text-sm tabular-nums text-ink">
                   {formatUsd(prediction.predictedClose)}
                 </span>
-                <span className="ml-auto flex items-center gap-2">
+                <span className="ml-auto flex items-center gap-2.5">
                   {prediction.predictedDirection ? (
                     <Badge tone={prediction.predictedDirection === 'UP' ? 'success' : 'danger'}>
                       {prediction.predictedDirection === 'UP' ? 'sube' : 'baja'}
@@ -292,14 +301,14 @@ export default function DashboardPage() {
             description="Genera un pronóstico desde la sección de predicciones para verlo aquí."
           />
         )}
-      </Panel>
+      </Section>
 
       {isAnalyst ? (
-        <section aria-label="Comparativa de modelos" className="overflow-hidden rounded border border-hairline-default bg-surface-2">
-          <span aria-hidden="true" className="block h-0.5 bg-brand" />
-          <div className="flex flex-wrap items-center justify-between gap-4 p-5">
+        <Panel tone="strong">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-base font-semibold text-ink">Comparativa de modelos</h2>
+              <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">05 · Evaluación comparada</p>
+              <h2 className="mt-1 text-base font-semibold text-ink">Comparativa de modelos</h2>
               <p className="mt-1 text-[13px] text-ink-secondary">
                 MAE, RMSE, MAPE y proporción de aciertos de dirección por modelo, sobre la misma partición.
               </p>
@@ -308,7 +317,7 @@ export default function DashboardPage() {
               <Button variant="secondary">Abrir comparativa</Button>
             </Link>
           </div>
-        </section>
+        </Panel>
       ) : null}
 
       {!isAnalyst ? (

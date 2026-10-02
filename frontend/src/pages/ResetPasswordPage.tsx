@@ -44,29 +44,32 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <BrandMark size={36} />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Establecer nueva contrasena</h1>
-          <p className="mt-1 text-sm leading-normal text-ink-secondary">
-            El token de recuperacion es de un solo uso y caduca tras un tiempo limitado.
-          </p>
+    <div className="mx-auto w-full max-w-md">
+      <Panel tone="strong">
+        <div className="mb-5 flex items-center gap-3 border-b-2 border-hairline-strong pb-4">
+          <BrandMark size={34} />
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-Forecast · recuperación</p>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-ink">Establecer nueva contrasena</h1>
+          </div>
         </div>
-      </div>
+        <p className="mb-4 text-[13px] leading-normal text-ink-secondary">
+          El token de recuperacion es de un solo uso y caduca tras un tiempo limitado.
+        </p>
 
-      {error ? <ApiErrorAlert error={error} /> : null}
-      {!tokenFromUrl ? (
-        <Notice>
-          Abre el enlace que te enviamos por correo: el token llega en la direccion. Si no lo tienes,{' '}
-          <Link to="/forgot-password" className="link-accent">
-            solicita uno nuevo
-          </Link>
-          .
-        </Notice>
-      ) : null}
+        {error ? <div className="mb-4"><ApiErrorAlert error={error} /></div> : null}
+        {!tokenFromUrl ? (
+          <div className="mb-4">
+            <Notice>
+              Abre el enlace que te enviamos por correo: el token llega en la direccion. Si no lo tienes,{' '}
+              <Link to="/forgot-password" className="link-accent">
+                solicita uno nuevo
+              </Link>
+              .
+            </Notice>
+          </div>
+        ) : null}
 
-      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Token de recuperacion"

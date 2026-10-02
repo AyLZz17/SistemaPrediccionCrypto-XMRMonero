@@ -3,7 +3,7 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTML
 import { useId } from 'react'
 
 const FIELD_BASE =
-  'w-full rounded border border-hairline bg-surface-inset px-3 py-2 text-sm text-ink placeholder:text-ink-muted transition-colors duration-fast ease-out hover:border-hairline-strong focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50'
+  'w-full rounded-sm border border-hairline-default bg-surface-inset px-3 py-2 text-sm text-ink placeholder:text-ink-muted transition-colors duration-fast ease-out hover:border-hairline-strong focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50'
 
 function FieldShell({
   id,
@@ -27,14 +27,14 @@ function FieldShell({
       <label htmlFor={id} className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
         {label}
         {required ? (
-          <span aria-hidden="true" className="text-accent-red">
+          <span aria-hidden="true" className="font-semibold text-accent-red">
             *
           </span>
         ) : null}
       </label>
       {children}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-xs text-accent-red">
+        <p id={`${id}-error`} role="alert" className="font-mono text-[11px] uppercase tracking-wide text-accent-red">
           {error}
         </p>
       ) : hint ? (

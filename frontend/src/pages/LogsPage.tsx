@@ -9,8 +9,7 @@ import {
   ErrorState,
   MetricCard,
   Notice,
-  Panel,
-  PanelHeader,
+  Section,
   SelectField,
   StatusDot,
   TextField,
@@ -45,13 +44,13 @@ export default function LogsPage() {
   const errors = lines.filter((line) => line.level === 'ERROR').length
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="label-caps-ticked">Administración · consola operativa</p>
-            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Logs</h1>
-            <p className="mt-1 text-[13px] text-ink-secondary">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Administración · consola operativa</p>
+            <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Logs</h1>
+            <p className="mt-1.5 text-[13px] text-ink-secondary">
               Registro operativo de tareas. No se exponen tokens, credenciales ni datos sensibles.
             </p>
           </div>
@@ -62,35 +61,34 @@ export default function LogsPage() {
             </Button>
           </div>
         </div>
+
+        <div className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-3">
+          <MetricCard label="Eventos" value={lines.length} tone="idle" />
+          <MetricCard label="Errores" value={errors} tone={errors > 0 ? 'danger' : 'idle'} />
+          <MetricCard
+            label="Tareas en curso"
+            value={lines.filter((line) => line.level === 'RUNNING').length}
+            tone="active"
+          />
+        </div>
       </div>
 
-      <section aria-label="Resumen del log" className="grid gap-x-6 gap-y-5 rounded border border-hairline-subtle bg-deep p-4 sm:grid-cols-3">
-        <MetricCard label="Eventos" value={lines.length} tone="idle" />
-        <MetricCard label="Errores" value={errors} tone={errors > 0 ? 'danger' : 'idle'} />
-        <MetricCard
-          label="Tareas en curso"
-          value={lines.filter((line) => line.level === 'RUNNING').length}
-          tone="active"
-        />
-      </section>
-
-      <Panel tone="raised">
-        <PanelHeader
-          title="Consola"
-          subtitle="Salida de la cola de tareas"
-          actions={
-            <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(event) => setAutoRefresh(event.target.checked)}
-                className="h-3.5 w-3.5 rounded-sm border-hairline-strong bg-surface-2 accent-brand"
-              />
-              Auto refresco
-            </label>
-          }
-        />
-
+      <Section
+        index="01"
+        eyebrow="Salida de la cola de tareas"
+        title="Consola"
+        actions={
+          <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(event) => setAutoRefresh(event.target.checked)}
+              className="h-3.5 w-3.5 rounded-none border-hairline-strong bg-surface-2 accent-brand"
+            />
+            Auto refresco
+          </label>
+        }
+      >
         <div className="mb-4 grid gap-3 sm:grid-cols-2">
           <TextField
             label="Buscar"
@@ -128,38 +126,40 @@ export default function LogsPage() {
             description="Ajusta el filtro o espera a que se generen nuevas tareas."
           />
         ) : (
-          <div
-            role="log"
-            aria-label="Registro de operaciones"
-            aria-live="polite"
-            className="max-h-[28rem] overflow-y-auto rounded-sm border border-hairline-subtle bg-surface-inset p-3 font-mono text-xs leading-relaxed"
-          >
-            <ul className="space-y-1">
-              {filtered.map((line, index) => (
-                <li key={`${line.timestamp}-${index}`} className="flex flex-wrap gap-x-2 border-b border-hairline-subtle/50 py-0.5 last:border-b-0">
-                  <span className="shrink-0 tabular-nums text-ink-muted">{formatDateTime(line.timestamp)}</span>
-                  <span
-                    className={
-                      line.level === 'ERROR'
-                        ? 'shrink-0 text-accent-red'
-                        : line.level === 'WARN'
-                          ? 'shrink-0 text-accent-amber'
-                          : line.level === 'SUCCESS'
-                            ? 'shrink-0 text-accent-green'
-                            : line.level === 'RUNNING'
-                              ? 'shrink-0 text-accent-cyan'
-                              : 'shrink-0 text-ink-secondary'
-                    }
-                  >
-                    [{line.level.padEnd(7, ' ')}]
-                  </span>
-                  <span className="min-w-0 flex-1 break-words text-ink-secondary">{line.text}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="console-well p-0">
+            <div
+              role="log"
+              aria-label="Registro de operaciones"
+              aria-live="polite"
+              className="max-h-[28rem] overflow-y-auto p-3 font-mono text-xs leading-relaxed"
+            >
+              <ul className="divide-y divide-hairline-subtle">
+                {filtered.map((line, index) => (
+                  <li key={`${line.timestamp}-${index}`} className="flex flex-wrap gap-x-3 py-1">
+                    <span className="shrink-0 tabular-nums text-ink-muted">{formatDateTime(line.timestamp)}</span>
+                    <span
+                      className={
+                        line.level === 'ERROR'
+                          ? 'w-20 shrink-0 text-accent-red'
+                          : line.level === 'WARN'
+                            ? 'w-20 shrink-0 text-accent-amber'
+                            : line.level === 'SUCCESS'
+                              ? 'w-20 shrink-0 text-accent-green'
+                              : line.level === 'RUNNING'
+                                ? 'w-20 shrink-0 text-accent-cyan'
+                                : 'w-20 shrink-0 text-ink-secondary'
+                      }
+                    >
+                      {line.level}
+                    </span>
+                    <span className="min-w-0 flex-1 break-words text-ink-secondary">{line.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
-      </Panel>
+      </Section>
 
       <Notice>
         Los identificadores requestId visibles en los errores permiten correlacionar esta vista con los logs del

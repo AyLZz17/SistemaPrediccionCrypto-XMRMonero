@@ -42,14 +42,13 @@ export function PublicLayout({
 
       <header
         aria-label="Cabecera pública"
-        className="border-b border-hairline-subtle bg-raised"
+        className="border-b-2 border-hairline-strong bg-raised"
       >
-        <span aria-hidden="true" className="block h-0.5 bg-brand" />
-        <div className="mx-auto flex min-h-header w-full max-w-content flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 sm:px-6">
+        <div className="mx-auto flex min-h-header w-full max-w-content flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5" aria-label="XMR-Forecast, inicio">
-            <BrandMark size={26} />
+            <BrandMark size={28} />
             <span className="leading-tight">
-              <span className="block text-[13px] font-semibold tracking-tight text-ink">XMR-Forecast</span>
+              <span className="block font-mono text-[13px] font-semibold tracking-wide text-ink">XMR-FORECAST</span>
               <span className="block font-mono text-[10px] uppercase tracking-wide text-ink-muted">
                 Capacidad predictiva evaluada
               </span>
@@ -60,7 +59,7 @@ export function PublicLayout({
             {isAuth ? (
               <Link
                 to="/"
-                className="rounded-sm border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                className="rounded-none border border-hairline-default px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
               >
                 Volver al inicio
               </Link>
@@ -70,7 +69,7 @@ export function PublicLayout({
                   data-testid="public-identity"
                   className="hidden max-w-[200px] flex-col items-end leading-tight sm:flex"
                 >
-                  <span className="truncate text-xs font-medium text-ink">
+                  <span className="truncate text-xs font-semibold text-ink">
                     {user?.fullName || user?.email}
                   </span>
                   <span className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">
@@ -79,13 +78,13 @@ export function PublicLayout({
                 </span>
                 <Link
                   to="/account"
-                  className="rounded-sm border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                  className="rounded-none border border-hairline-default px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
                 >
                   Configuración
                 </Link>
                 <Link
                   to="/dashboard"
-                  className="rounded-sm border border-brand-deep bg-brand-solid px-3 py-2 text-xs font-medium text-ink-inverse transition-colors duration-fast hover:bg-brand"
+                  className="rounded-none border border-brand-deep bg-brand-solid px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-inverse transition-colors duration-fast hover:bg-brand"
                 >
                   Dashboard
                 </Link>
@@ -95,7 +94,7 @@ export function PublicLayout({
                     clearSession(null)
                     navigate('/', { replace: true })
                   }}
-                  className="rounded-sm border border-hairline px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-accent-red/50 hover:text-accent-red"
+                  className="rounded-none border border-hairline-default px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-accent-red/50 hover:text-accent-red"
                 >
                   Cerrar sesión
                 </button>
@@ -104,13 +103,13 @@ export function PublicLayout({
               <>
                 <Link
                   to="/login"
-                  className="rounded-sm border border-hairline px-3 py-2 text-xs font-medium text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                  className="rounded-none border border-hairline-default px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-secondary transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
                 >
                   Iniciar sesión
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-sm border border-brand-deep bg-brand-solid px-3 py-2 text-xs font-medium text-ink-inverse transition-colors duration-fast hover:bg-brand"
+                  className="rounded-none border border-brand-deep bg-brand-solid px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-ink-inverse transition-colors duration-fast hover:bg-brand"
                 >
                   Registrarse
                 </Link>
@@ -129,7 +128,7 @@ export function PublicLayout({
         <div className="mx-auto w-full max-w-content px-4 py-6 sm:px-6 lg:py-8">{children}</div>
       </main>
 
-      <div className="border-t border-hairline-subtle bg-surface-inset">
+      <div className="border-t border-hairline-subtle">
         <div className="mx-auto flex w-full max-w-content flex-wrap items-center gap-x-6 gap-y-1.5 px-4 py-2.5 sm:px-6">
           <StatusDot tone="success" label="Canal cifrado" />
           <span className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-USD · datos históricos</span>

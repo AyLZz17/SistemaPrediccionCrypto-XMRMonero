@@ -20,50 +20,55 @@ export function LegalPage({
   children: ReactNode
 }) {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5">
-      <Panel tone="raised">
-        <p className="label-caps-ticked">Documentos legales</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink">{title}</h1>
-        <p className="mt-2 text-sm leading-normal text-ink-secondary">{subtitle}</p>
+    <div className="mx-auto w-full max-w-3xl">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Documento legal</p>
+      <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{title}</h1>
+      <p className="mt-2 max-w-2xl text-sm leading-normal text-ink-secondary">{subtitle}</p>
 
-        <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-hairline-subtle pt-3 font-mono text-xs text-ink-muted">
-          <div>
-            <dt className="inline">Version vigente: </dt>
-            <dd className="inline text-ink-secondary" data-testid="legal-version">
-              {LEGAL_VERSION}
-            </dd>
-          </div>
-          <div>
-            <dt className="inline">En vigor desde: </dt>
-            <dd className="inline text-ink-secondary">{LEGAL_EFFECTIVE_DATE}</dd>
-          </div>
-          <div>
-            <dt className="inline">Contacto: </dt>
-            <dd className="inline">
-              <a href={`mailto:${LEGAL_CONTACT_EMAIL}`} className="link-accent">
-                {LEGAL_CONTACT_EMAIL}
-              </a>
-            </dd>
-          </div>
-        </dl>
+      <dl className="mt-5 grid gap-px border border-hairline-subtle bg-hairline-subtle sm:grid-cols-3">
+        <div className="bg-deep px-4 py-3">
+          <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Versión vigente</dt>
+          <dd className="mt-1 font-mono text-[13px] text-ink" data-testid="legal-version">
+            {LEGAL_VERSION}
+          </dd>
+        </div>
+        <div className="bg-deep px-4 py-3">
+          <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">En vigor desde</dt>
+          <dd className="mt-1 font-mono text-[13px] text-ink">{LEGAL_EFFECTIVE_DATE}</dd>
+        </div>
+        <div className="bg-deep px-4 py-3">
+          <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Contacto</dt>
+          <dd className="mt-1 font-mono text-[13px]">
+            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`} className="link-accent">
+              {LEGAL_CONTACT_EMAIL}
+            </a>
+          </dd>
+        </div>
+      </dl>
 
-        <div className="mt-5 space-y-5 text-sm leading-relaxed text-ink-secondary">{children}</div>
+      <Panel className="mt-5">
+        <div className="space-y-5 text-sm leading-relaxed text-ink-secondary">{children}</div>
       </Panel>
 
       <aside
         aria-label="Advertencia sobre el alcance de este documento"
-        className="rounded border border-hairline bg-surface-inset p-4 text-xs leading-relaxed text-ink-muted"
+        className="mt-5 rounded-sm border border-hairline-default bg-surface-1"
       >
-        Este documento describe como opera el servicio y como se tratan los datos
-        personales de quien lo usa. Se redacto para este proyecto y para el marco
-        colombiano aplicable, pero <strong className="text-ink-secondary">no constituye
-        asesoria juridica</strong>: debe ser revisado por un abogado colombiano antes de
-        operar con usuarios reales y, si el servicio se ofrece fuera de Colombia, por
-        asesores de cada jurisdiccion que resulte aplicable.
+        <p className="border-b border-hairline-subtle px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink-muted">
+          Alcance del documento
+        </p>
+        <p className="px-4 py-3 text-xs leading-relaxed text-ink-muted">
+          Este documento describe como opera el servicio y como se tratan los datos
+          personales de quien lo usa. Se redacto para este proyecto y para el marco
+          colombiano aplicable, pero <strong className="text-ink-secondary">no constituye
+          asesoria juridica</strong>: debe ser revisado por un abogado colombiano antes de
+          operar con usuarios reales y, si el servicio se ofrece fuera de Colombia, por
+          asesores de cada jurisdiccion que resulte aplicable.
+        </p>
       </aside>
 
-      <nav aria-label="Otros documentos legales">
-        <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+      <nav aria-label="Otros documentos legales" className="mt-5 border-t-2 border-hairline-strong pt-3">
+        <ul className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] uppercase tracking-wide">
           {LEGAL_DOCUMENTS.map((document) => (
             <li key={document.key}>
               <Link to={document.path} className="link-accent">
@@ -81,10 +86,7 @@ export function LegalPage({
 export function LegalSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-2 border-t border-hairline-subtle pt-4 first:border-t-0 first:pt-0">
-      <h2 className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-        <span aria-hidden="true" className="inline-block h-3.5 w-0.5 bg-brand" />
-        {title}
-      </h2>
+      <h2 className="font-mono text-[13px] font-semibold uppercase tracking-wide text-ink">{title}</h2>
       {children}
     </section>
   )
@@ -93,7 +95,7 @@ export function LegalSection({ title, children }: { title: string; children: Rea
 /** Bullet list inside a legal document. */
 export function LegalList({ items }: { items: ReactNode[] }) {
   return (
-    <ul className="list-disc space-y-1.5 pl-5 marker:text-ink-muted">
+    <ul className="list-[square] space-y-1.5 pl-5 marker:text-ink-muted">
       {items.map((item, index) => (
         <li key={index}>{item}</li>
       ))}

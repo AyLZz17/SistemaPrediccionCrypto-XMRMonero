@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAudit } from '../api'
 import { toApiError } from '../api/errors'
-import { Badge, EmptyState, ErrorState, Panel, PanelHeader, SkeletonTable, StatusDot } from '../components/ui'
+import { Badge, EmptyState, ErrorState, Section, SkeletonTable, StatusDot } from '../components/ui'
 import { DataTable, Pagination, type Column } from '../components/ui'
 import { formatDateTime } from '../utils/format'
 import type { AuditEntry } from '../types'
@@ -27,7 +27,7 @@ export default function AuditPage() {
       header: 'Actor',
       render: (row) => <span className="font-mono text-xs">{row.actorEmail ?? row.actorId ?? 'sistema'}</span>,
     },
-    { key: 'action', header: 'Acción', render: (row) => <span className="font-medium text-ink">{row.action}</span> },
+    { key: 'action', header: 'Acción', render: (row) => <span className="font-semibold text-ink">{row.action}</span> },
     {
       key: 'resourceType',
       header: 'Recurso',
@@ -51,45 +51,42 @@ export default function AuditPage() {
   ]
 
   return (
-    <div className="space-y-5">
-      <div className="border-b border-hairline-subtle pb-4">
+    <div className="space-y-9">
+      <div className="border-b-2 border-hairline-strong pb-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="label-caps-ticked">Administración · traza append-only</p>
-            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Auditoría</h1>
-            <p className="mt-1 max-w-3xl text-[13px] text-ink-secondary">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Administración · traza append-only</p>
+            <h1 className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Auditoría</h1>
+            <p className="mt-1.5 max-w-3xl text-[13px] text-ink-secondary">
               Traza de acciones sensibles. Cada entrada lleva el requestId que permite correlacionar con los logs
               del backend y del servicio ML.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <StatusDot tone="danger" label="Sesión ADMIN" />
-            <StatusDot
-              tone={audit.isError ? 'danger' : audit.isPending ? 'warning' : 'success'}
-              label={audit.isError ? 'Error al leer' : audit.isPending ? 'Consultando' : 'Registro disponible'}
-            />
+            <StatusDot tone={audit.isError ? 'danger' : audit.isPending ? 'warning' : 'success'} label={audit.isError ? 'Error al leer' : audit.isPending ? 'Consultando' : 'Registro disponible'} />
           </div>
         </div>
       </div>
 
-      <Panel tone="raised" flush>
-        <div className="p-5 pb-3">
-          <PanelHeader title="Registro de auditoría" subtitle="Solo lectura. Ningún endpoint permite modificarlo desde la UI." />
-        </div>
+      <Section
+        index="01"
+        eyebrow="Solo lectura"
+        title="Registro de auditoría"
+        description="Ningún endpoint permite modificarlo desde la UI."
+      >
         {audit.isPending ? (
-          <div className="p-5 pt-0"><SkeletonTable rows={6} columns={5} /></div>
+          <SkeletonTable rows={6} columns={5} />
         ) : audit.isError ? (
-          <div className="p-5 pt-0">
-            <ErrorState
-              message={toApiError(audit.error).friendlyMessage}
-              requestId={toApiError(audit.error).requestId}
-              onRetry={() => void audit.refetch()}
-            />
-          </div>
+          <ErrorState
+            message={toApiError(audit.error).friendlyMessage}
+            requestId={toApiError(audit.error).requestId}
+            onRetry={() => void audit.refetch()}
+          />
         ) : audit.data && audit.data.items.length > 0 ? (
           <>
             <DataTable caption="Registro de auditoria" columns={columns} rows={audit.data.items} rowKey={(row) => row.id} dense />
-            <div className="px-1 pb-1">
+            <div className="mt-1">
               <Pagination
                 page={audit.data.page}
                 totalPages={audit.data.totalPages}
@@ -101,14 +98,12 @@ export default function AuditPage() {
             </div>
           </>
         ) : (
-          <div className="p-5 pt-0">
-            <EmptyState
-              title="Sin entradas de auditoría"
-              description="No se han registrado acciones sensibles en el periodo consultado."
-            />
-          </div>
+          <EmptyState
+            title="Sin entradas de auditoría"
+            description="No se han registrado acciones sensibles en el periodo consultado."
+          />
         )}
-      </Panel>
+      </Section>
     </div>
   )
 }

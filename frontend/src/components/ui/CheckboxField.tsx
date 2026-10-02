@@ -35,8 +35,8 @@ export function CheckboxField({
       <label
         htmlFor={id}
         className={clsx(
-          'flex cursor-pointer items-start gap-2.5 rounded border border-transparent p-0.5 text-sm text-ink-secondary transition-colors duration-fast hover:text-ink',
-          error && 'text-ink',
+          'flex cursor-pointer items-start gap-2.5 rounded-sm border border-hairline-subtle bg-surface-inset px-2.5 py-2 text-sm text-ink-secondary transition-colors duration-fast hover:border-hairline-default hover:text-ink',
+          error && 'border-accent-red/70 text-ink',
         )}
       >
         <input
@@ -46,8 +46,7 @@ export function CheckboxField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={clsx(
-            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded-sm border-hairline bg-surface-inset accent-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60',
-            error && 'border-accent-red/70',
+            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded-none border-hairline-strong bg-surface-2 accent-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/60',
             className,
           )}
           {...rest}
@@ -55,11 +54,11 @@ export function CheckboxField({
         <span className="leading-relaxed">{label}</span>
       </label>
       {error ? (
-        <p id={`${id}-error`} role="alert" className="pl-6 text-xs text-accent-red">
+        <p id={`${id}-error`} role="alert" className="pl-1 font-mono text-[11px] uppercase tracking-wide text-accent-red">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="pl-6 text-xs text-ink-muted">
+        <p id={`${id}-hint`} className="pl-1 text-xs text-ink-muted">
           {hint}
         </p>
       ) : null}

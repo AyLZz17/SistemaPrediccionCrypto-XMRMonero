@@ -1,15 +1,15 @@
 import clsx from 'clsx'
 import type { HTMLAttributes, ReactNode } from 'react'
 
-export type PanelTone = 'default' | 'raised' | 'inset' | 'line' | 'danger'
+export type PanelTone = 'default' | 'strong' | 'well' | 'line' | 'danger'
 
 const TONES: Record<PanelTone, string> = {
-  default: 'ledger-panel',
-  raised: 'ledger-panel-strong shadow-card',
-  inset: 'ledger-well',
-  /** Border-only strip: transparent body, used for grouped stat rows. */
+  default: 'console-box',
+  strong: 'console-box-strong shadow-card',
+  well: 'console-well',
+  /** Border-only strip: transparent body for grouped ledger rows. */
   line: 'border border-hairline-subtle bg-transparent',
-  danger: 'ledger-panel-strong border-accent-red/40',
+  danger: 'console-box-strong border-accent-red/40',
 }
 
 export interface PanelProps extends HTMLAttributes<HTMLDivElement> {
@@ -24,7 +24,7 @@ export function Panel({ tone = 'default', flush = false, as = 'div', className, 
   return (
     <Tag
       className={clsx(
-        'rounded-md transition-colors duration-base ease-out',
+        'rounded transition-colors duration-base ease-out',
         TONES[tone],
         !flush && 'p-5',
         className,
@@ -45,17 +45,12 @@ export interface PanelHeaderProps {
   /** Heading level for a correct document outline (accessibility). */
   as?: 'h1' | 'h2' | 'h3' | 'h4'
   id?: string
-  /** Red contextual marker: 'tick' (default), 'danger', 'warn' or none. */
-  marker?: 'tick' | 'danger' | 'warn' | 'none'
 }
 
-const MARKERS = {
-  tick: 'bg-brand',
-  danger: 'bg-accent-red',
-  warn: 'bg-accent-amber',
-  none: 'bg-transparent',
-} as const
-
+/**
+ * Box header: title row with a hairline rule underneath. Ledger pages use
+ * `<Section>` instead; this header belongs to boxes (forms, dialogs, cards).
+ */
 export function PanelHeader({
   title,
   subtitle,
@@ -64,25 +59,25 @@ export function PanelHeader({
   className,
   as: Heading = 'h2',
   id,
-  marker = 'tick',
 }: PanelHeaderProps) {
   return (
-    <div className={clsx('mb-4 flex items-start justify-between gap-4', className)}>
-      <div className="flex min-w-0 items-start gap-2.5">
-        <span aria-hidden="true" className={clsx('mt-1 h-4 w-0.5 shrink-0', MARKERS[marker])} />
-        {icon ? (
-          <span aria-hidden="true" className="mt-0.5 shrink-0 text-ink-secondary">
-            {icon}
-          </span>
-        ) : null}
-        <div className="min-w-0">
-          <Heading id={id} className="text-base font-semibold leading-tight text-ink">
-            {title}
-          </Heading>
-          {subtitle ? <p className="mt-0.5 text-[13px] leading-normal text-ink-secondary">{subtitle}</p> : null}
+    <div className={clsx('mb-4 border-b border-hairline-subtle pb-3', className)}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-2.5">
+          {icon ? (
+            <span aria-hidden="true" className="mt-0.5 shrink-0 text-ink-secondary">
+              {icon}
+            </span>
+          ) : null}
+          <div className="min-w-0">
+            <Heading id={id} className="text-[15px] font-semibold leading-tight text-ink">
+              {title}
+            </Heading>
+            {subtitle ? <p className="mt-0.5 text-[13px] leading-normal text-ink-secondary">{subtitle}</p> : null}
+          </div>
         </div>
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   )
 }

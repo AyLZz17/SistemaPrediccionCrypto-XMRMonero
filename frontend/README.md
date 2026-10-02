@@ -276,20 +276,22 @@ personalizadas y se exponen a Tailwind por `tailwind.config.js`
 (excepción: los cuatro colores oficiales del logotipo de Google en
 `GoogleButton.tsx`, que son un activo de marca de terceros).
 
-- Identidad de terminal cuantitativa: negro profundo (`--xmr-bg-root`),
-  carbón (`--xmr-bg-raised`), superficies negras translúcidas y tinta
-  blanca cálida con grises fríos secundarios.
+- Identidad de consola de libro mayor: negro profundo (`--xmr-bg-root`),
+  carbón (`--xmr-bg-raised`), tinta blanca cálida con grises fríos
+  secundarios. El contenido vive entre reglas hairline sobre el fondo,
+  no en pilas de cajas idénticas; las cajas (`Panel`, `console-box`)
+  se reservan para formularios, diálogos, menús y terminales.
 - Rojo institucional de marca (`--xmr-brand`) y rojo de peligro
-  (`--xmr-brand-strong`): **solo** énfasis y estado (barra lateral de
-  navegación activa, botones primarios, errores, caídas, acciones
-  destructivas). Nunca como relleno de página.
+  (`--xmr-brand-strong`): **solo** énfasis y estado (bloque de navegación
+  activa, botones primarios, errores, caídas, marcas de campeón,
+  acciones destructivas). Nunca como relleno de página.
 - Verde **solo** subidas/éxito, ámbar **solo** advertencias, cian
   **solo** foco, actividad y conectividad.
-- Paneles planos de carbón con borde hairline y radios sobrios
-  (3/5/8 px); sin glassmorphism decorativo, sin resplandores, sin
-  degradados llamativos.
-- Tipografía monoespaciada para terminales, logs, métricas e identificadores
-  (`.mono`, `.label-caps`, `.label-caps-ticked`, `font-mono`).
+- Secciones rayadas y numeradas (`Section`: folio mono + regla de 2 px);
+  tablas sin caja con regla de cabecera de 2 px; radios sobrios
+  (2/3/5 px); sin glassmorphism, sin resplandores, sin degradados.
+- Tipografía monoespaciada para folios, terminales, logs, métricas e
+  identificadores (`.mono`, `.label-caps`, `font-mono`).
 - Modo oscuro permanente (`color-scheme: dark`); no existe tema claro.
 - Los acentos usan tripletas de canal (`--xmr-brand-ch`,
   `--xmr-accent-cyan-ch`, …) para que los modificadores de opacidad de
@@ -299,14 +301,17 @@ personalizadas y se exponen a Tailwind por `tailwind.config.js`
   verde 8.0:1, ámbar 9.2:1, cian 8.1:1, rojo de peligro 5.1:1;
   blanco sobre el rojo sólido del botón primario 7.3:1.
 - Estados: esqueletos oscuros, estados vacíos, estados de error, 404 y modal
-  con trampa de foco. El marcador activo de navegación (`.nav-active`) es una
-  barra roja lateral sobre fondo oscuro, con `aria-current="page"`.
+  con trampa de foco. El marcador activo de navegación (`.nav-active`) es un
+  bloque rojo sólido con `aria-current="page"`.
+- El envoltorio de desplazamiento de `DataTable` es posicionado (`relative`)
+  para que el contenido solo-lectores dentro de celdas no escape del scroll
+  en viewports estrechos; los hijos de rejilla llevan `min-w-0`.
 - Indicadores de actividad/conexión/seguridad/ejecución (`StatusDot`,
   `ActivityBar`, `Badge`) con animación sutil y etiqueta textual (no solo
   color). `prefers-reduced-motion` desactiva las transiciones.
-- Responsive: sidebar completa en escritorio (232 px, colapsable a 64 px),
-  cajón deslizante en móvil; cintas de KPIs en rejilla que colapsa sin
-  overflow horizontal.
+- Responsive: sidebar completa en escritorio (248 px, colapsable a 68 px),
+  cajón deslizante en móvil; rejillas ledger que colapsan sin overflow
+  horizontal (verificado a 1440/1280/768/390/360).
 
 ## 12. Accesibilidad
 

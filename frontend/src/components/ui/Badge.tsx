@@ -28,7 +28,7 @@ export function Badge({ tone = 'neutral', children, className, dot = false, puls
     <span
       title={title}
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide',
+        'inline-flex items-center gap-1.5 rounded-none border px-1.5 py-px font-mono text-[10px] uppercase tracking-wide',
         TONES[tone],
         className,
       )}
@@ -36,7 +36,7 @@ export function Badge({ tone = 'neutral', children, className, dot = false, puls
       {dot ? (
         <span
           aria-hidden="true"
-          className={clsx('h-1.5 w-1.5 rounded-full bg-current', pulse && 'animate-pulse')}
+          className={clsx('h-1.5 w-1.5 bg-current', pulse && 'animate-pulse')}
         />
       ) : null}
       {children}

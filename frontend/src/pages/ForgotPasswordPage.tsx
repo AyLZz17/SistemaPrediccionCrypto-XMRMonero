@@ -26,26 +26,29 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-5">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <BrandMark size={36} />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Recuperar contrasena</h1>
-          <p className="mt-1 text-sm leading-normal text-ink-secondary">
-            Te enviaremos un enlace de un solo uso. El enlace caduca por seguridad.
-          </p>
+    <div className="mx-auto w-full max-w-md">
+      <Panel tone="strong">
+        <div className="mb-5 flex items-center gap-3 border-b-2 border-hairline-strong pb-4">
+          <BrandMark size={34} />
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">XMR-Forecast · recuperación</p>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-ink">Recuperar contrasena</h1>
+          </div>
         </div>
-      </div>
+        <p className="mb-4 text-[13px] leading-normal text-ink-secondary">
+          Te enviaremos un enlace de un solo uso. El enlace caduca por seguridad.
+        </p>
 
-      {error ? <ApiErrorAlert error={error} /> : null}
-      {sent ? (
-        <Notice>
-          Si la cuenta existe, recibirás un correo con las instrucciones. Por seguridad no revelamos si el
-          correo esta registrado.
-        </Notice>
-      ) : null}
+        {error ? <div className="mb-4"><ApiErrorAlert error={error} /></div> : null}
+        {sent ? (
+          <div className="mb-4">
+            <Notice>
+              Si la cuenta existe, recibirás un correo con las instrucciones. Por seguridad no revelamos si el
+              correo esta registrado.
+            </Notice>
+          </div>
+        ) : null}
 
-      <Panel tone="raised">
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
             label="Correo electronico"
@@ -61,7 +64,7 @@ export default function ForgotPasswordPage() {
             Enviar enlace
           </Button>
         </form>
-        <p className="mt-5 text-center text-xs text-ink-secondary">
+        <p className="mt-5 border-t border-hairline-subtle pt-4 text-center font-mono text-[11px] uppercase tracking-wide">
           <Link to="/reset-password" className="link-accent">
             Ya tengo un token de recuperacion
           </Link>

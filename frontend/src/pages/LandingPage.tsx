@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Disclaimer } from '../components/common/Disclaimer'
-import { Badge, Button, MetricCard, Panel, StatusDot } from '../components/ui'
+import { Badge, Button, MetricCard, Section, StatusDot } from '../components/ui'
 import { useAuthStore } from '../store/authStore'
 
 const FEATURES = [
@@ -38,47 +38,60 @@ const FAMILIES = [
   { name: 'ARIMA', kind: 'Línea base', note: 'Referencia estadística con pronóstico rodante de un paso.' },
 ]
 
+const SPECS: Array<[string, string]> = [
+  ['Activo', 'Monero · XMR-USD · velas diarias'],
+  ['Tareas', 'Cierre t+1 (regresión) y dirección sube / baja'],
+  ['Partición', '70 / 15 / 15 estrictamente cronológica'],
+  ['Semillas', 'Mínimo 5 por modelo estocástico'],
+  ['Salida', 'Métrica registrada · sin operaciones'],
+]
+
 export default function LandingPage() {
   const authenticated = useAuthStore((state) => state.status === 'authenticated')
 
   return (
     <div className="space-y-10">
-      {/* ---------------------------------------------------------- portada */}
-      <section className="overflow-hidden rounded border border-hairline-subtle bg-surface-1">
-        <span aria-hidden="true" className="block h-1 bg-brand" />
-        <div className="max-w-3xl p-6 sm:p-10">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge tone="neutral">
-              Capacidad predictiva evaluada
-            </Badge>
+      {/* ------------------------------------------------------ masthead */}
+      <div className="border-b-2 border-hairline-strong pb-6">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">
+          Ficha técnica · XMR-Forecast
+        </p>
+        <h1 className="mt-2 max-w-3xl font-mono text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+          Capacidad predictiva evaluada para Monero
+        </h1>
+        <p className="mt-3 max-w-2xl text-[15px] leading-normal text-ink-secondary">
+          XMR-Forecast mide, con particiones cronológicas rigurosas, cuánta capacidad predictiva tienen los
+          modelos recurrentes frente a las líneas base clásicas sobre la serie diaria de XMR-USD. Publicamos
+          el resultado, incluso cuando no es favorable.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center gap-2.5">
+          <Link to={authenticated ? '/dashboard' : '/register'}>
+            <Button size="lg">{authenticated ? 'Ir al dashboard' : 'Crear cuenta gratuita'}</Button>
+          </Link>
+          <Link to={authenticated ? '/models' : '/login'}>
+            <Button size="lg" variant="secondary">
+              {authenticated ? 'Ver comparativa' : 'Iniciar sesión'}
+            </Button>
+          </Link>
+        </div>
+        <dl className="mt-6 grid gap-px border border-hairline-subtle bg-hairline-subtle sm:grid-cols-2 lg:grid-cols-5">
+          {SPECS.map(([term, value]) => (
+            <div key={term} className="bg-deep px-3.5 py-2.5">
+              <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">{term}</dt>
+              <dd className="mt-1 text-[13px] leading-snug text-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <StatusDot tone="success" label="HTTPS obligatorio" />
+          <StatusDot tone="idle" label="Trazabilidad por requestId" />
+          <StatusDot tone="idle" label="Sin simulación de operaciones" />
+          <span className="flex flex-wrap gap-1.5">
             <Badge tone="neutral">XMR-USD</Badge>
             <Badge tone="neutral">LSTM / GRU vs. ARIMA</Badge>
-          </div>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-            Capacidad predictiva evaluada para Monero
-          </h1>
-          <p className="mt-3 max-w-2xl text-[15px] leading-normal text-ink-secondary">
-            XMR-Forecast mide, con particiones cronológicas rigurosas, cuánta capacidad predictiva tienen los
-            modelos recurrentes frente a las líneas base clásicas sobre la serie diaria de XMR-USD. Publicamos
-            el resultado, incluso cuando no es favorable.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            <Link to={authenticated ? '/dashboard' : '/register'}>
-              <Button size="lg">{authenticated ? 'Ir al dashboard' : 'Crear cuenta gratuita'}</Button>
-            </Link>
-            <Link to={authenticated ? '/models' : '/login'}>
-              <Button size="lg" variant="secondary">
-                {authenticated ? 'Ver comparativa' : 'Iniciar sesión'}
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-hairline-subtle pt-4">
-            <StatusDot tone="success" label="HTTPS obligatorio" />
-            <StatusDot tone="idle" label="Trazabilidad por requestId" />
-            <StatusDot tone="idle" label="Sin simulación de operaciones" />
-          </div>
+          </span>
         </div>
-      </section>
+      </div>
 
       <section aria-labelledby="landing-disclaimer">
         <h2 id="landing-disclaimer" className="sr-only">
@@ -88,103 +101,102 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------ metodología */}
-      <section aria-labelledby="landing-pipeline" className="space-y-4">
-        <div>
-          <p className="label-caps-ticked">Metodología</p>
-          <h2 id="landing-pipeline" className="mt-1.5 text-2xl font-semibold tracking-tight text-ink">
-            Del dato histórico al informe reproducible
-          </h2>
-        </div>
-        <ol className="grid gap-px overflow-hidden rounded border border-hairline-subtle bg-hairline-subtle sm:grid-cols-2 lg:grid-cols-5">
+      <Section
+        index="01"
+        eyebrow="Metodología"
+        title="Del dato histórico al informe reproducible"
+      >
+        <ol className="divide-y divide-hairline-subtle border-y-2 border-hairline-strong">
           {PIPELINE.map((item) => (
-            <li key={item.step} className="bg-deep p-4">
-              <p className="font-mono text-xs tabular-nums text-brand-strong">{item.step}</p>
-              <p className="mt-1.5 text-sm font-semibold text-ink">{item.label}</p>
-              <p className="mt-1 text-xs leading-normal text-ink-muted">{item.detail}</p>
+            <li key={item.step} className="flex flex-wrap items-baseline gap-x-5 gap-y-1 py-3">
+              <span aria-hidden="true" className="font-mono text-[13px] font-semibold tabular-nums text-brand-strong">{item.step}</span>
+              <span className="min-w-36 text-sm font-semibold text-ink">{item.label}</span>
+              <span className="text-[13px] text-ink-secondary">{item.detail}</span>
             </li>
           ))}
         </ol>
-      </section>
+      </Section>
 
       {/* -------------------------------------------------------- familias */}
-      <section aria-labelledby="landing-families" className="space-y-4">
-        <div>
-          <p className="label-caps-ticked">Modelos evaluados</p>
-          <h2 id="landing-families" className="mt-1.5 text-2xl font-semibold tracking-tight text-ink">
-            Recurrentes frente a líneas base, en igualdad de condiciones
-          </h2>
-          <p className="mt-1.5 max-w-3xl text-sm leading-normal text-ink-secondary">
-            Todas las familias se evalúan sobre la misma partición y las mismas fechas. Las líneas base
-            nunca se ocultan: son la referencia contra la que se mide cualquier mejora.
-          </p>
+      <Section
+        index="02"
+        eyebrow="Modelos evaluados"
+        title="Recurrentes frente a líneas base, en igualdad de condiciones"
+        description="Todas las familias se evalúan sobre la misma partición y las mismas fechas. Las líneas base nunca se ocultan: son la referencia contra la que se mide cualquier mejora."
+      >
+        <div className="relative w-full overflow-x-auto">
+          <table className="w-full border-collapse text-left text-sm">
+            <caption className="sr-only">Familias de modelos evaluadas</caption>
+            <thead>
+              <tr className="border-b-2 border-hairline-strong">
+                <th scope="col" className="py-2 pr-4 font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">Familia</th>
+                <th scope="col" className="py-2 pr-4 font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">Tipo</th>
+                <th scope="col" className="py-2 font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-secondary">Evaluación</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FAMILIES.map((family) => (
+                <tr key={family.name} className="border-b border-hairline-subtle last:border-b-0 hover:bg-surface-2">
+                  <th scope="row" className="py-2.5 pr-4 text-left font-semibold text-ink">{family.name}</th>
+                  <td className="py-2.5 pr-4">
+                    <Badge tone={family.kind === 'Línea base' ? 'neutral' : 'brand'}>{family.kind}</Badge>
+                  </td>
+                  <td className="py-2.5 text-[13px] text-ink-secondary">{family.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <ul className="divide-y divide-hairline-subtle rounded border border-hairline-subtle bg-surface-table">
-          {FAMILIES.map((family) => (
-            <li key={family.name} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface-2">
-              <span className="min-w-36 text-sm font-semibold text-ink">{family.name}</span>
-              <Badge tone={family.kind === 'Línea base' ? 'neutral' : 'brand'}>{family.kind}</Badge>
-              <span className="w-full text-[13px] text-ink-secondary sm:w-auto sm:flex-1">{family.note}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      </Section>
 
       {/* ------------------------------------------------------ principios */}
-      <section aria-labelledby="landing-features" className="space-y-4">
-        <div>
-          <p className="label-caps-ticked">Principios</p>
-          <h2 id="landing-features" className="mt-1.5 text-2xl font-semibold tracking-tight text-ink">
-            Lo que ofrece la plataforma
-          </h2>
-        </div>
-        <div className="grid gap-px overflow-hidden rounded border border-hairline-subtle bg-hairline-subtle md:grid-cols-2">
-          {FEATURES.map((feature, index) => (
-            <div key={feature.title} className="bg-deep p-5">
-              <p className="font-mono text-[11px] tabular-nums text-ink-muted">{String(index + 1).padStart(2, '0')}</p>
-              <h3 className="mt-1.5 text-[15px] font-semibold text-ink">{feature.title}</h3>
-              <p className="mt-1.5 text-[13px] leading-normal text-ink-secondary">{feature.body}</p>
+      <Section
+        index="03"
+        eyebrow="Principios"
+        title="Lo que ofrece la plataforma"
+      >
+        <div className="grid gap-x-10 gap-y-5 md:grid-cols-2">
+          {FEATURES.map((feature, position) => (
+            <div key={feature.title} className="border-t-2 border-hairline-strong pt-2.5">
+              <p className="font-mono text-[11px] tabular-nums text-ink-muted">{String(position + 1).padStart(2, '0')}</p>
+              <h3 className="mt-1 text-[15px] font-semibold text-ink">{feature.title}</h3>
+              <p className="mt-1 text-[13px] leading-normal text-ink-secondary">{feature.body}</p>
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
       {/* -------------------------------------------------------- métricas */}
-      <section aria-labelledby="landing-cta" className="space-y-4">
-        <div>
-          <p className="label-caps-ticked">Métricas de referencia</p>
-          <h2 id="landing-cta" className="mt-1.5 text-2xl font-semibold tracking-tight text-ink">
-            Lo que verás dentro de la plataforma
-          </h2>
+      <Section
+        index="04"
+        eyebrow="Métricas de referencia"
+        title="Lo que verás dentro de la plataforma"
+      >
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label="MAE" value="USD" hint="Error absoluto medio en dólares" tone="idle" />
+          <MetricCard label="RMSE" value="USD" hint="Penaliza errores grandes" tone="idle" />
+          <MetricCard label="MAPE" value="%" hint="Error porcentual medio" tone="idle" />
+          <MetricCard
+            label="Dirección"
+            value="%"
+            hint="Proporción de aciertos sube / baja"
+            tone="idle"
+          />
         </div>
-        <Panel>
-          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label="MAE" value="USD" hint="Error absoluto medio en dólares" tone="idle" />
-            <MetricCard label="RMSE" value="USD" hint="Penaliza errores grandes" tone="idle" />
-            <MetricCard label="MAPE" value="%" hint="Error porcentual medio" tone="idle" />
-            <MetricCard
-              label="Dirección"
-              value="%"
-              hint="Proporción de aciertos sube / baja"
-              tone="idle"
-            />
+        <div className="mt-6 flex flex-col items-start justify-between gap-4 border border-hairline-default bg-surface-1 p-5 sm:flex-row sm:items-center">
+          <div>
+            <h3 className="font-mono text-[13px] font-semibold uppercase tracking-wide text-ink">Acceso a la plataforma</h3>
+            <p className="mt-1 max-w-2xl text-[13px] leading-normal text-ink-secondary">
+              Crea una cuenta para ver el mercado, generar pronósticos y comparar modelos. Los roles VIEWER,
+              ANALYST y ADMIN controlan qué se puede ver y ejecutar.
+            </p>
           </div>
-        </Panel>
-        <section aria-label="Acceso a la plataforma" className="overflow-hidden rounded border border-hairline-default bg-surface-2">
-          <span aria-hidden="true" className="block h-0.5 bg-brand" />
-          <div className="flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center">
-            <div>
-              <h3 className="text-base font-semibold text-ink">Empieza a consultar la capacidad del sistema</h3>
-              <p className="mt-1 max-w-2xl text-[13px] leading-normal text-ink-secondary">
-                Crea una cuenta para ver el mercado, generar pronósticos y comparar modelos. Los roles VIEWER,
-                ANALYST y ADMIN controlan qué se puede ver y ejecutar.
-              </p>
-            </div>
-            <Link to={authenticated ? '/dashboard' : '/register'} className="shrink-0">
-              <Button size="lg">{authenticated ? 'Abrir panel' : 'Crear cuenta'}</Button>
-            </Link>
-          </div>
-        </section>
-      </section>
+          <Link to={authenticated ? '/dashboard' : '/register'} className="shrink-0">
+            <Button size="lg">{authenticated ? 'Abrir panel' : 'Crear cuenta'}</Button>
+          </Link>
+        </div>
+      </Section>
+
     </div>
   )
 }
