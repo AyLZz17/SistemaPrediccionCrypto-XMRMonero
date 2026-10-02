@@ -21,6 +21,7 @@ import { Disclaimer } from '../components/common/Disclaimer'
 import { StatusPill, statusTone } from '../components/common/StatusPill'
 import { Sparkline } from '../components/charts/Sparkline'
 import { formatUsd, formatDateTime } from '../utils/format'
+import { AnalystAccessRequestForm } from '../components/analyst/AnalystAccessRequestForm'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
@@ -268,6 +269,10 @@ export default function DashboardPage() {
             </Link>
           </div>
         </Panel>
+      ) : null}
+
+      {!isAnalyst ? (
+        <AnalystAccessRequestForm />
       ) : null}
     </div>
   )

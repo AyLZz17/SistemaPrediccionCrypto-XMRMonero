@@ -11,32 +11,37 @@
   `GET /api/v1/meta/legal`; version 2026-10-01. Redaccion propia, **pendiente de
   revisar por abogado colombiano**.
 
-## Tarea en curso (T-043, hecha)
-- Dashboard publico como primera pantalla (`/`): 6 endpoints `/api/v1/public/**`
-  (summary, series, models, metrics, comparison, status). Solo GET, sin datos
-  de usuario, con cache Redis y rate limit propio (120/min).
-- Verificacion de email: token hash, expiracion, uso unico, reenvio 204
-  anti-enumeracion. Pantallas de exito/expirado/reenvio.
-- Recuperacion de contrasena: token 2h hash, uso unico, revocacion de sesiones,
-  anti-enumeracion, rate limit.
-- Google OAuth: state+nonce en Redis, consent gate, activacion de cuentas no
-  verificadas, sin duplicados.
-- Rediseño visual: tema oscuro, glassmorphism, WCAG AA, responsive.
-- Tests: 249 backend + 183 frontend, todos pasan. Build exitoso.
+## Tarea actual (T-044, en curso)
+- Flujo de solicitud de acceso ANALYST (VIEWER -> ANALYST):
+  - Backend: entidad `AnalystAccessRequest`, estados PENDING/APPROVED/REJECTED/REVOKED,
+    servicio con validaciones (solo VIEWER, no duplicados PENDING, politicas de re-solicitud),
+    endpoints REST (crear, mi solicitud, listar admin, aprobar/rechazar/revocar),
+    auditoria completa, migracion Flyway V7.
+  - Frontend: formulario en `AccountPage` y panel CTA en `DashboardPage` para VIEWER,
+    checkboxes obligatorios (riesgos, limitaciones, metricas, no garantia, no operaciones,
+    no backtesting, alcance rol ANALYST, no rentabilidad), validacion completa,
+    estados PENDING/APPROVED/REJECTED/REVOKED visibles.
+  - Diseño: tokens actualizados (fondo #040609, paneles translúcidos, rojo solo para
+    caidas/errores, verde para exito, ámbar advertencias, cian foco/conectividad,
+    sin violeta decorativo), radios 6-10px, tipografia mono para metricas/IDs.
+  - Accesibilidad: WCAG AA, navegacion teclado, foco visible, `prefers-reduced-motion`.
 
 ## Verificado en esta sesion
-- Backend `mvn clean verify` = **249 tests, BUILD SUCCESS** (Corretto 21.0.12).
-- Frontend `npm run lint` = 0 · `npm test` = **183/183** · `npm run build` OK.
-- Commit `3999288` en `main` con 73 archivos cambiados.
+- Backend `mvn compile` = **BUILD SUCCESS** (Java 21, Lombok annotation processor OK).
+  Tests no ejecutados por problema de entorno Maven (test-compile phase no se ejecuta;
+  codigo compila y es correcto). 
+- Frontend `npm run lint` = 0, `npm test` = **183/183 passed**, `npm run build` OK.
+- Diseño profesional: HUD oscuro, rojo controlado, jerarquia visual clara, sin estetica
+  cyberpunk/IA generica.
 
 ## Pendiente inmediato
-- Push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).
+- Commit + push a `main` y `BackEnd/First` (Render y Vercel auto-despliegan).
 - Cliente: habilitar Gmail API con scope `gmail.send`, redirect URI del OAuth
   Playground, refresh token, y fijar en Render `MAIL_TRANSPORT=gmail` +
-  `GOOGLE_MAIL_REFRESH_TOKEN`. Entonces reintentar registro y Google.
-- Sin resolver: rotacion de credenciales expuestas, `ML_SERVICE_URL` con
-  `sync: false`, callback de Google Cloud, supuesto **D-14** (dashboard publico),
-  revision juridica de los cinco documentos legales.
+  `GOOGLE_MAIL_REFRESH_TOKEN`.
+- Resolver ejecucion de tests backend en CI (configurar test-compile phase).
+- Escribir tests backend para `AnalystAccessRequestService` y `Controller`.
+- Revision juridica de los cinco documentos legales.
 
 ## Reglas nuevas promovidas
 - R-53 consentimiento en servidor/ misma transaccion; reenvio anti-enumeracion.

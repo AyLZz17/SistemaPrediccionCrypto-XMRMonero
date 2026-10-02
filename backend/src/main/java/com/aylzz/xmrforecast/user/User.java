@@ -77,4 +77,19 @@ public class User {
     public boolean isActive() {
         return status == UserStatus.ACTIVE;
     }
+
+    public boolean isViewer() {
+        return roles == null || roles.isEmpty() || roles.stream().allMatch(r -> r == Role.VIEWER);
+    }
+
+    public boolean hasRole(Role role) {
+        return roles != null && roles.contains(role);
+    }
+
+    public boolean hasAtLeast(Role minimum) {
+        if (roles == null || roles.isEmpty()) {
+            return minimum == Role.VIEWER;
+        }
+        return roles.stream().anyMatch(r -> r.ordinal() >= minimum.ordinal());
+    }
 }

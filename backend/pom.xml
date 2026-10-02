@@ -154,6 +154,15 @@
         <configuration>
           <release>21</release>
           <compilerArgs><arg>-parameters</arg></compilerArgs>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.34</version>
+            </path>
+          </annotationProcessorPaths>
+          <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
+          <testOutputDirectory>${project.build.directory}/test-classes</testOutputDirectory>
         </configuration>
       </plugin>
       <plugin>

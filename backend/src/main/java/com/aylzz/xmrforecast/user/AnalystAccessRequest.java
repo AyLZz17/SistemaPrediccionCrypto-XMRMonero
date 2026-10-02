@@ -98,6 +98,6 @@ public class AnalystAccessRequest {
     }
 
     public String getIdOpaque() {
-        return Ids.encode(id);
+        return Ids.of(id);
     }
 }

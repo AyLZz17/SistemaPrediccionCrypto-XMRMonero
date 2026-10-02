@@ -39,4 +39,8 @@ public record AuthenticatedUser(Long id, String email, String jti, Set<Role> rol
     public boolean isAdmin() {
         return roles.contains(Role.ADMIN);
     }
+
+    public boolean hasAtLeast(Role minimum) {
+        return roles.stream().anyMatch(r -> r.ordinal() >= minimum.ordinal());
+    }
 }

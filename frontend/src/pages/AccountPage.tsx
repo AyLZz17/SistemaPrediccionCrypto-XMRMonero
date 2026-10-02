@@ -7,6 +7,7 @@ import { hasAtLeast, ROLE_LABELS, type User } from '../types'
 import { Alert, Badge, Button, Notice, Panel, PanelHeader, TextField } from '../components/ui'
 import { readRefreshToken } from '../auth/tokenStorage'
 import { formatDateTime } from '../utils/format'
+import { AnalystAccessRequestForm } from '../components/analyst/AnalystAccessRequestForm'
 
 export default function AccountPage() {
   const user = useAuthStore((state) => state.user)
@@ -170,6 +171,10 @@ export default function AccountPage() {
           </div>
         </Panel>
       </div>
+
+      {!hasAtLeast(user.role, 'ANALYST') ? (
+        <AnalystAccessRequestForm />
+      ) : null}
     </div>
   )
 }
