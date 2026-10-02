@@ -43,8 +43,7 @@ COPY --from=build --chown=xmr:xmr /build/backend/target/xmr-forecast-backend.jar
 USER xmr
 EXPOSE 8443 10000
 
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom" \
-    SERVER_SSL_KEYSTORE=/certs/backend/keystore.p12
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
 
 # Health check: respeta SERVER_SSL_ENABLED y SERVER_PORT.
 # En Render: SERVER_SSL_ENABLED=false, SERVER_PORT=10000 (HTTP interno tras el borde TLS).
@@ -52,7 +51,11 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/de
 # Sin esta distincion, el healthcheck falla en Render (HTTPS contra HTTP) y el
 # servicio nunca se marca healthy: Render lo muestra en "APPLICATION LOADING"
 # indefinidamente.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+#
+# start-period=120s: en Render Free el contenedor tarda más en arrancar (JVM +
+# Flyway + conexiones). Con 60s el healthcheck fallaba antes de que el backend
+# estuviera listo y Render lo mataba.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
   CMD if [ "${SERVER_SSL_ENABLED:-true}" = "true" ]; then \
         wget --quiet --tries=1 -O /dev/null \
             --ca-certificate=/certs/ca/ca.crt \

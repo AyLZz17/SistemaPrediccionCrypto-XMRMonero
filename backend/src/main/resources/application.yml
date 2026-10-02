@@ -101,7 +101,11 @@ server:
     # externo ya termina TLS (p. ej. Render): el trafico publico sigue siendo
     # HTTPS y el tramo interno va por la red privada del proveedor.
     enabled: ${SERVER_SSL_ENABLED:true}
-    key-store: ${SERVER_SSL_KEYSTORE:file:/certs/backend/keystore.p12}
+    # El keystore solo es obligatorio cuando SSL está activo. En Render
+    # (SERVER_SSL_ENABLED=false) no existe /certs/backend/keystore.p12 y
+    # Spring Boot falla al arrancar si se exige un keystore que no existe.
+    # Con SERVER_SSL_ENABLED=false el keystore se ignora por completo.
+    key-store: ${SERVER_SSL_KEYSTORE:}
     key-store-password: ${SERVER_SSL_KEYSTORE_PASSWORD:}
     key-store-type: ${SERVER_SSL_KEYSTORE_TYPE:PKCS12}
     key-alias: ${SERVER_SSL_KEY_ALIAS:xmrforecast}
